@@ -45,11 +45,9 @@ Note: no `express` yet — this plan is DB-only. `tsx` runs TypeScript files dir
     "verify": "tsx src/verify.ts",
     "studio": "prisma studio"
   },
-  "prisma": {
-    "seed": "tsx prisma/seed.ts"
-  },
   "dependencies": {
-    "@prisma/client": "^6.0.0"
+    "@prisma/client": "^6.0.0",
+    "dotenv": "^16.0.0"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
@@ -58,6 +56,28 @@ Note: no `express` yet — this plan is DB-only. `tsx` runs TypeScript files dir
     "typescript": "^5.0.0"
   }
 }
+```
+
+- [ ] **Step 2b: Create `server/prisma.config.ts`** (the `package.json#prisma` field is deprecated in Prisma 6, removed in 7):
+
+```typescript
+// Prisma CLI configuration. This replaces the deprecated `prisma` field in
+// package.json (removed in Prisma 7). One subtlety: when this file exists,
+// the Prisma CLI stops auto-loading .env — the `import "dotenv/config"` line
+// below takes over that job.
+import "dotenv/config";
+import { defineConfig, env } from "prisma/config";
+
+export default defineConfig({
+  schema: "prisma/schema.prisma",
+  migrations: {
+    path: "prisma/migrations",
+    seed: "tsx prisma/seed.ts",
+  },
+  datasource: {
+    url: env("DATABASE_URL"),
+  },
+});
 ```
 
 - [ ] **Step 3: Create `server/tsconfig.json`**
@@ -473,6 +493,7 @@ git commit -m "feat: initial migration — create all 15 tables"
 // The seed is idempotent: it wipes all rows first, then inserts. Deleting
 // mechs and traits is enough because every other table cascades from them
 // (onDelete: Cascade in the schema).
+import "dotenv/config"; // load DATABASE_URL when run directly via tsx
 import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
@@ -797,6 +818,8 @@ async function main() {
 main()
   .catch((e) => {
     console.error(e);
+    // Note: process.exit() won't wait for the .finally() disconnect below.
+    // Fine for a one-shot script; don't copy this pattern into a server.
     process.exit(1);
   })
   .finally(() => prisma.$disconnect());
@@ -840,6 +863,7 @@ git commit -m "feat: idempotent seed — Shadow Warrior (S-tier, full kit) + Pir
 // 1. Prove every relation in the schema resolves (incl. self-referencing trees).
 // 2. Preview the exact `include` shape the future GET /api/mechs/:id endpoint
 //    will use — when we build the API, this query moves there.
+import "dotenv/config"; // load DATABASE_URL when run directly via tsx
 import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
@@ -893,6 +917,8 @@ async function main() {
 main()
   .catch((e) => {
     console.error(e);
+    // Note: process.exit() won't wait for the .finally() disconnect below.
+    // Fine for a one-shot script; don't copy this pattern into a server.
     process.exit(1);
   })
   .finally(() => prisma.$disconnect());

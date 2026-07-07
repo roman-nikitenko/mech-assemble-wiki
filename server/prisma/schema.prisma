@@ -1,0 +1,277 @@
+// Prisma schema for the Mech Assemble wiki — 15 tables + 2 enums.
+// Source of truth for the domain model: CLAUDE.md at the repo root.
+//
+// Conventions used throughout:
+// - Model names are PascalCase, mapped to snake_case table names with @@map.
+// - Field names are camelCase, mapped to snake_case columns with @map.
+// - Every primary key is a UUID (project convention).
+// - Flexible stat blocks are jsonb (Json type) — their shape varies per mech.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------- Enums ----------
+
+enum MechType {
+  Fire
+  Thunder
+  Physical
+  Ice
+  Energy
+  Explosive
+}
+
+enum MechRank {
+  Standard
+  S
+}
+
+// ---------- The hub ----------
+
+model Mech {
+  id           String   @id @default(uuid()) @db.Uuid
+  name         String   @unique
+  epithet      String? // subtitle, e.g. "Shadow Hunter"
+  type         MechType
+  rank         MechRank
+  quality      String? // e.g. "Supreme"
+  // Deliberately a plain string like "ATK +10%" — NOT structured fields.
+  // Explicit product decision (see CLAUDE.md); do not normalize.
+  specialBonus String?  @map("special_bonus")
+  pilotName    String?  @map("pilot_name")
+  lore         String?
+
+  // S-tier-only systems below are optional/empty for Standard mechs;
+  // the frontend decides what to show based on `rank`.
+  skills          MechSkill[]
+  traits          MechTrait[]
+  awakeningLevels AwakeningLevel[]
+  weapon          Weapon?
+  accessory       Accessory?
+  skins           Skin[]
+  helpers         Helper[]
+
+  @@map("mechs")
+}
+
+// ---------- Skills + upgrade tree ----------
+
+model MechSkill {
+  id          String  @id @default(uuid()) @db.Uuid
+  mechId      String  @map("mech_id") @db.Uuid
+  name        String
+  description String?
+  baseStats   Json?   @map("base_stats") // shape varies per skill -> jsonb
+
+  mech     Mech           @relation(fields: [mechId], references: [id], onDelete: Cascade)
+  upgrades SkillUpgrade[]
+
+  @@map("mech_skills")
+}
+
+model SkillUpgrade {
+  id          String  @id @default(uuid()) @db.Uuid
+  skillId     String  @map("skill_id") @db.Uuid
+  // Self-reference: each upgrade may point at a parent upgrade in the SAME
+  // table — that's how the branching tree is stored. Root nodes have
+  // parentId = null. Prisma requires self-relations to be NAMED (the
+  // "SkillUpgradeTree" label) so it can tell the two sides (parent vs
+  // children) apart.
+  parentId    String? @map("parent_id") @db.Uuid
+  name        String
+  description String?
+  isEvolution Boolean @default(false) @map("is_evolution") // "evolve into..." nodes
+  unlockReq   String? @map("unlock_req") // e.g. "3/8"
+
+  skill    MechSkill      @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  parent   SkillUpgrade?  @relation("SkillUpgradeTree", fields: [parentId], references: [id])
+  children SkillUpgrade[] @relation("SkillUpgradeTree")
+
+  @@map("skill_upgrades")
+}
+
+// ---------- Traits (many-to-many via join table) ----------
+
+model Trait {
+  id    String  @id @default(uuid()) @db.Uuid
+  name  String  @unique
+  color String? // hex color for the tag chip in the UI
+
+  mechs MechTrait[]
+
+  @@map("traits")
+}
+
+model MechTrait {
+  // Join table gets its own UUID id (instead of a composite PK) to stay
+  // consistent with the "UUIDs for all primary keys" project convention.
+  // The @@unique below still prevents duplicate mech<->trait pairs.
+  id      String @id @default(uuid()) @db.Uuid
+  mechId  String @map("mech_id") @db.Uuid
+  traitId String @map("trait_id") @db.Uuid
+
+  mech  Mech  @relation(fields: [mechId], references: [id], onDelete: Cascade)
+  trait Trait @relation(fields: [traitId], references: [id], onDelete: Cascade)
+
+  @@unique([mechId, traitId])
+  @@map("mech_traits")
+}
+
+// ---------- Awakening (S-tier only) ----------
+
+model AwakeningLevel {
+  id            String  @id @default(uuid()) @db.Uuid
+  mechId        String  @map("mech_id") @db.Uuid
+  level         Int
+  statBonus     Json?   @map("stat_bonus") // e.g. {"atk": 120, "hp": 800}
+  specialEffect String? @map("special_effect")
+  requirement   String? // e.g. "Shadow Warrior Shard x30"
+
+  mech    Mech              @relation(fields: [mechId], references: [id], onDelete: Cascade)
+  // "Exactly 5 nodes per level" is an app-level rule (enforced by the seed /
+  // future admin code), not a DB constraint — kept simple by design.
+  nodes   AwakeningNode[]
+  unlocks AwakeningUnlock[]
+
+  @@unique([mechId, level])
+  @@map("awakening_levels")
+}
+
+model AwakeningNode {
+  id        String @id @default(uuid()) @db.Uuid
+  levelId   String @map("level_id") @db.Uuid
+  position  Int // 1-5
+  attribute String // e.g. "ATK", "Crit Rate"
+
+  level AwakeningLevel @relation(fields: [levelId], references: [id], onDelete: Cascade)
+
+  @@unique([levelId, position])
+  @@map("awakening_nodes")
+}
+
+model AwakeningUnlock {
+  id          String  @id @default(uuid()) @db.Uuid
+  levelId     String  @map("level_id") @db.Uuid
+  name        String
+  description String?
+
+  level AwakeningLevel @relation(fields: [levelId], references: [id], onDelete: Cascade)
+
+  @@map("awakening_unlocks")
+}
+
+// ---------- Unique weapon (S-tier only) + upgrade tree ----------
+
+model Weapon {
+  id          String  @id @default(uuid()) @db.Uuid
+  mechId      String  @unique @map("mech_id") @db.Uuid // @unique makes this 1:1
+  name        String
+  description String?
+  baseStats   Json?   @map("base_stats")
+
+  mech     Mech            @relation(fields: [mechId], references: [id], onDelete: Cascade)
+  upgrades WeaponUpgrade[]
+  skins    Skin[]
+  helpers  Helper[]
+
+  @@map("weapons")
+}
+
+model WeaponUpgrade {
+  id          String  @id @default(uuid()) @db.Uuid
+  weaponId    String  @map("weapon_id") @db.Uuid
+  // Same self-referencing tree pattern as SkillUpgrade — see the comment there.
+  parentId    String? @map("parent_id") @db.Uuid
+  name        String
+  description String?
+  isEvolution Boolean @default(false) @map("is_evolution")
+  unlockReq   String? @map("unlock_req")
+
+  weapon   Weapon          @relation(fields: [weaponId], references: [id], onDelete: Cascade)
+  parent   WeaponUpgrade?  @relation("WeaponUpgradeTree", fields: [parentId], references: [id])
+  children WeaponUpgrade[] @relation("WeaponUpgradeTree")
+
+  @@map("weapon_upgrades")
+}
+
+// ---------- Accessory (S-tier only, deliberately minimal) ----------
+
+model Accessory {
+  id          String  @id @default(uuid()) @db.Uuid
+  mechId      String  @unique @map("mech_id") @db.Uuid
+  // Just name + description — explicit product decision, do not extend.
+  name        String
+  description String?
+
+  mech Mech @relation(fields: [mechId], references: [id], onDelete: Cascade)
+
+  @@map("accessories")
+}
+
+// ---------- Skins ----------
+
+model Skin {
+  id          String  @id @default(uuid()) @db.Uuid
+  // A skin belongs to EITHER a mech OR a weapon: two nullable FKs, exactly
+  // one filled. Deliberately simple vs. polymorphic associations. Prisma
+  // can't declaratively enforce "exactly one is set" — that invariant lives
+  // in the code that writes rows (the seed, later the admin API). A Postgres
+  // CHECK constraint is the planned later-phase upgrade.
+  mechId      String? @map("mech_id") @db.Uuid
+  weaponId    String? @map("weapon_id") @db.Uuid
+  name        String
+  description String?
+
+  mech   Mech?      @relation(fields: [mechId], references: [id], onDelete: Cascade)
+  weapon Weapon?    @relation(fields: [weaponId], references: [id], onDelete: Cascade)
+  stars  SkinStar[]
+
+  @@map("skins")
+}
+
+model SkinStar {
+  id     String @id @default(uuid()) @db.Uuid
+  skinId String @map("skin_id") @db.Uuid
+  star   Int // 1, 2, 3...
+  perk   String // what this star level grants
+
+  skin Skin @relation(fields: [skinId], references: [id], onDelete: Cascade)
+
+  @@unique([skinId, star])
+  @@map("skin_stars")
+}
+
+// ---------- Helpers ----------
+
+model Helper {
+  id            String  @id @default(uuid()) @db.Uuid
+  // Same dual-nullable-FK pattern as Skin — see the comment there.
+  mechId        String? @map("mech_id") @db.Uuid
+  weaponId      String? @map("weapon_id") @db.Uuid
+  name          String // e.g. "Darren", "Akira"
+  passiveEffect String? @map("passive_effect")
+
+  mech   Mech?        @relation(fields: [mechId], references: [id], onDelete: Cascade)
+  weapon Weapon?      @relation(fields: [weaponId], references: [id], onDelete: Cascade)
+  ranks  HelperRank[]
+
+  @@map("helpers")
+}
+
+model HelperRank {
+  id       String @id @default(uuid()) @db.Uuid
+  helperId String @map("helper_id") @db.Uuid
+  rank     Int
+  effect   String
+
+  helper Helper @relation(fields: [helperId], references: [id], onDelete: Cascade)
+
+  @@unique([helperId, rank])
+  @@map("helper_ranks")
+}
