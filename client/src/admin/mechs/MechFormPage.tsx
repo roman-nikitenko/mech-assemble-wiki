@@ -6,15 +6,15 @@ import {
   useMech,
   usePilots,
   useTraits,
+  useTypes,
   useUpdateMech,
 } from "../../api/client";
-import type { MechInput, MechRank, MechType } from "../../api/types";
+import type { MechInput, MechRank } from "../../api/types";
 import { ImageUploadField } from "../ImageUploadField";
 
-const TYPES: MechType[] = ["Fire", "Thunder", "Physical", "Ice", "Energy", "Explosive"];
 const RANKS: MechRank[] = ["Standard", "S"];
 
-const EMPTY: MechInput = { name: "", type: "Fire", rank: "Standard", traitIds: [], pilotId: null };
+const EMPTY: MechInput = { name: "", rank: "Standard", traitIds: [], pilotId: null, typeId: null };
 
 /** One form for BOTH /admin/mechs/new and /admin/mechs/:id/edit — the
     presence of an :id route param decides which mode we're in. */
@@ -29,6 +29,7 @@ export function MechFormPage() {
   const updateMech = useUpdateMech(id ?? "");
   const createTrait = useCreateTrait();
   const pilots = usePilots();
+  const types = useTypes();
 
   const [form, setForm] = useState<MechInput>(EMPTY);
   const [newTrait, setNewTrait] = useState("");
@@ -40,7 +41,7 @@ export function MechFormPage() {
       setForm({
         name: m.name,
         epithet: m.epithet,
-        type: m.type,
+        typeId: m.type?.id ?? null,
         rank: m.rank,
         quality: m.quality,
         specialBonus: m.specialBonus,
@@ -114,23 +115,33 @@ export function MechFormPage() {
           <input id="name" value={form.name} onChange={(e) => set("name", e.target.value)} className={fieldCls} />
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div>
-            <label htmlFor="type" className="mb-1 block text-sm font-semibold">Type</label>
-            <select id="type" value={form.type} onChange={(e) => set("type", e.target.value as MechType)} className={fieldCls}>
-              {TYPES.map((t) => (
-                <option key={t}>{t}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label htmlFor="rank" className="mb-1 block text-sm font-semibold">Rank</label>
-            <select id="rank" value={form.rank} onChange={(e) => set("rank", e.target.value as MechRank)} className={fieldCls}>
-              {RANKS.map((r) => (
-                <option key={r}>{r}</option>
-              ))}
-            </select>
-          </div>
+        <div>
+          <label htmlFor="type" className="mb-1 block text-sm font-semibold">Type</label>
+          <select
+            id="type"
+            value={form.typeId ?? ""}
+            onChange={(e) => set("typeId", e.target.value || null)}
+            className={fieldCls}
+          >
+            <option value="">— no type —</option>
+            {(types.data ?? []).map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.name}
+              </option>
+            ))}
+          </select>
+          <p className="mt-1 text-xs text-ink-dim">
+            Every mech in the game has a type — assign one when you can.
+          </p>
+        </div>
+
+        <div>
+          <label htmlFor="rank" className="mb-1 block text-sm font-semibold">Rank</label>
+          <select id="rank" value={form.rank} onChange={(e) => set("rank", e.target.value as MechRank)} className={fieldCls}>
+            {RANKS.map((r) => (
+              <option key={r}>{r}</option>
+            ))}
+          </select>
         </div>
 
         {form.rank === "S" && (

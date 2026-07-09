@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { MechDetail, MechInput, MechRank, MechSummary, MechType, Pilot, PilotInput, Trait } from "./types";
+import type { GameType, MechDetail, MechInput, MechRank, MechSummary, Pilot, PilotInput, Trait, TypeInput } from "./types";
 
 const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
 
@@ -14,7 +14,7 @@ export async function fetchJson<T>(path: string): Promise<T> {
 }
 
 export interface MechFilters {
-  type?: MechType;
+  typeId?: string;
   rank?: MechRank;
 }
 
@@ -22,7 +22,7 @@ export interface MechFilters {
     is a different cache entry and triggers its own fetch. */
 export function useMechs(filters: MechFilters) {
   const params = new URLSearchParams();
-  if (filters.type) params.set("type", filters.type);
+  if (filters.typeId) params.set("typeId", filters.typeId);
   if (filters.rank) params.set("rank", filters.rank);
   const qs = params.toString();
   return useQuery({
@@ -170,5 +170,44 @@ export function useDeletePilot() {
       qc.invalidateQueries({ queryKey: ["pilots"] });
       qc.invalidateQueries({ queryKey: ["mech"] });
     },
+  });
+}
+
+export function useTypes() {
+  return useQuery({ queryKey: ["types"], queryFn: () => fetchJson<GameType[]>("/api/types") });
+}
+
+export function useCreateType() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: TypeInput) => sendJson<GameType>("/api/types", "POST", input),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["types"] }),
+  });
+}
+
+export function useUpdateType(id: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: TypeInput) => sendJson<GameType>(`/api/types/${id}`, "PUT", input),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["types"] });
+      // a renamed type / new icon shows on mech cards too
+      qc.invalidateQueries({ queryKey: ["mechs"] });
+      qc.invalidateQueries({ queryKey: ["mech"] });
+    },
+  });
+}
+
+export function useDeleteType() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`${API_URL}/api/types/${id}`, { method: "DELETE" });
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        throw new Error(data?.error ?? `API error ${res.status}`);
+      }
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["types"] }),
   });
 }

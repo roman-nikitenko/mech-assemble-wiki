@@ -2,13 +2,19 @@
 // server/src/routes/mechs.ts). Kept deliberately in sync by hand — sharing
 // types with the server would need npm workspaces; not worth it yet.
 
-export type MechType =
-  | "Fire"
-  | "Thunder"
-  | "Physical"
-  | "Ice"
-  | "Energy"
-  | "Explosive";
+/** An element type from the admin-managed catalog (name + icon).
+    Named GameType because "Type" collides with too much in TS-land. */
+export interface GameType {
+  id: string;
+  name: string;
+  iconUrl: string | null;
+}
+
+/** Payload for POST/PUT /api/types. */
+export interface TypeInput {
+  name: string;
+  iconUrl?: string | null;
+}
 
 export type MechRank = "Standard" | "S";
 
@@ -17,7 +23,7 @@ export interface MechSummary {
   id: string;
   name: string;
   epithet: string | null;
-  type: MechType;
+  type: GameType | null;
   rank: MechRank;
   quality: string | null;
   imageUrl: string | null;
@@ -81,6 +87,7 @@ export interface Weapon {
   name: string;
   description: string | null;
   baseStats: Stats | null;
+  type: GameType | null;
   upgrades: UpgradeNode[];
   skins: Skin[];
   helpers: Helper[];
@@ -134,7 +141,7 @@ export interface Trait {
 export interface MechInput {
   name: string;
   epithet?: string | null;
-  type: MechType;
+  typeId?: string | null;
   rank: MechRank;
   quality?: string | null;
   specialBonus?: string | null;

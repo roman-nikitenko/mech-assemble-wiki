@@ -17,8 +17,10 @@ const prisma = new PrismaClient();
 
 async function main() {
   // ---- wipe (children cascade from these two roots) ----
+  // Types LAST: Restrict means mechs must be deleted before types.
   await prisma.mech.deleteMany();
   await prisma.trait.deleteMany();
+  await prisma.type.deleteMany();
 
   // ---- traits (shared catalog, linked to mechs via mech_traits) ----
   const thunder = await prisma.trait.create({
@@ -31,12 +33,16 @@ async function main() {
     data: { name: "Physical", color: "#c0c0c0" },
   });
 
+  // ---- types (element catalog; icons get uploaded via the admin later) ----
+  const thunderType = await prisma.type.create({ data: { name: "Thunder" } });
+  const physicalType = await prisma.type.create({ data: { name: "Physical" } });
+
   // ================= Shadow Warrior (S-tier, full kit) =================
   const shadowWarrior = await prisma.mech.create({
     data: {
       name: "Shadow Warrior",
       epithet: "Shadow Hunter",
-      type: "Thunder",
+      typeId: thunderType.id,
       rank: "S",
       quality: "Supreme",
       specialBonus: "ATK +10%",
@@ -295,7 +301,7 @@ async function main() {
     data: {
       name: "Pirate Gunner",
       epithet: "Powder Keg",
-      type: "Physical",
+      typeId: physicalType.id,
       rank: "Standard",
       quality: "Rare",
       specialBonus: "DEF +200",

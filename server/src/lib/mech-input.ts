@@ -1,4 +1,4 @@
-import { MechRank, MechType } from "@prisma/client";
+import { MechRank } from "@prisma/client";
 
 // Shared validation for POST and PUT /api/mechs. Returns either a clean,
 // typed payload or a user-facing error message. Kept out of the router so
@@ -7,7 +7,7 @@ import { MechRank, MechType } from "@prisma/client";
 export interface MechInput {
   name: string;
   epithet: string | null;
-  type: MechType;
+  typeId: string | null;
   rank: MechRank;
   quality: string | null;
   specialBonus: string | null;
@@ -42,15 +42,11 @@ export function parseMechInput(body: unknown): ParseResult {
     return { ok: false, message: "Mech name is required." };
   }
 
-  // Enum validation reads the GENERATED enum objects — same pattern as the
-  // GET filters: extend the schema enum and validation follows automatically.
-  const validTypes = Object.values(MechType);
-  if (typeof b.type !== "string" || !(validTypes as string[]).includes(b.type)) {
-    return {
-      ok: false,
-      message: `Invalid type '${String(b.type)}'. Valid values: ${validTypes.join(", ")}`,
-    };
+  // Type is a catalog reference now (nullable — the catalog may be empty).
+  if (b.typeId !== undefined && b.typeId !== null && typeof b.typeId !== "string") {
+    return { ok: false, message: "typeId must be a type id string or null." };
   }
+
   const validRanks = Object.values(MechRank);
   if (typeof b.rank !== "string" || !(validRanks as string[]).includes(b.rank)) {
     return {
@@ -82,7 +78,7 @@ export function parseMechInput(body: unknown): ParseResult {
     ok: true,
     value: {
       name: b.name.trim(),
-      type: b.type as MechType,
+      typeId: (b.typeId as string | null | undefined) ?? null,
       rank: b.rank as MechRank,
       traitIds: (b.traitIds as string[] | undefined) ?? [],
       pilotId: b.pilotId as string | null | undefined,

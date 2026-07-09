@@ -13,6 +13,7 @@ afterAll(async () => {
   await prisma.pilot.deleteMany({ where: { name: { startsWith: "[test:mechs] " } } });
   await prisma.mech.deleteMany({ where: { name: { startsWith: "[test:mechs] " } } });
   await prisma.trait.deleteMany({ where: { name: { startsWith: "[test:mechs] " } } });
+  await prisma.type.deleteMany({ where: { name: { startsWith: "[test:mechs] " } } });
   await prisma.$disconnect();
 });
 
@@ -22,7 +23,6 @@ describe("POST /api/mechs", () => {
     const res = await request(app).post("/api/mechs").send({
       name: "[test:mechs] Iron Colossus",
       epithet: "Wall Breaker",
-      type: "Physical",
       rank: "Standard",
       traitIds: [trait.id],
     });
@@ -34,24 +34,14 @@ describe("POST /api/mechs", () => {
   });
 
   it("400s on a missing name", async () => {
-    const res = await request(app).post("/api/mechs").send({ type: "Fire", rank: "S" });
+    const res = await request(app).post("/api/mechs").send({ rank: "S" });
     expect(res.status).toBe(400);
     expect(res.body.error).toContain("name");
-  });
-
-  it("400s on an invalid type, listing valid values", async () => {
-    const res = await request(app)
-      .post("/api/mechs")
-      .send({ name: "[test:mechs] Bad Type", type: "Water", rank: "S" });
-    expect(res.status).toBe(400);
-    expect(res.body.error).toContain("Water");
-    expect(res.body.error).toContain("Thunder");
   });
 
   it("400s on unknown trait ids", async () => {
     const res = await request(app).post("/api/mechs").send({
       name: "[test:mechs] Ghost Traits",
-      type: "Ice",
       rank: "Standard",
       traitIds: ["00000000-0000-4000-8000-000000000000"],
     });
@@ -62,11 +52,11 @@ describe("POST /api/mechs", () => {
   it("409s on a duplicate name", async () => {
     const first = await request(app)
       .post("/api/mechs")
-      .send({ name: "[test:mechs] Twin", type: "Fire", rank: "S" });
+      .send({ name: "[test:mechs] Twin", rank: "S" });
     expect(first.status).toBe(201);
     const res = await request(app)
       .post("/api/mechs")
-      .send({ name: "[test:mechs] Twin", type: "Fire", rank: "S" });
+      .send({ name: "[test:mechs] Twin", rank: "S" });
     expect(res.status).toBe(409);
   });
 });
@@ -77,13 +67,11 @@ describe("PUT /api/mechs/:id", () => {
     const t2 = await prisma.trait.create({ data: { name: "[test:mechs] New Trait" } });
     const created = await request(app).post("/api/mechs").send({
       name: "[test:mechs] Editable",
-      type: "Energy",
       rank: "Standard",
       traitIds: [t1.id],
     });
     const res = await request(app).put(`/api/mechs/${created.body.id}`).send({
       name: "[test:mechs] Editable v2",
-      type: "Energy",
       rank: "S",
       traitIds: [t2.id],
     });
@@ -98,14 +86,14 @@ describe("PUT /api/mechs/:id", () => {
   it("404s for an absent id", async () => {
     const res = await request(app)
       .put("/api/mechs/00000000-0000-4000-8000-000000000000")
-      .send({ name: "[test:mechs] Nobody", type: "Fire", rank: "S" });
+      .send({ name: "[test:mechs] Nobody", rank: "S" });
     expect(res.status).toBe(404);
   });
 
   it("404s for a malformed id", async () => {
     const res = await request(app)
       .put("/api/mechs/abc")
-      .send({ name: "[test:mechs] Nobody", type: "Fire", rank: "S" });
+      .send({ name: "[test:mechs] Nobody", rank: "S" });
     expect(res.status).toBe(404);
     expect(res.body).toEqual({ error: "Mech not found" });
   });
@@ -115,7 +103,6 @@ describe("DELETE /api/mechs/:id", () => {
   it("deletes the mech and cascades to child rows", async () => {
     const created = await request(app).post("/api/mechs").send({
       name: "[test:mechs] Doomed",
-      type: "Explosive",
       rank: "Standard",
     });
     const id = created.body.id;
@@ -147,7 +134,6 @@ describe("mech <-> pilot wiring", () => {
     const pilot = await prisma.pilot.create({ data: { name: "[test:mechs] Seated" } });
     const res = await request(app).post("/api/mechs").send({
       name: "[test:mechs] Cockpit",
-      type: "Energy",
       rank: "S",
       pilotId: pilot.id,
     });
@@ -160,13 +146,11 @@ describe("mech <-> pilot wiring", () => {
     const pilot = await prisma.pilot.create({ data: { name: "[test:mechs] Poached" } });
     const first = await request(app).post("/api/mechs").send({
       name: "[test:mechs] Old Ride",
-      type: "Ice",
       rank: "S",
       pilotId: pilot.id,
     });
     const second = await request(app).post("/api/mechs").send({
       name: "[test:mechs] New Ride",
-      type: "Fire",
       rank: "S",
       pilotId: pilot.id,
     });
@@ -182,7 +166,6 @@ describe("mech <-> pilot wiring", () => {
     const pilot = await prisma.pilot.create({ data: { name: "[test:mechs] Grounded" } });
     const res = await request(app).post("/api/mechs").send({
       name: "[test:mechs] No Cockpit",
-      type: "Physical",
       rank: "Standard",
       pilotId: pilot.id,
     });
@@ -194,7 +177,6 @@ describe("mech <-> pilot wiring", () => {
     const pilot = await prisma.pilot.create({ data: { name: "[test:mechs] Ejected" } });
     const mech = await request(app).post("/api/mechs").send({
       name: "[test:mechs] Doomed Ride",
-      type: "Explosive",
       rank: "S",
       pilotId: pilot.id,
     });
@@ -203,5 +185,28 @@ describe("mech <-> pilot wiring", () => {
     const freed = await prisma.pilot.findUnique({ where: { id: pilot.id } });
     expect(freed).not.toBeNull(); // pilot survives
     expect(freed!.mechId).toBeNull(); // cockpit vacated
+  });
+});
+
+describe("mech type link", () => {
+  it("creates a mech with a typeId and returns the type object", async () => {
+    const t = await prisma.type.create({ data: { name: "[test:mechs] Plasma" } });
+    const res = await request(app).post("/api/mechs").send({
+      name: "[test:mechs] Typed",
+      rank: "Standard",
+      typeId: t.id,
+    });
+    expect(res.status).toBe(201);
+    expect(res.body.type).toMatchObject({ name: "[test:mechs] Plasma" });
+  });
+
+  it("400s on an unknown typeId", async () => {
+    const res = await request(app).post("/api/mechs").send({
+      name: "[test:mechs] Mystery Type",
+      rank: "Standard",
+      typeId: "00000000-0000-4000-8000-000000000000",
+    });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toContain("Unknown type id");
   });
 });

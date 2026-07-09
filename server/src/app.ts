@@ -7,6 +7,7 @@ import { mechsRouter } from "./routes/mechs";
 import { traitsRouter } from "./routes/traits";
 import { uploadsDir, uploadsRouter } from "./routes/uploads";
 import { pilotsRouter } from "./routes/pilots";
+import { typesRouter } from "./routes/types";
 
 export const app = express();
 
@@ -18,6 +19,7 @@ app.use(express.json());
 app.use("/api/mechs", mechsRouter);
 app.use("/api/traits", traitsRouter);
 app.use("/api/pilots", pilotsRouter);
+app.use("/api/types", typesRouter);
 app.use("/api/uploads", uploadsRouter);
 // Serve uploaded images as plain static files: GET /uploads/<name>.
 app.use("/uploads", express.static(uploadsDir));

@@ -9,6 +9,8 @@ import { AdminMechsPage } from "./admin/mechs/AdminMechsPage";
 import { MechFormPage } from "./admin/mechs/MechFormPage";
 import { AdminPilotsPage } from "./admin/pilots/AdminPilotsPage";
 import { PilotFormPage } from "./admin/pilots/PilotFormPage";
+import { AdminTypesPage } from "./admin/types/AdminTypesPage";
+import { TypeFormPage } from "./admin/types/TypeFormPage";
 
 export default function App() {
   return (
@@ -26,6 +28,9 @@ export default function App() {
         <Route path="pilots" element={<AdminPilotsPage />} />
         <Route path="pilots/new" element={<PilotFormPage />} />
         <Route path="pilots/:id/edit" element={<PilotFormPage />} />
+        <Route path="types" element={<AdminTypesPage />} />
+        <Route path="types/new" element={<TypeFormPage />} />
+        <Route path="types/:id/edit" element={<TypeFormPage />} />
         <Route path="settings" element={<SettingsPage />} />
       </Route>
 

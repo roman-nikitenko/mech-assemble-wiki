@@ -11,7 +11,7 @@ const mechs: MechSummary[] = [
     id: "m1",
     name: "Shadow Warrior",
     epithet: "Shadow Hunter",
-    type: "Thunder",
+    type: null,
     rank: "S",
     quality: "Supreme",
     imageUrl: null,

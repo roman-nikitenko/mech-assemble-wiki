@@ -1,4 +1,4 @@
-// Prisma schema for the Mech Assemble wiki — 15 tables + 2 enums.
+// Prisma schema for the Mech Assemble wiki — 16 tables + 1 enum (MechRank).
 // Source of truth for the domain model: CLAUDE.md at the repo root.
 //
 // Conventions used throughout:
@@ -18,15 +18,6 @@ datasource db {
 
 // ---------- Enums ----------
 
-enum MechType {
-  Fire
-  Thunder
-  Physical
-  Ice
-  Energy
-  Explosive
-}
-
 enum MechRank {
   Standard
   S
@@ -38,7 +29,13 @@ model Mech {
   id           String   @id @default(uuid()) @db.Uuid
   name         String   @unique
   epithet      String? // subtitle, e.g. "Shadow Hunter"
-  type         MechType
+  // Element type is a CATALOG ROW now, not an enum: the admin manages types
+  // (name + icon) in the UI. Nullable by design — the catalog starts empty
+  // and real data gets assigned as it's entered. onDelete: Restrict is the
+  // third delete flavor in this schema: a type that's in use cannot be
+  // deleted (contrast: mech children Cascade; pilots SetNull).
+  typeId String? @map("type_id") @db.Uuid
+  type   Type?   @relation(fields: [typeId], references: [id], onDelete: Restrict)
   rank         MechRank
   quality      String? // e.g. "Supreme"
   // Deliberately a plain string like "ATK +10%" — NOT structured fields.
@@ -86,6 +83,19 @@ model Pilot {
   mech   Mech?   @relation(fields: [mechId], references: [id], onDelete: SetNull)
 
   @@map("pilots")
+}
+
+// ---------- Types (element catalog: Fire, Thunder, ... with icons) ----------
+
+model Type {
+  id      String  @id @default(uuid()) @db.Uuid
+  name    String  @unique
+  iconUrl String? @map("icon_url")
+
+  mechs   Mech[]
+  weapons Weapon[]
+
+  @@map("types")
 }
 
 // ---------- Skills + upgrade tree ----------
@@ -202,6 +212,10 @@ model Weapon {
   name        String
   description String?
   baseStats   Json?   @map("base_stats")
+  // Weapons carry a type in the game too. Schema + API surface only for now —
+  // the UI to assign it arrives with the future weapons editor.
+  typeId String? @map("type_id") @db.Uuid
+  type   Type?   @relation(fields: [typeId], references: [id], onDelete: Restrict)
 
   mech     Mech            @relation(fields: [mechId], references: [id], onDelete: Cascade)
   upgrades WeaponUpgrade[]

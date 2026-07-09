@@ -73,7 +73,7 @@ export function MechDetailPage() {
         <div className="flex flex-wrap items-center gap-2">
           <h1 className="text-3xl font-black tracking-tight">{mech.name}</h1>
           <RankBadge rank={mech.rank} />
-          <TypeBadge type={mech.type} />
+          {mech.type && <TypeBadge type={mech.type} />}
         </div>
         {mech.epithet && <p className="mt-1 text-ink-dim">{mech.epithet}</p>}
         <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-ink-dim">

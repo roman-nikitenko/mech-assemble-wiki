@@ -38,24 +38,23 @@ describe("GET /api/mechs", () => {
     ]);
   });
 
-  it("filters by type", async () => {
-    const res = await request(app).get("/api/mechs?type=Physical");
-    expect(res.body.map((m: { name: string }) => m.name)).toEqual([
-      "Pirate Gunner",
-    ]);
+  it("filters by typeId", async () => {
+    const physical = await prisma.type.findUnique({ where: { name: "Physical" } });
+    const res = await request(app).get(`/api/mechs?typeId=${physical!.id}`);
+    expect(res.body.map((m: { name: string }) => m.name)).toEqual(["Pirate Gunner"]);
   });
 
   it("combines filters (no match -> empty array)", async () => {
-    const res = await request(app).get("/api/mechs?type=Thunder&rank=Standard");
+    const thunder = await prisma.type.findUnique({ where: { name: "Thunder" } });
+    const res = await request(app).get(`/api/mechs?typeId=${thunder!.id}&rank=Standard`);
     expect(res.status).toBe(200);
     expect(res.body).toEqual([]);
   });
 
-  it("rejects an invalid type with 400 and lists valid values", async () => {
-    const res = await request(app).get("/api/mechs?type=Water");
+  it("rejects a non-uuid typeId with 400", async () => {
+    const res = await request(app).get("/api/mechs?typeId=Water");
     expect(res.status).toBe(400);
-    expect(res.body.error).toContain("Water");
-    expect(res.body.error).toContain("Thunder");
+    expect(res.body.error).toContain("Invalid typeId");
   });
 });
 

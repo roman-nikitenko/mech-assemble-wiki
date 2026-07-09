@@ -5,6 +5,7 @@ const NAV = [
   { to: "/admin/users", label: "Users", end: false },
   { to: "/admin/mechs", label: "Mechs", end: false },
   { to: "/admin/pilots", label: "Pilots", end: false },
+  { to: "/admin/types", label: "Types", end: false },
   { to: "/admin/settings", label: "Settings", end: false },
 ];
 

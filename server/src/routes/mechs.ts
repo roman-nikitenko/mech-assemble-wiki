@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { MechRank, MechType, Prisma } from "@prisma/client";
+import { MechRank, Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma";
 import { buildTree } from "../lib/build-tree";
 import { parseMechInput } from "../lib/mech-input";
@@ -12,7 +12,7 @@ const SUMMARY_SELECT = {
   id: true,
   name: true,
   epithet: true,
-  type: true,
+  type: { select: { id: true, name: true, iconUrl: true } },
   rank: true,
   quality: true,
   imageUrl: true,
@@ -33,7 +33,16 @@ async function validateMechPilotLink(
   return null;
 }
 
-// Validates an optional ?type= / ?rank= query param against a Prisma enum.
+// A mech's type must reference an existing catalog row (or be null).
+async function validateMechTypeLink(typeId: string | null): Promise<string | null> {
+  if (typeId === null) return null;
+  if (!UUID_RE.test(typeId)) return "Unknown type id";
+  const type = await prisma.type.findUnique({ where: { id: typeId } });
+  if (!type) return "Unknown type id";
+  return null;
+}
+
+// Validates an optional ?rank= query param against a Prisma enum.
 // Valid values come from the GENERATED enum objects, so adding an enum value
 // to schema.prisma automatically updates validation — no hand-kept list.
 function parseEnumParam<T extends Record<string, string>>(
@@ -52,16 +61,20 @@ function parseEnumParam<T extends Record<string, string>>(
   };
 }
 
-// GET /api/mechs?type=Thunder&rank=S — summaries for the browse page.
+// GET /api/mechs?typeId=<uuid>&rank=S — summaries for the browse page.
 mechsRouter.get("/", async (req, res) => {
-  const type = parseEnumParam(req.query.type, MechType, "type");
-  if (!type.ok) return res.status(400).json({ error: type.message });
+  // typeId filters by catalog row. Anything that isn't a uuid can't match —
+  // reject it loudly instead of silently returning everything.
+  const { typeId } = req.query;
+  if (typeId !== undefined && (typeof typeId !== "string" || !UUID_RE.test(typeId))) {
+    return res.status(400).json({ error: "Invalid typeId" });
+  }
   const rank = parseEnumParam(req.query.rank, MechRank, "rank");
   if (!rank.ok) return res.status(400).json({ error: rank.message });
 
   const mechs = await prisma.mech.findMany({
     // `undefined` in a where clause means "no filter" to Prisma.
-    where: { type: type.value, rank: rank.value },
+    where: { typeId: typeId as string | undefined, rank: rank.value },
     select: SUMMARY_SELECT,
     orderBy: { name: "asc" },
   });
@@ -87,9 +100,11 @@ const detailInclude = {
       upgrades: { orderBy: { name: "asc" } },
       skins: { include: { stars: { orderBy: { star: "asc" } } } },
       helpers: { include: { ranks: { orderBy: { rank: "asc" } } } },
+      type: { select: { id: true, name: true, iconUrl: true } },
     },
   },
   accessory: true,
+  type: { select: { id: true, name: true, iconUrl: true } },
   pilot: { select: { id: true, name: true } },
   skins: { include: { stars: { orderBy: { star: "asc" } } } },
   helpers: { include: { ranks: { orderBy: { rank: "asc" } } } },
@@ -146,6 +161,9 @@ mechsRouter.post("/", async (req, res) => {
   const pilotError = await validateMechPilotLink(pilotId, fields.rank);
   if (pilotError) return res.status(400).json({ error: pilotError });
 
+  const typeError = await validateMechTypeLink(input.value.typeId);
+  if (typeError) return res.status(400).json({ error: typeError });
+
   try {
     const mech = await prisma.$transaction(async (tx) => {
       const created = await tx.mech.create({
@@ -190,6 +208,9 @@ mechsRouter.put("/:id", async (req, res) => {
 
   const pilotError = await validateMechPilotLink(pilotId, fields.rank);
   if (pilotError) return res.status(400).json({ error: pilotError });
+
+  const typeError = await validateMechTypeLink(input.value.typeId);
+  if (typeError) return res.status(400).json({ error: typeError });
 
   try {
     const mech = await prisma.$transaction(async (tx) => {

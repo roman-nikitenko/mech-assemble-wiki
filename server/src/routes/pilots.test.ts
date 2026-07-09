@@ -13,7 +13,7 @@ afterAll(async () => {
 });
 
 async function createSMech(name: string) {
-  return prisma.mech.create({ data: { name, type: "Thunder", rank: "S" } });
+  return prisma.mech.create({ data: { name, rank: "S" } });
 }
 
 describe("GET /api/pilots", () => {
@@ -65,7 +65,7 @@ describe("POST /api/pilots", () => {
 
   it("400s when linking to a Standard mech", async () => {
     const standard = await prisma.mech.create({
-      data: { name: "[test:pilots] Standard Mech", type: "Fire", rank: "Standard" },
+      data: { name: "[test:pilots] Standard Mech", rank: "Standard" },
     });
     const res = await request(app).post("/api/pilots").send({
       name: "[test:pilots] Wrong Cockpit",

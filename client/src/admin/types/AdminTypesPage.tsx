@@ -1,27 +1,24 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { imageSrc, useDeleteMech, useMechs } from "../../api/client";
-import type { MechSummary } from "../../api/types";
+import { imageSrc, useDeleteType, useTypes } from "../../api/client";
+import type { GameType } from "../../api/types";
 import { LoadingSkeleton } from "../../components/LoadingSkeleton";
 import { ErrorPanel } from "../../components/ErrorPanel";
-import { TypeBadge } from "../../components/TypeBadge";
-import { RankBadge } from "../../components/RankBadge";
 
-export function AdminMechsPage() {
-  const { data, isPending, isError, refetch } = useMechs({});
-  const deleteMech = useDeleteMech();
-  // The mech awaiting delete confirmation, or null when the dialog is closed.
-  const [confirming, setConfirming] = useState<MechSummary | null>(null);
+export function AdminTypesPage() {
+  const { data, isPending, isError, refetch } = useTypes();
+  const deleteType = useDeleteType();
+  const [confirming, setConfirming] = useState<GameType | null>(null);
 
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-black tracking-tight">Mechs</h1>
+        <h1 className="text-2xl font-black tracking-tight">Types</h1>
         <Link
-          to="/admin/mechs/new"
+          to="/admin/types/new"
           className="min-h-11 rounded-lg bg-accent px-4 py-2 font-semibold text-bg hover:brightness-110"
         >
-          + New mech
+          + New type
         </Link>
       </div>
 
@@ -31,47 +28,39 @@ export function AdminMechsPage() {
         <ErrorPanel onRetry={() => refetch()} />
       ) : (
         <div className="mt-6 overflow-x-auto rounded-xl border border-edge">
-          <table className="w-full min-w-[520px] text-left text-sm">
+          <table className="w-full min-w-[420px] text-left text-sm">
             <thead className="bg-surface text-ink-dim">
               <tr>
-                <th className="px-4 py-3">Image</th>
+                <th className="px-4 py-3">Icon</th>
                 <th className="px-4 py-3">Name</th>
-                <th className="px-4 py-3">Type</th>
-                <th className="px-4 py-3">Rank</th>
                 <th className="px-4 py-3">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {data.map((mech) => (
-                <tr key={mech.id} className="border-t border-edge">
+              {data.map((type) => (
+                <tr key={type.id} className="border-t border-edge">
                   <td className="px-4 py-2">
-                    {mech.imageUrl ? (
+                    {type.iconUrl ? (
                       <img
-                        src={imageSrc(mech.imageUrl)}
-                        alt={mech.name}
-                        className="h-10 w-10 rounded object-cover"
+                        src={imageSrc(type.iconUrl)}
+                        alt={type.name}
+                        className="h-8 w-8 rounded object-cover"
                       />
                     ) : (
-                      <div className="h-10 w-10 rounded bg-surface-2" aria-hidden />
+                      <div className="h-8 w-8 rounded bg-surface-2" aria-hidden />
                     )}
                   </td>
-                  <td className="px-4 py-2 font-semibold">{mech.name}</td>
-                  <td className="px-4 py-2">
-                    {mech.type ? <TypeBadge type={mech.type} /> : <span className="text-ink-dim">—</span>}
-                  </td>
-                  <td className="px-4 py-2">
-                    <RankBadge rank={mech.rank} />
-                  </td>
+                  <td className="px-4 py-2 font-semibold">{type.name}</td>
                   <td className="px-4 py-2">
                     <div className="flex gap-2">
                       <Link
-                        to={`/admin/mechs/${mech.id}/edit`}
+                        to={`/admin/types/${type.id}/edit`}
                         className="rounded border border-edge px-2 py-1 text-xs hover:border-accent/60"
                       >
                         Edit
                       </Link>
                       <button
-                        onClick={() => setConfirming(mech)}
+                        onClick={() => setConfirming(type)}
                         className="rounded border border-fire/40 px-2 py-1 text-xs text-fire hover:bg-fire/10"
                       >
                         Delete
@@ -91,15 +80,14 @@ export function AdminMechsPage() {
           role="dialog"
           aria-modal="true"
         >
-          <div className="max-w-md rounded-xl border border-fire/40 bg-surface p-6">
+          <div className="max-w-md rounded-xl border border-edge bg-surface p-6">
             <h2 className="font-bold">Delete {confirming.name}?</h2>
             <p className="mt-2 text-sm text-ink-dim">
-              This permanently removes the mech AND everything attached to it —
-              skills, upgrade trees, weapon, accessory, skins, helpers, and
-              awakening data. There is no undo.
+              If any mech or weapon still uses this type, the API will refuse
+              and nothing happens — reassign them first.
             </p>
-            {deleteMech.isError && (
-              <p className="mt-2 text-sm text-fire">{(deleteMech.error as Error).message}</p>
+            {deleteType.isError && (
+              <p className="mt-2 text-sm text-fire">{(deleteType.error as Error).message}</p>
             )}
             <div className="mt-4 flex justify-end gap-2">
               <button
@@ -110,12 +98,12 @@ export function AdminMechsPage() {
               </button>
               <button
                 onClick={() =>
-                  deleteMech.mutate(confirming.id, { onSuccess: () => setConfirming(null) })
+                  deleteType.mutate(confirming.id, { onSuccess: () => setConfirming(null) })
                 }
-                disabled={deleteMech.isPending}
+                disabled={deleteType.isPending}
                 className="min-h-11 rounded-lg bg-fire px-4 text-sm font-semibold text-bg hover:brightness-110 disabled:opacity-60"
               >
-                {deleteMech.isPending ? "Deleting..." : "Delete forever"}
+                {deleteType.isPending ? "Deleting..." : "Delete type"}
               </button>
             </div>
           </div>
