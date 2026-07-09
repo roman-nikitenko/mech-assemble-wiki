@@ -20,6 +20,7 @@ export interface MechSummary {
   type: MechType;
   rank: MechRank;
   quality: string | null;
+  imageUrl: string | null;
 }
 
 /** Upgrade tree node — the API pre-assembles children[]; recursion mirrors that. */
@@ -117,6 +118,52 @@ export interface MechDetail extends MechSummary {
   awakeningLevels: AwakeningLevel[];
   weapon: Weapon | null;
   accessory: { id: string; name: string; description: string | null } | null;
+  pilot: { id: string; name: string } | null;
   skins: Skin[];
   helpers: Helper[];
+}
+
+/** A catalog trait, as served by GET /api/traits. */
+export interface Trait {
+  id: string;
+  name: string;
+  color: string | null;
+}
+
+/** Payload for POST/PUT /api/mechs (admin form). */
+export interface MechInput {
+  name: string;
+  epithet?: string | null;
+  type: MechType;
+  rank: MechRank;
+  quality?: string | null;
+  specialBonus?: string | null;
+  pilotName?: string | null;
+  lore?: string | null;
+  imageUrl?: string | null;
+  traitIds?: string[];
+  pilotId?: string | null;
+}
+
+/** A pilot, as served by /api/pilots (always carries its linked mech or null). */
+export interface Pilot {
+  id: string;
+  name: string;
+  unlockBoost: string | null;
+  relationshipBonus: string | null;
+  bonusPerLevel: string[];
+  iconUrl: string | null;
+  backgroundUrl: string | null;
+  mech: { id: string; name: string; rank: MechRank } | null;
+}
+
+/** Payload for POST/PUT /api/pilots. */
+export interface PilotInput {
+  name: string;
+  unlockBoost?: string | null;
+  relationshipBonus?: string | null;
+  bonusPerLevel?: string[];
+  iconUrl?: string | null;
+  backgroundUrl?: string | null;
+  mechId?: string | null;
 }

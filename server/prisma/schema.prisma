@@ -46,6 +46,10 @@ model Mech {
   specialBonus String?  @map("special_bonus")
   pilotName    String?  @map("pilot_name")
   lore         String?
+  // Path to the mech's image under /uploads (e.g. "/uploads/abc.png").
+  // We store the POINTER, not the image: databases are bad at large binary
+  // blobs; filesystems/CDNs are good at them.
+  imageUrl String? @map("image_url")
 
   // S-tier-only systems below are optional/empty for Standard mechs;
   // the frontend decides what to show based on `rank`.
@@ -56,8 +60,32 @@ model Mech {
   accessory       Accessory?
   skins           Skin[]
   helpers         Helper[]
+  pilot           Pilot?
 
   @@map("mechs")
+}
+
+// ---------- Pilots (S-tier only, exclusive 1:1 with a mech) ----------
+
+model Pilot {
+  id                String   @id @default(uuid()) @db.Uuid
+  name              String   @unique
+  unlockBoost       String?  @map("unlock_boost")
+  relationshipBonus String?  @map("relationship_bonus")
+  // Up to 4 per-level bonus strings (Lv.1-4). Postgres text[]; "max 4" is an
+  // app-level rule enforced by the API, same philosophy as awakening nodes.
+  bonusPerLevel     String[] @map("bonus_per_level")
+  iconUrl           String?  @map("icon_url")
+  backgroundUrl     String?  @map("background_url")
+  // The 1:1 link: nullable = a pilot may be unassigned; @unique = a mech can
+  // have at most one pilot. onDelete: SetNull — deleting a MECH must not
+  // delete the pilot, just vacate the cockpit. Deliberate contrast with the
+  // Cascade used on mech children: the pilot is a standalone entity, not a
+  // part of the mech. "S-tier only" is enforced by the API, not the DB.
+  mechId String? @unique @map("mech_id") @db.Uuid
+  mech   Mech?   @relation(fields: [mechId], references: [id], onDelete: SetNull)
+
+  @@map("pilots")
 }
 
 // ---------- Skills + upgrade tree ----------

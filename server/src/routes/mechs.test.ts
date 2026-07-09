@@ -22,6 +22,7 @@ describe("GET /api/mechs", () => {
     expect(Object.keys(res.body[0]).sort()).toEqual([
       "epithet",
       "id",
+      "imageUrl",
       "name",
       "quality",
       "rank",

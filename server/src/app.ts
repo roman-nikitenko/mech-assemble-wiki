@@ -4,15 +4,23 @@
 import express from "express";
 import cors from "cors";
 import { mechsRouter } from "./routes/mechs";
+import { traitsRouter } from "./routes/traits";
+import { uploadsDir, uploadsRouter } from "./routes/uploads";
+import { pilotsRouter } from "./routes/pilots";
 
 export const app = express();
 
-// Open CORS: any origin may call us. Fine for a public read-only API;
-// an API with auth or writes would restrict origins here.
+// Open CORS: any origin may call us. Acceptable while the API is LOCAL-ONLY;
+// once auth exists and this deploys, restrict origins here.
 app.use(cors());
 app.use(express.json());
 
 app.use("/api/mechs", mechsRouter);
+app.use("/api/traits", traitsRouter);
+app.use("/api/pilots", pilotsRouter);
+app.use("/api/uploads", uploadsRouter);
+// Serve uploaded images as plain static files: GET /uploads/<name>.
+app.use("/uploads", express.static(uploadsDir));
 
 // Fallthrough for unknown routes — keep API errors as JSON, not HTML.
 app.use((_req, res) => {

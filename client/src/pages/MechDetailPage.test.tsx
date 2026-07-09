@@ -13,6 +13,7 @@ const bareMech: MechDetail = {
   type: "Physical",
   rank: "Standard",
   quality: null,
+  imageUrl: null,
   specialBonus: null,
   pilotName: null,
   lore: null,
@@ -21,6 +22,7 @@ const bareMech: MechDetail = {
   awakeningLevels: [],
   weapon: null,
   accessory: null,
+  pilot: null,
   skins: [],
   helpers: [],
 };

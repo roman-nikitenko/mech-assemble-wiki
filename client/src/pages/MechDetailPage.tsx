@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { NotFoundError, useMech } from "../api/client";
+import { imageSrc, NotFoundError, useMech } from "../api/client";
 import { Tabs } from "../components/Tabs";
 import { TypeBadge } from "../components/TypeBadge";
 import { RankBadge } from "../components/RankBadge";
@@ -63,6 +63,13 @@ export function MechDetailPage() {
       </Link>
 
       <header className="mt-3 mb-5">
+        {mech.imageUrl && (
+          <img
+            src={imageSrc(mech.imageUrl)}
+            alt={mech.name}
+            className="mb-4 h-48 w-48 rounded-xl border border-edge object-cover"
+          />
+        )}
         <div className="flex flex-wrap items-center gap-2">
           <h1 className="text-3xl font-black tracking-tight">{mech.name}</h1>
           <RankBadge rank={mech.rank} />
