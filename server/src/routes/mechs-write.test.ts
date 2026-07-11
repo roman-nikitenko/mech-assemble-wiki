@@ -11,6 +11,7 @@ import { prisma } from "../lib/prisma";
 // — deferred deliberately.)
 afterAll(async () => {
   await prisma.pilot.deleteMany({ where: { name: { startsWith: "[test:mechs] " } } });
+  await prisma.weapon.deleteMany({ where: { name: { startsWith: "[test:mechs] " } } });
   await prisma.mech.deleteMany({ where: { name: { startsWith: "[test:mechs] " } } });
   await prisma.trait.deleteMany({ where: { name: { startsWith: "[test:mechs] " } } });
   await prisma.type.deleteMany({ where: { name: { startsWith: "[test:mechs] " } } });
@@ -185,6 +186,42 @@ describe("mech <-> pilot wiring", () => {
     const freed = await prisma.pilot.findUnique({ where: { id: pilot.id } });
     expect(freed).not.toBeNull(); // pilot survives
     expect(freed!.mechId).toBeNull(); // cockpit vacated
+  });
+
+  it("seating a pilot into a mech un-seats them from any weapon", async () => {
+    const weapon = await prisma.weapon.create({ data: { name: "[test:mechs] Left Arm" } });
+    const pilot = await prisma.pilot.create({
+      data: { name: "[test:mechs] Defector", weaponId: weapon.id },
+    });
+    const res = await request(app).post("/api/mechs").send({
+      name: "[test:mechs] Poacher",
+      rank: "S",
+      pilotId: pilot.id,
+    });
+    expect(res.status).toBe(201);
+    const moved = await prisma.pilot.findUnique({ where: { id: pilot.id } });
+    expect(moved!.mechId).toBe(res.body.id);
+    expect(moved!.weaponId).toBeNull();
+  });
+
+  it("PUT seating a weapon-fronting pilot clears their weapon link", async () => {
+    const weapon = await prisma.weapon.create({ data: { name: "[test:mechs] Prior Arm" } });
+    const pilot = await prisma.pilot.create({
+      data: { name: "[test:mechs] Late Defector", weaponId: weapon.id },
+    });
+    const created = await request(app).post("/api/mechs").send({
+      name: "[test:mechs] Late Poacher",
+      rank: "S",
+    });
+    const res = await request(app).put(`/api/mechs/${created.body.id}`).send({
+      name: "[test:mechs] Late Poacher",
+      rank: "S",
+      pilotId: pilot.id,
+    });
+    expect(res.status).toBe(200);
+    const moved = await prisma.pilot.findUnique({ where: { id: pilot.id } });
+    expect(moved!.mechId).toBe(created.body.id);
+    expect(moved!.weaponId).toBeNull();
   });
 });
 

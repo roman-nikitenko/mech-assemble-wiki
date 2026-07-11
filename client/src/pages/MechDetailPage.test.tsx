@@ -74,10 +74,15 @@ describe("MechDetailPage tabs are driven by data", () => {
         name: "Blade",
         description: null,
         baseStats: null,
+        tier: "S",
+        rankUpPreview: [],
+        imageUrl: null,
+        iconUrl: null,
         type: null,
         upgrades: [],
-        skins: [],
+        weaponSkins: [],
         helpers: [],
+        pilot: null,
       },
       awakeningLevels: [
         {

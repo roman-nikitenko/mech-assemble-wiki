@@ -10,6 +10,7 @@ export const pilotsRouter = Router();
 // "linked mech" column needs it.
 const PILOT_INCLUDE = {
   mech: { select: { id: true, name: true, rank: true } },
+  weapon: { select: { id: true, name: true } },
 } satisfies Prisma.PilotInclude;
 
 // Shared by POST and PUT: a pilot may only link to an existing S-tier mech.
@@ -23,11 +24,24 @@ export async function validatePilotMechLink(mechId: string | null): Promise<stri
   return null;
 }
 
+// A pilot may front any existing weapon (no tier rule — weapons have their
+// own tier and standard weapons have faces in the game too).
+async function validatePilotWeaponLink(weaponId: string | null): Promise<string | null> {
+  if (weaponId === null) return null;
+  if (!UUID_RE.test(weaponId)) return "Unknown weapon id";
+  const weapon = await prisma.weapon.findUnique({ where: { id: weaponId } });
+  if (!weapon) return "Unknown weapon id";
+  return null;
+}
+
 // Both unique constraints (name, mech_id) surface as P2002 — err.meta.target
 // says which one fired, so the two get different messages.
 function pilotConflictResponse(err: unknown, name: string) {
   if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
     const target = (err.meta?.target as string[] | undefined) ?? [];
+    if (target.includes("weapon_id")) {
+      return { status: 409, error: "That weapon already has a pilot." };
+    }
     if (target.includes("mech_id")) {
       return { status: 409, error: "That mech already has a pilot." };
     }
@@ -54,6 +68,9 @@ pilotsRouter.post("/", async (req, res) => {
   const linkError = await validatePilotMechLink(input.value.mechId);
   if (linkError) return res.status(400).json({ error: linkError });
 
+  const weaponLinkError = await validatePilotWeaponLink(input.value.weaponId);
+  if (weaponLinkError) return res.status(400).json({ error: weaponLinkError });
+
   try {
     const pilot = await prisma.pilot.create({
       data: input.value,
@@ -77,6 +94,9 @@ pilotsRouter.put("/:id", async (req, res) => {
 
   const linkError = await validatePilotMechLink(input.value.mechId);
   if (linkError) return res.status(400).json({ error: linkError });
+
+  const weaponLinkError = await validatePilotWeaponLink(input.value.weaponId);
+  if (weaponLinkError) return res.status(400).json({ error: weaponLinkError });
 
   try {
     const pilot = await prisma.pilot.update({

@@ -16,15 +16,16 @@ afterAll(async () => {
 
 describe("GET /api/traits", () => {
   it("lists traits ordered by name", async () => {
+    // Self-provisioned (there is no seed anymore): create a trait, then
+    // assert it shows up in the list.
+    await prisma.trait.create({ data: { name: "[test:traits] Zulu" } });
     const res = await request(app).get("/api/traits");
     expect(res.status).toBe(200);
-    // Exclude "[test:...] " rows: other test files use "[test:...] " prefixes
-    // and run in parallel workers — Postgres and JS disagree on how "[" sorts,
-    // so including them makes this assertion flaky.
-    const names = res.body
-      .map((t: { name: string }) => t.name)
-      .filter((n: string) => !n.startsWith("[test:"));
-    expect(names).toContain("Thunder");
+    const allNames = res.body.map((t: { name: string }) => t.name);
+    expect(allNames).toContain("[test:traits] Zulu");
+    // Ordering check excludes "[test:...] " rows: Postgres and JS disagree
+    // on how "[" sorts, so including them makes this assertion flaky.
+    const names = allNames.filter((n: string) => !n.startsWith("[test:"));
     expect([...names].sort()).toEqual(names);
   });
 });

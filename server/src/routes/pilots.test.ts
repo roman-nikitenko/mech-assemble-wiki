@@ -8,6 +8,7 @@ import { prisma } from "../lib/prisma";
 // never touch each other's rows.
 afterAll(async () => {
   await prisma.pilot.deleteMany({ where: { name: { startsWith: "[test:pilots] " } } });
+  await prisma.weapon.deleteMany({ where: { name: { startsWith: "[test:pilots] " } } });
   await prisma.mech.deleteMany({ where: { name: { startsWith: "[test:pilots] " } } });
   await prisma.$disconnect();
 });
@@ -144,5 +145,57 @@ describe("DELETE /api/pilots/:id", () => {
     const res = await request(app).delete("/api/pilots/abc");
     expect(res.status).toBe(404);
     expect(res.body).toEqual({ error: "Pilot not found" });
+  });
+});
+
+describe("pilot <-> weapon link (either/or)", () => {
+  it("creates a pilot fronting a weapon", async () => {
+    const weapon = await prisma.weapon.create({ data: { name: "[test:pilots] Fronted Arm" } });
+    const res = await request(app)
+      .post("/api/pilots")
+      .send({ name: "[test:pilots] Weapon Face", weaponId: weapon.id });
+    expect(res.status).toBe(201);
+    expect(res.body.weapon.name).toBe("[test:pilots] Fronted Arm");
+    expect(res.body.mech).toBeNull();
+  });
+
+  it("400s when both mechId and weaponId are sent", async () => {
+    const mech = await createSMech("[test:pilots] Both Seat");
+    const weapon = await prisma.weapon.create({ data: { name: "[test:pilots] Both Arm" } });
+    const res = await request(app).post("/api/pilots").send({
+      name: "[test:pilots] Greedy",
+      mechId: mech.id,
+      weaponId: weapon.id,
+    });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toContain("not both");
+  });
+
+  it("PUT with mechId clears an existing weapon link", async () => {
+    const weapon = await prisma.weapon.create({ data: { name: "[test:pilots] Prior Arm" } });
+    const mech = await createSMech("[test:pilots] Next Seat");
+    const created = await request(app)
+      .post("/api/pilots")
+      .send({ name: "[test:pilots] Switcher", weaponId: weapon.id });
+    const res = await request(app)
+      .put(`/api/pilots/${created.body.id}`)
+      .send({ name: "[test:pilots] Switcher", mechId: mech.id });
+    expect(res.status).toBe(200);
+    expect(res.body.mech.name).toBe("[test:pilots] Next Seat");
+    expect(res.body.weapon).toBeNull();
+  });
+
+  it("PUT with weaponId clears an existing mech link", async () => {
+    const mech = await createSMech("[test:pilots] Prior Seat");
+    const weapon = await prisma.weapon.create({ data: { name: "[test:pilots] Next Arm" } });
+    const created = await request(app)
+      .post("/api/pilots")
+      .send({ name: "[test:pilots] Backswitcher", mechId: mech.id });
+    const res = await request(app)
+      .put(`/api/pilots/${created.body.id}`)
+      .send({ name: "[test:pilots] Backswitcher", weaponId: weapon.id });
+    expect(res.status).toBe(200);
+    expect(res.body.weapon.name).toBe("[test:pilots] Next Arm");
+    expect(res.body.mech).toBeNull();
   });
 });

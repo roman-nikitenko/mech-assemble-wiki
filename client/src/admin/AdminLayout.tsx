@@ -4,6 +4,7 @@ const NAV = [
   { to: "/admin", label: "Dashboard", end: true }, // end: exact match, or it'd stay lit for every /admin/* page
   { to: "/admin/users", label: "Users", end: false },
   { to: "/admin/mechs", label: "Mechs", end: false },
+  { to: "/admin/weapons", label: "Weapons", end: false },
   { to: "/admin/pilots", label: "Pilots", end: false },
   { to: "/admin/types", label: "Types", end: false },
   { to: "/admin/settings", label: "Settings", end: false },
@@ -24,7 +25,7 @@ export function AdminLayout() {
             to={item.to}
             end={item.end}
             className={({ isActive }) =>
-              `min-h-11 whitespace-nowrap rounded-lg px-3 py-2 text-sm font-semibold ${
+              `whitespace-nowrap rounded-lg px-3 py-2 text-sm font-semibold ${
                 isActive ? "bg-surface-2 text-accent" : "text-ink-dim hover:text-ink"
               }`
             }

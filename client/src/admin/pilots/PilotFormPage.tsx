@@ -5,6 +5,7 @@ import {
   useMechs,
   usePilots,
   useUpdatePilot,
+  useWeapons,
 } from "../../api/client";
 import type { PilotInput } from "../../api/types";
 import { ImageUploadField } from "../ImageUploadField";
@@ -21,6 +22,7 @@ export function PilotFormPage() {
 
   // Only S-tier mechs can carry a pilot — ask the API for exactly those.
   const sMechs = useMechs({ rank: "S" });
+  const weapons = useWeapons();
   const pilots = usePilots();
   const createPilot = useCreatePilot();
   const updatePilot = useUpdatePilot(id ?? "");
@@ -40,6 +42,7 @@ export function PilotFormPage() {
           iconUrl: pilot.iconUrl,
           backgroundUrl: pilot.backgroundUrl,
           mechId: pilot.mech?.id ?? null,
+          weaponId: pilot.weapon?.id ?? null,
         });
         // pad the stored list back out to 4 visible slots
         setBonuses([...pilot.bonusPerLevel, "", "", "", ""].slice(0, 4));
@@ -86,19 +89,20 @@ export function PilotFormPage() {
           <input id="name" value={form.name} onChange={(e) => set("name", e.target.value)} className={fieldCls} />
         </div>
 
+        <div>
+          <label htmlFor="unlockBoost" className="mb-1 block text-sm font-semibold">
+            Unlock boost
+          </label>
+          <input
+            id="unlockBoost"
+            value={form.unlockBoost ?? ""}
+            onChange={(e) => set("unlockBoost", e.target.value)}
+            className={fieldCls}
+            placeholder='e.g. "ATK +5%"'
+          />
+        </div>
+
         <div className="grid gap-4 sm:grid-cols-2">
-          <div>
-            <label htmlFor="unlockBoost" className="mb-1 block text-sm font-semibold">
-              Unlock boost
-            </label>
-            <input
-              id="unlockBoost"
-              value={form.unlockBoost ?? ""}
-              onChange={(e) => set("unlockBoost", e.target.value)}
-              className={fieldCls}
-              placeholder='e.g. "ATK +5%"'
-            />
-          </div>
           <div>
             <label htmlFor="mech" className="mb-1 block text-sm font-semibold">
               Linked S-tier mech
@@ -106,7 +110,10 @@ export function PilotFormPage() {
             <select
               id="mech"
               value={form.mechId ?? ""}
-              onChange={(e) => set("mechId", e.target.value || null)}
+              onChange={(e) =>
+                // either/or: picking a mech clears the weapon link
+                setForm((f) => ({ ...f, mechId: e.target.value || null, weaponId: null }))
+              }
               className={fieldCls}
             >
               <option value="">— no mech —</option>
@@ -116,8 +123,29 @@ export function PilotFormPage() {
                 </option>
               ))}
             </select>
+          </div>
+          <div>
+            <label htmlFor="weapon" className="mb-1 block text-sm font-semibold">
+              Linked weapon
+            </label>
+            <select
+              id="weapon"
+              value={form.weaponId ?? ""}
+              onChange={(e) =>
+                // either/or: picking a weapon clears the mech link
+                setForm((f) => ({ ...f, weaponId: e.target.value || null, mechId: null }))
+              }
+              className={fieldCls}
+            >
+              <option value="">— no weapon —</option>
+              {(weapons.data ?? []).map((w) => (
+                <option key={w.id} value={w.id}>
+                  {w.name}
+                </option>
+              ))}
+            </select>
             <p className="mt-1 text-xs text-ink-dim">
-              Linking here moves the pilot from any other mech.
+              A pilot links to a mech OR a weapon, never both.
             </p>
           </div>
         </div>

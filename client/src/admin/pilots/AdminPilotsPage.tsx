@@ -16,7 +16,7 @@ export function AdminPilotsPage() {
         <h1 className="text-2xl font-black tracking-tight">Pilots</h1>
         <Link
           to="/admin/pilots/new"
-          className="min-h-11 rounded-lg bg-accent px-4 py-2 font-semibold text-bg hover:brightness-110"
+          className="rounded-lg bg-accent px-4 py-2 font-semibold text-bg hover:brightness-110"
         >
           + New pilot
         </Link>
@@ -33,7 +33,7 @@ export function AdminPilotsPage() {
               <tr>
                 <th className="px-4 py-3">Icon</th>
                 <th className="px-4 py-3">Name</th>
-                <th className="px-4 py-3">Linked mech</th>
+                <th className="px-4 py-3">Linked to</th>
                 <th className="px-4 py-3">Actions</th>
               </tr>
             </thead>
@@ -52,7 +52,9 @@ export function AdminPilotsPage() {
                     )}
                   </td>
                   <td className="px-4 py-2 font-semibold">{pilot.name}</td>
-                  <td className="px-4 py-2 text-ink-dim">{pilot.mech?.name ?? "—"}</td>
+                  <td className="px-4 py-2 text-ink-dim">
+                    {pilot.mech?.name ?? pilot.weapon?.name ?? "—"}
+                  </td>
                   <td className="px-4 py-2">
                     <div className="flex gap-2">
                       <Link

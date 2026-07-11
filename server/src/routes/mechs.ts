@@ -98,9 +98,10 @@ const detailInclude = {
   weapon: {
     include: {
       upgrades: { orderBy: { name: "asc" } },
-      skins: { include: { stars: { orderBy: { star: "asc" } } } },
+      weaponSkins: true,
       helpers: { include: { ranks: { orderBy: { rank: "asc" } } } },
       type: { select: { id: true, name: true, iconUrl: true } },
+      pilot: { select: { id: true, name: true } },
     },
   },
   accessory: true,
@@ -177,7 +178,8 @@ mechsRouter.post("/", async (req, res) => {
         // Seat the pilot — if they're in another mech, this MOVES them
         // (mech_id is unique, and we just vacated nothing: the new mech
         // can't have a pilot yet).
-        await tx.pilot.update({ where: { id: pilotId }, data: { mechId: created.id } });
+        // either/or: seating into a mech un-seats from any weapon
+        await tx.pilot.update({ where: { id: pilotId }, data: { mechId: created.id, weaponId: null } });
       }
       return created;
     });
@@ -228,7 +230,8 @@ mechsRouter.put("/:id", async (req, res) => {
       if (pilotId !== undefined) {
         await tx.pilot.updateMany({ where: { mechId: id }, data: { mechId: null } });
         if (pilotId !== null) {
-          await tx.pilot.update({ where: { id: pilotId }, data: { mechId: id } });
+          // either/or: seating into a mech un-seats from any weapon
+          await tx.pilot.update({ where: { id: pilotId }, data: { mechId: id, weaponId: null } });
         }
       }
       return updated;

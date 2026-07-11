@@ -16,6 +16,7 @@ const pilots: Pilot[] = [
     iconUrl: null,
     backgroundUrl: null,
     mech: { id: "m1", name: "Shadow Warrior", rank: "S" },
+    weapon: null,
   },
 ];
 

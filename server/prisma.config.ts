@@ -9,7 +9,9 @@ export default defineConfig({
   schema: "prisma/schema.prisma",
   migrations: {
     path: "prisma/migrations",
-    seed: "tsx prisma/seed.ts",
+    // NO seed command — deliberately removed 2026-07-09 after the demo-reset
+    // seed destroyed real admin-entered data twice. Data lives in the DB and
+    // is entered via /admin; back it up with `npm run backup`.
   },
   datasource: {
     url: env("DATABASE_URL"),

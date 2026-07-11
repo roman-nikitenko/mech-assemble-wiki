@@ -9,6 +9,7 @@ export interface PilotInput {
   iconUrl: string | null;
   backgroundUrl: string | null;
   mechId: string | null;
+  weaponId: string | null;
 }
 
 type ParseResult = { ok: true; value: PilotInput } | { ok: false; message: string };
@@ -52,6 +53,10 @@ export function parsePilotInput(body: unknown): ParseResult {
     return { ok: false, message: "mechId must be a mech id string or null." };
   }
 
+  if (b.weaponId !== undefined && b.weaponId !== null && typeof b.weaponId !== "string") {
+    return { ok: false, message: "weaponId must be a weapon id string or null." };
+  }
+
   const optionalFields = ["unlockBoost", "relationshipBonus", "iconUrl", "backgroundUrl"] as const;
   const parsed: Record<string, string | null> = {};
   for (const field of optionalFields) {
@@ -60,12 +65,23 @@ export function parsePilotInput(body: unknown): ParseResult {
     parsed[field] = v;
   }
 
+  // No tri-state here (unlike the mech/weapon forms' pilotId): both links
+  // are ALWAYS replaced on every write — the pilot form echoes the full
+  // current state, so an omitted field means "clear it".
+  const mechId = (b.mechId as string | null | undefined) ?? null;
+  const weaponId = (b.weaponId as string | null | undefined) ?? null;
+  // Either/or rule: a pilot sits in a mech OR fronts a weapon, never both.
+  if (mechId !== null && weaponId !== null) {
+    return { ok: false, message: "A pilot can link to a mech OR a weapon, not both." };
+  }
+
   return {
     ok: true,
     value: {
       name: b.name.trim(),
       bonusPerLevel,
-      mechId: (b.mechId as string | null | undefined) ?? null,
+      mechId,
+      weaponId,
       unlockBoost: parsed.unlockBoost,
       relationshipBonus: parsed.relationshipBonus,
       iconUrl: parsed.iconUrl,

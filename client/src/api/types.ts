@@ -82,15 +82,57 @@ export interface Helper {
   ranks: HelperRank[];
 }
 
+/** A weapon skin row (separate system from mech skins — different fields). */
+export interface WeaponSkinRow {
+  id: string;
+  name: string;
+  bonuses: string[];
+  imageUrl: string | null;
+}
+
 export interface Weapon {
   id: string;
   name: string;
   description: string | null;
   baseStats: Stats | null;
+  tier: MechRank;
+  rankUpPreview: string[];
+  imageUrl: string | null;
+  iconUrl: string | null;
   type: GameType | null;
   upgrades: UpgradeNode[];
-  skins: Skin[];
+  weaponSkins: WeaponSkinRow[];
   helpers: Helper[];
+  pilot: { id: string; name: string } | null;
+}
+
+/** Shape of GET /api/weapons rows (admin list, edit prefill, pilot form). */
+export interface WeaponSummary {
+  id: string;
+  name: string;
+  description: string | null;
+  tier: MechRank;
+  rankUpPreview: string[];
+  imageUrl: string | null;
+  iconUrl: string | null;
+  type: GameType | null;
+  mech: { id: string; name: string } | null;
+  pilot: { id: string; name: string } | null;
+  weaponSkins: WeaponSkinRow[];
+}
+
+/** Payload for POST/PUT /api/weapons. */
+export interface WeaponInput {
+  name: string;
+  description?: string | null;
+  tier?: MechRank;
+  rankUpPreview?: string[];
+  typeId?: string | null;
+  mechId?: string | null;
+  pilotId?: string | null;
+  imageUrl?: string | null;
+  iconUrl?: string | null;
+  skins?: { name: string; bonuses: string[]; imageUrl?: string | null }[];
 }
 
 export interface AwakeningNode {
@@ -162,6 +204,7 @@ export interface Pilot {
   iconUrl: string | null;
   backgroundUrl: string | null;
   mech: { id: string; name: string; rank: MechRank } | null;
+  weapon: { id: string; name: string } | null;
 }
 
 /** Payload for POST/PUT /api/pilots. */
@@ -173,4 +216,5 @@ export interface PilotInput {
   iconUrl?: string | null;
   backgroundUrl?: string | null;
   mechId?: string | null;
+  weaponId?: string | null;
 }

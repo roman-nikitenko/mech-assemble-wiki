@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { GameType, MechDetail, MechInput, MechRank, MechSummary, Pilot, PilotInput, Trait, TypeInput } from "./types";
+import type { GameType, MechDetail, MechInput, MechRank, MechSummary, Pilot, PilotInput, Trait, TypeInput, WeaponInput, WeaponSummary } from "./types";
 
 const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
 
@@ -141,6 +141,7 @@ export function useCreatePilot() {
       qc.invalidateQueries({ queryKey: ["pilots"] });
       // linking/unlinking can change which mech "has" a pilot
       qc.invalidateQueries({ queryKey: ["mech"] });
+      qc.invalidateQueries({ queryKey: ["weapons"] });
     },
   });
 }
@@ -152,6 +153,7 @@ export function useUpdatePilot(id: string) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["pilots"] });
       qc.invalidateQueries({ queryKey: ["mech"] });
+      qc.invalidateQueries({ queryKey: ["weapons"] });
     },
   });
 }
@@ -169,6 +171,7 @@ export function useDeletePilot() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["pilots"] });
       qc.invalidateQueries({ queryKey: ["mech"] });
+      qc.invalidateQueries({ queryKey: ["weapons"] });
     },
   });
 }
@@ -209,5 +212,55 @@ export function useDeleteType() {
       }
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["types"] }),
+  });
+}
+
+export function useWeapons() {
+  return useQuery({ queryKey: ["weapons"], queryFn: () => fetchJson<WeaponSummary[]>("/api/weapons") });
+}
+
+export function useCreateWeapon() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: WeaponInput) => sendJson<WeaponSummary>("/api/weapons", "POST", input),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["weapons"] });
+      // owner/pilot links may have moved
+      qc.invalidateQueries({ queryKey: ["mechs"] });
+      qc.invalidateQueries({ queryKey: ["mech"] });
+      qc.invalidateQueries({ queryKey: ["pilots"] });
+    },
+  });
+}
+
+export function useUpdateWeapon(id: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: WeaponInput) => sendJson<WeaponSummary>(`/api/weapons/${id}`, "PUT", input),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["weapons"] });
+      qc.invalidateQueries({ queryKey: ["mechs"] });
+      qc.invalidateQueries({ queryKey: ["mech"] });
+      qc.invalidateQueries({ queryKey: ["pilots"] });
+    },
+  });
+}
+
+export function useDeleteWeapon() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`${API_URL}/api/weapons/${id}`, { method: "DELETE" });
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        throw new Error(data?.error ?? `API error ${res.status}`);
+      }
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["weapons"] });
+      qc.invalidateQueries({ queryKey: ["mechs"] });
+      qc.invalidateQueries({ queryKey: ["mech"] });
+      qc.invalidateQueries({ queryKey: ["pilots"] });
+    },
   });
 }
