@@ -83,6 +83,7 @@ describe("MechDetailPage tabs are driven by data", () => {
         weaponSkins: [],
         helpers: [],
         pilot: null,
+        skillNodes: [],
       },
       awakeningLevels: [
         {

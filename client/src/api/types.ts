@@ -90,6 +90,19 @@ export interface WeaponSkinRow {
   imageUrl: string | null;
 }
 
+export type SkillNodeType = "Normal" | "Premium" | "Core";
+
+/** One skill-tree node as served by the API (flat; assemble by parentId). */
+export interface SkillNodeRow {
+  id: string;
+  parentId: string | null;
+  name: string | null; // null for Core skills
+  description: string | null;
+  appearanceLevel: number;
+  type: SkillNodeType;
+  sortOrder: number;
+}
+
 export interface Weapon {
   id: string;
   name: string;
@@ -104,6 +117,7 @@ export interface Weapon {
   weaponSkins: WeaponSkinRow[];
   helpers: Helper[];
   pilot: { id: string; name: string } | null;
+  skillNodes: SkillNodeRow[];
 }
 
 /** Shape of GET /api/weapons rows (admin list, edit prefill, pilot form). */
@@ -119,6 +133,7 @@ export interface WeaponSummary {
   mech: { id: string; name: string } | null;
   pilot: { id: string; name: string } | null;
   weaponSkins: WeaponSkinRow[];
+  skillNodes: SkillNodeRow[];
 }
 
 /** Payload for POST/PUT /api/weapons. */
@@ -133,6 +148,13 @@ export interface WeaponInput {
   imageUrl?: string | null;
   iconUrl?: string | null;
   skins?: { name: string; bonuses: string[]; imageUrl?: string | null }[];
+  skills?: {
+    name: string | null;
+    description: string | null;
+    appearanceLevel: number;
+    type: SkillNodeType;
+    parentIndex: number | null;
+  }[];
 }
 
 export interface AwakeningNode {

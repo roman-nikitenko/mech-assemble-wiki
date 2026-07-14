@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma";
-import { parseWeaponInput } from "../lib/weapon-input";
+import { parseWeaponInput, WeaponSkillNodeInput } from "../lib/weapon-input";
 import { UUID_RE } from "../lib/uuid";
 
 export const weaponsRouter = Router();
@@ -12,6 +12,7 @@ const WEAPON_INCLUDE = {
   mech: { select: { id: true, name: true } },
   pilot: { select: { id: true, name: true } },
   weaponSkins: true,
+  skillNodes: { orderBy: { sortOrder: "asc" as const } },
 } satisfies Prisma.WeaponInclude;
 
 // Shared by POST and PUT: link validations that need the database.
@@ -40,6 +41,34 @@ async function validateWeaponLinks(input: {
   return null;
 }
 
+// Creates the skill tree parent-first: parentIndex always points at an
+// EARLIER entry, so by the time a child is created its parent's real id is
+// already known. sortOrder counts previous siblings (same parentIndex).
+async function createSkillNodes(
+  tx: Prisma.TransactionClient,
+  weaponId: string,
+  skills: WeaponSkillNodeInput[]
+) {
+  const createdIds: string[] = [];
+  const siblingCounts = new Map<number | null, number>();
+  for (const entry of skills) {
+    const order = siblingCounts.get(entry.parentIndex) ?? 0;
+    siblingCounts.set(entry.parentIndex, order + 1);
+    const node = await tx.skillNode.create({
+      data: {
+        weaponId,
+        parentId: entry.parentIndex === null ? null : createdIds[entry.parentIndex],
+        name: entry.name,
+        description: entry.description,
+        appearanceLevel: entry.appearanceLevel,
+        type: entry.type,
+        sortOrder: order,
+      },
+    });
+    createdIds.push(node.id);
+  }
+}
+
 // GET /api/weapons
 weaponsRouter.get("/", async (_req, res) => {
   const weapons = await prisma.weapon.findMany({
@@ -54,7 +83,7 @@ weaponsRouter.get("/", async (_req, res) => {
 weaponsRouter.post("/", async (req, res) => {
   const input = parseWeaponInput(req.body);
   if (!input.ok) return res.status(400).json({ error: input.message });
-  const { pilotId, skins, ...fields } = input.value;
+  const { pilotId, skins, skills, ...fields } = input.value;
 
   const linkError = await validateWeaponLinks(input.value);
   if (linkError) return res.status(400).json({ error: linkError });
@@ -68,6 +97,7 @@ weaponsRouter.post("/", async (req, res) => {
         },
         select: { id: true },
       });
+      await createSkillNodes(tx, created.id, skills);
       if (pilotId !== undefined && pilotId !== null) {
         // One update covers the whole either/or rule: it overwrites any
         // previous weapon link and clears any mech link.
@@ -104,7 +134,7 @@ weaponsRouter.put("/:id", async (req, res) => {
 
   const input = parseWeaponInput(req.body);
   if (!input.ok) return res.status(400).json({ error: input.message });
-  const { pilotId, skins, ...fields } = input.value;
+  const { pilotId, skins, skills, ...fields } = input.value;
 
   const linkError = await validateWeaponLinks(input.value);
   if (linkError) return res.status(400).json({ error: linkError });
@@ -120,6 +150,9 @@ weaponsRouter.put("/:id", async (req, res) => {
           weaponSkins: { create: skins },
         },
       });
+      // Replace the whole skill tree — same set semantics as the skins.
+      await tx.skillNode.deleteMany({ where: { weaponId: id } });
+      await createSkillNodes(tx, id, skills);
       // Tri-state: undefined = leave the pilot link as-is; null = vacate;
       // string = vacate then seat (clearing the pilot's mech — either/or).
       if (pilotId !== undefined) {

@@ -10,6 +10,8 @@ import {
 } from "../../api/client";
 import type { MechRank, WeaponInput } from "../../api/types";
 import { ImageUploadField } from "../ImageUploadField";
+import { SkillTreeEditor } from "./SkillTreeEditor";
+import { draftsFromNodes, serializeDrafts, type SkillDraft } from "./skillTreeDrafts";
 
 const TIERS: MechRank[] = ["Standard", "S"];
 
@@ -39,6 +41,7 @@ export function WeaponFormPage() {
   // 7 visible rank-up slots (Lv.1-7); blanks dropped on submit.
   const [rankUp, setRankUp] = useState<string[]>(["", "", "", "", "", "", ""]);
   const [skins, setSkins] = useState<SkinDraft[]>([]);
+  const [skillDrafts, setSkillDrafts] = useState<SkillDraft[]>([]);
 
   useEffect(() => {
     if (isEdit && weapons.data) {
@@ -63,6 +66,7 @@ export function WeaponFormPage() {
             imageUrl: s.imageUrl,
           }))
         );
+        setSkillDrafts(draftsFromNodes(weapon.skillNodes));
       }
     }
   }, [isEdit, id, weapons.data]);
@@ -87,6 +91,7 @@ export function WeaponFormPage() {
   }
 
   const skinNameMissing = skins.some((s) => s.name.trim() === "");
+  const skillNameMissing = skillDrafts.some((d) => d.type !== "Core" && d.name.trim() === "");
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -99,6 +104,7 @@ export function WeaponFormPage() {
           bonuses: s.bonuses.filter((b) => b.trim() !== ""),
           imageUrl: s.imageUrl,
         })),
+        skills: serializeDrafts(skillDrafts),
       },
       { onSuccess: () => navigate("/admin/weapons") }
     );
@@ -286,13 +292,22 @@ export function WeaponFormPage() {
               is confirmed; this list is where it will slot in. */}
         </fieldset>
 
+        <fieldset>
+          <legend className="mb-1 text-sm font-semibold">Skills</legend>
+          <p className="mb-2 text-xs text-ink-dim">
+            Drag rows to reorder; drag right (or use ▶) to inherit from the
+            skill above. Core skills have no name — only a description.
+          </p>
+          <SkillTreeEditor drafts={skillDrafts} onChange={setSkillDrafts} />
+        </fieldset>
+
         {mutation.isError && (
           <p className="text-sm text-fire">{(mutation.error as Error).message}</p>
         )}
 
         <button
           type="submit"
-          disabled={form.name.trim() === "" || skinNameMissing || mutation.isPending}
+          disabled={form.name.trim() === "" || skinNameMissing || skillNameMissing || mutation.isPending}
           className="min-h-11 rounded-lg bg-accent px-6 font-semibold text-bg hover:brightness-110 disabled:opacity-60"
         >
           {mutation.isPending ? "Saving…" : isEdit ? "Save changes" : "Create weapon"}

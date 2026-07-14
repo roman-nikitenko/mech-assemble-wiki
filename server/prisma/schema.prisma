@@ -1,4 +1,4 @@
-// Prisma schema for the Mech Assemble wiki — 18 tables + 1 enum (MechRank).
+// Prisma schema for the Mech Assemble wiki — 19 tables + 2 enums (MechRank, SkillNodeType).
 // Source of truth for the domain model: CLAUDE.md at the repo root.
 //
 // Conventions used throughout:
@@ -21,6 +21,12 @@ datasource db {
 enum MechRank {
   Standard
   S
+}
+
+enum SkillNodeType {
+  Normal
+  Premium
+  Core
 }
 
 // ---------- The hub ----------
@@ -101,6 +107,32 @@ model WeaponSkin {
   weapon Weapon @relation(fields: [weaponId], references: [id], onDelete: Cascade)
 
   @@map("weapon_skins")
+}
+
+// ---------- Skill tree (generic; weapons this cycle, mechs later) ----------
+
+// Replaces the old weapon_upgrades system (dormant since Cycle I; cleanup is
+// a future cycle). Mechs will join by adding a nullable mech_id alongside.
+model SkillNode {
+  id       String  @id @default(uuid()) @db.Uuid
+  weaponId String  @map("weapon_id") @db.Uuid
+  // Any-depth inheritance: parent points at a node in the SAME tree.
+  // Named self-relation, like the older upgrade trees.
+  parentId String? @map("parent_id") @db.Uuid
+  // Nullable by design: Core skills have no name, only a description.
+  name            String?
+  description     String?
+  // "Available from weapon level X" — 1..10, app-enforced.
+  appearanceLevel Int           @default(1) @map("appearance_level")
+  type            SkillNodeType @default(Normal)
+  // Sibling position; written by the drag-and-drop editor.
+  sortOrder Int @default(0) @map("sort_order")
+
+  weapon   Weapon      @relation(fields: [weaponId], references: [id], onDelete: Cascade)
+  parent   SkillNode?  @relation("SkillNodeTree", fields: [parentId], references: [id])
+  children SkillNode[] @relation("SkillNodeTree")
+
+  @@map("skill_nodes")
 }
 
 // ---------- Types (element catalog: Fire, Thunder, ... with icons) ----------
@@ -252,6 +284,7 @@ model Weapon {
   weaponSkins WeaponSkin[]
   helpers     Helper[]
   pilot       Pilot?
+  skillNodes  SkillNode[]
 
   @@map("weapons")
 }

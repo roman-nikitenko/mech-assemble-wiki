@@ -243,3 +243,100 @@ describe("DELETE /api/weapons/:id", () => {
     expect(res.body).toEqual({ error: "Weapon not found" });
   });
 });
+
+describe("weapon skill tree", () => {
+  it("creates a 3-level tree via parentIndex and returns flat nodes", async () => {
+    const res = await request(app).post("/api/weapons").send({
+      name: "[test:weapons] Skilled",
+      skills: [
+        { name: "Root Strike", description: "Base.", appearanceLevel: 1, type: "Normal", parentIndex: null },
+        { name: "Twin Strike", description: null, appearanceLevel: 3, type: "Premium", parentIndex: 0 },
+        { name: null, description: "Hidden core power.", appearanceLevel: 10, type: "Core", parentIndex: 1 },
+        { name: "Side Strike", description: null, appearanceLevel: 2, type: "Normal", parentIndex: 0 },
+      ],
+    });
+    expect(res.status).toBe(201);
+    const nodes = res.body.skillNodes;
+    expect(nodes).toHaveLength(4);
+    const root = nodes.find((n: { name: string | null }) => n.name === "Root Strike");
+    const twin = nodes.find((n: { name: string | null }) => n.name === "Twin Strike");
+    const core = nodes.find((n: { type: string }) => n.type === "Core");
+    const side = nodes.find((n: { name: string | null }) => n.name === "Side Strike");
+    expect(root.parentId).toBeNull();
+    expect(twin.parentId).toBe(root.id);
+    expect(core.parentId).toBe(twin.id);
+    expect(core.name).toBeNull();
+    expect(side.parentId).toBe(root.id);
+    // sibling order among root's children: Twin (0), Side (1)
+    expect(twin.sortOrder).toBe(0);
+    expect(side.sortOrder).toBe(1);
+  });
+
+  it("nulls the name on Core skills even when one is sent", async () => {
+    const res = await request(app).post("/api/weapons").send({
+      name: "[test:weapons] Core Namer",
+      skills: [
+        { name: "should vanish", description: "core", appearanceLevel: 5, type: "Core", parentIndex: null },
+      ],
+    });
+    expect(res.status).toBe(201);
+    expect(res.body.skillNodes[0].name).toBeNull();
+  });
+
+  it("400s a Normal skill without a name", async () => {
+    const res = await request(app).post("/api/weapons").send({
+      name: "[test:weapons] Nameless Skill",
+      skills: [{ name: "  ", description: null, appearanceLevel: 1, type: "Normal", parentIndex: null }],
+    });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toContain("name");
+  });
+
+  it("400s appearanceLevel outside 1-10", async () => {
+    for (const appearanceLevel of [0, 11]) {
+      const res = await request(app).post("/api/weapons").send({
+        name: "[test:weapons] Bad Level",
+        skills: [{ name: "X", description: null, appearanceLevel, type: "Normal", parentIndex: null }],
+      });
+      expect(res.status).toBe(400);
+      expect(res.body.error).toContain("1");
+      expect(res.body.error).toContain("10");
+    }
+  });
+
+  it("400s a parentIndex that doesn't reference an earlier entry", async () => {
+    const res = await request(app).post("/api/weapons").send({
+      name: "[test:weapons] Time Traveler",
+      skills: [{ name: "X", description: null, appearanceLevel: 1, type: "Normal", parentIndex: 0 }],
+    });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toContain("earlier");
+  });
+
+  it("PUT replaces the whole tree", async () => {
+    const created = await request(app).post("/api/weapons").send({
+      name: "[test:weapons] Retrained",
+      skills: [{ name: "Old Skill", description: null, appearanceLevel: 1, type: "Normal", parentIndex: null }],
+    });
+    const res = await request(app).put(`/api/weapons/${created.body.id}`).send({
+      name: "[test:weapons] Retrained",
+      skills: [
+        { name: "New Root", description: null, appearanceLevel: 2, type: "Normal", parentIndex: null },
+        { name: "New Child", description: null, appearanceLevel: 4, type: "Premium", parentIndex: 0 },
+      ],
+    });
+    expect(res.status).toBe(200);
+    const names = res.body.skillNodes.map((n: { name: string | null }) => n.name).sort();
+    expect(names).toEqual(["New Child", "New Root"]);
+  });
+
+  it("DELETE cascades skill nodes", async () => {
+    const created = await request(app).post("/api/weapons").send({
+      name: "[test:weapons] Forgetful",
+      skills: [{ name: "Doomed Skill", description: null, appearanceLevel: 1, type: "Normal", parentIndex: null }],
+    });
+    const res = await request(app).delete(`/api/weapons/${created.body.id}`);
+    expect(res.status).toBe(204);
+    expect(await prisma.skillNode.findMany({ where: { weaponId: created.body.id } })).toEqual([]);
+  });
+});

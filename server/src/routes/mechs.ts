@@ -99,6 +99,7 @@ const detailInclude = {
     include: {
       upgrades: { orderBy: { name: "asc" } },
       weaponSkins: true,
+      skillNodes: { orderBy: { sortOrder: "asc" as const } },
       helpers: { include: { ranks: { orderBy: { rank: "asc" } } } },
       type: { select: { id: true, name: true, iconUrl: true } },
       pilot: { select: { id: true, name: true } },
