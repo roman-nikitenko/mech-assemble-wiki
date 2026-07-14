@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { GameType, MechDetail, MechInput, MechRank, MechSummary, Pilot, PilotInput, Trait, TypeInput, WeaponInput, WeaponSummary } from "./types";
+import type { AccessoryInput, AccessorySummary, GameType, MechDetail, MechInput, MechRank, MechSummary, Pilot, PilotInput, Trait, TypeInput, WeaponInput, WeaponSummary } from "./types";
 
 const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
 
@@ -261,6 +261,52 @@ export function useDeleteWeapon() {
       qc.invalidateQueries({ queryKey: ["mechs"] });
       qc.invalidateQueries({ queryKey: ["mech"] });
       qc.invalidateQueries({ queryKey: ["pilots"] });
+    },
+  });
+}
+
+export function useAccessories() {
+  return useQuery({ queryKey: ["accessories"], queryFn: () => fetchJson<AccessorySummary[]>("/api/accessories") });
+}
+
+export function useCreateAccessory() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: AccessoryInput) => sendJson<AccessorySummary>("/api/accessories", "POST", input),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["accessories"] });
+      qc.invalidateQueries({ queryKey: ["mech"] });
+      qc.invalidateQueries({ queryKey: ["mechs"] });
+    },
+  });
+}
+
+export function useUpdateAccessory(id: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: AccessoryInput) => sendJson<AccessorySummary>(`/api/accessories/${id}`, "PUT", input),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["accessories"] });
+      qc.invalidateQueries({ queryKey: ["mech"] });
+      qc.invalidateQueries({ queryKey: ["mechs"] });
+    },
+  });
+}
+
+export function useDeleteAccessory() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`${API_URL}/api/accessories/${id}`, { method: "DELETE" });
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        throw new Error(data?.error ?? `API error ${res.status}`);
+      }
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["accessories"] });
+      qc.invalidateQueries({ queryKey: ["mech"] });
+      qc.invalidateQueries({ queryKey: ["mechs"] });
     },
   });
 }

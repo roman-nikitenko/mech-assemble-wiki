@@ -166,7 +166,15 @@ export interface MechDetail extends MechSummary {
   traits: TraitLink[];
   awakeningLevels: AwakeningLevel[];
   weapon: Weapon | null;
-  accessory: { id: string; name: string; description: string | null } | null;
+  accessory: {
+    id: string;
+    name: string;
+    tier: MechRank;
+    attributes: AccessoryAttribute[];
+    exclusiveEffect: string | null;
+    imageUrl: string | null;
+    iconUrl: string | null;
+  } | null;
   pilot: { id: string; name: string } | null;
   skins: Skin[];
   helpers: Helper[];
@@ -217,4 +225,33 @@ export interface PilotInput {
   backgroundUrl?: string | null;
   mechId?: string | null;
   weaponId?: string | null;
+}
+
+/** One accessory attribute row (name + value pair). */
+export interface AccessoryAttribute {
+  name: string;
+  value: string;
+}
+
+/** Shape of GET /api/accessories rows. */
+export interface AccessorySummary {
+  id: string;
+  name: string;
+  tier: MechRank;
+  attributes: AccessoryAttribute[];
+  exclusiveEffect: string | null;
+  imageUrl: string | null;
+  iconUrl: string | null;
+  mech: { id: string; name: string } | null;
+}
+
+/** Payload for POST/PUT /api/accessories. */
+export interface AccessoryInput {
+  name: string;
+  tier?: MechRank;
+  mechId?: string | null;
+  attributes?: AccessoryAttribute[];
+  exclusiveEffect?: string | null;
+  imageUrl?: string | null;
+  iconUrl?: string | null;
 }

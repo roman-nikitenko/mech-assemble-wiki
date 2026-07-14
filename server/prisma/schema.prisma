@@ -1,4 +1,4 @@
-// Prisma schema for the Mech Assemble wiki — 16 tables + 1 enum (MechRank).
+// Prisma schema for the Mech Assemble wiki — 18 tables + 1 enum (MechRank).
 // Source of truth for the domain model: CLAUDE.md at the repo root.
 //
 // Conventions used throughout:
@@ -273,16 +273,29 @@ model WeaponUpgrade {
   @@map("weapon_upgrades")
 }
 
-// ---------- Accessory (S-tier only, deliberately minimal) ----------
+// ---------- Accessory (admin-managed since Cycle H) ----------
 
 model Accessory {
-  id          String  @id @default(uuid()) @db.Uuid
-  mechId      String  @unique @map("mech_id") @db.Uuid
-  // Just name + description — explicit product decision, do not extend.
-  name        String
-  description String?
+  id String @id @default(uuid()) @db.Uuid
+  // Nullable since Cycle H: Standard accessories are generic items; @unique
+  // keeps "one accessory per mech" for the S-tier pairs. onDelete: SetNull —
+  // a standalone accessory survives its mech (same reasoning as pilots).
+  mechId String? @unique @map("mech_id") @db.Uuid
+  name   String
+  // Accessories share the Standard|S tier enum, like weapons.
+  tier MechRank @default(Standard)
+  // Attribute rows [{name, value}] — S: up to 2 rows, Standard: 1 (API rule).
+  attributes Json @default("[]")
+  // Only for mech-paired accessories — the API normalizes this to null
+  // whenever the accessory has no mech. RENAMED from `description` in
+  // Cycle H: the old free text (e.g. "Crit hits restore 1% HP") was
+  // semantically an exclusive effect all along.
+  exclusiveEffect String? @map("exclusive_effect")
+  // Two art slots, like weapons: image = big art, icon = small square badge.
+  imageUrl String? @map("image_url")
+  iconUrl  String? @map("icon_url")
 
-  mech Mech @relation(fields: [mechId], references: [id], onDelete: Cascade)
+  mech Mech? @relation(fields: [mechId], references: [id], onDelete: SetNull)
 
   @@map("accessories")
 }

@@ -9,6 +9,8 @@ import { AdminMechsPage } from "./admin/mechs/AdminMechsPage";
 import { MechFormPage } from "./admin/mechs/MechFormPage";
 import { AdminWeaponsPage } from "./admin/weapons/AdminWeaponsPage";
 import { WeaponFormPage } from "./admin/weapons/WeaponFormPage";
+import { AdminAccessoriesPage } from "./admin/accessories/AdminAccessoriesPage";
+import { AccessoryFormPage } from "./admin/accessories/AccessoryFormPage";
 import { AdminPilotsPage } from "./admin/pilots/AdminPilotsPage";
 import { PilotFormPage } from "./admin/pilots/PilotFormPage";
 import { AdminTypesPage } from "./admin/types/AdminTypesPage";
@@ -30,6 +32,9 @@ export default function App() {
         <Route path="weapons" element={<AdminWeaponsPage />} />
         <Route path="weapons/new" element={<WeaponFormPage />} />
         <Route path="weapons/:id/edit" element={<WeaponFormPage />} />
+        <Route path="accessories" element={<AdminAccessoriesPage />} />
+        <Route path="accessories/new" element={<AccessoryFormPage />} />
+        <Route path="accessories/:id/edit" element={<AccessoryFormPage />} />
         <Route path="pilots" element={<AdminPilotsPage />} />
         <Route path="pilots/new" element={<PilotFormPage />} />
         <Route path="pilots/:id/edit" element={<PilotFormPage />} />
