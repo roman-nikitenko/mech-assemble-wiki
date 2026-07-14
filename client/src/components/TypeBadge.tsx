@@ -1,22 +1,16 @@
-import type { MechType } from "../api/types";
+import type { GameType } from "../api/types";
+import { imageSrc } from "../api/client";
 
-// The single source of truth for element colors in the app.
-// bg-*/15 = 15% opacity fill; border-*/40 = 40% opacity outline.
-const TYPE_STYLES: Record<MechType, string> = {
-  Fire: "bg-fire/15 text-fire border-fire/40",
-  Thunder: "bg-thunder/15 text-thunder border-thunder/40",
-  Physical: "bg-physical/15 text-physical border-physical/40",
-  Ice: "bg-ice/15 text-ice border-ice/40",
-  Energy: "bg-energy/15 text-energy border-energy/40",
-  Explosive: "bg-explosive/15 text-explosive border-explosive/40",
-};
-
-export function TypeBadge({ type }: { type: MechType }) {
+/** Neutral chip with the type's icon + name. Types are admin-managed catalog
+    rows now, so there is no hard-coded per-type color anymore. Callers skip
+    rendering when a mech/weapon has no type yet. */
+export function TypeBadge({ type }: { type: GameType }) {
   return (
-    <span
-      className={`inline-block rounded-full border px-2.5 py-0.5 text-xs font-semibold ${TYPE_STYLES[type]}`}
-    >
-      {type}
+    <span className="inline-flex items-center gap-1.5 rounded-full border border-edge bg-surface-2 px-2.5 py-0.5 text-xs font-semibold">
+      {type.iconUrl && (
+        <img src={imageSrc(type.iconUrl)} alt="" className="h-4 w-4 rounded-full object-cover" />
+      )}
+      {type.name}
     </span>
   );
 }

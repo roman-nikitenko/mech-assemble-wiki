@@ -2,13 +2,19 @@
 // server/src/routes/mechs.ts). Kept deliberately in sync by hand — sharing
 // types with the server would need npm workspaces; not worth it yet.
 
-export type MechType =
-  | "Fire"
-  | "Thunder"
-  | "Physical"
-  | "Ice"
-  | "Energy"
-  | "Explosive";
+/** An element type from the admin-managed catalog (name + icon).
+    Named GameType because "Type" collides with too much in TS-land. */
+export interface GameType {
+  id: string;
+  name: string;
+  iconUrl: string | null;
+}
+
+/** Payload for POST/PUT /api/types. */
+export interface TypeInput {
+  name: string;
+  iconUrl?: string | null;
+}
 
 export type MechRank = "Standard" | "S";
 
@@ -17,9 +23,10 @@ export interface MechSummary {
   id: string;
   name: string;
   epithet: string | null;
-  type: MechType;
+  type: GameType | null;
   rank: MechRank;
   quality: string | null;
+  imageUrl: string | null;
 }
 
 /** Upgrade tree node — the API pre-assembles children[]; recursion mirrors that. */
@@ -75,14 +82,57 @@ export interface Helper {
   ranks: HelperRank[];
 }
 
+/** A weapon skin row (separate system from mech skins — different fields). */
+export interface WeaponSkinRow {
+  id: string;
+  name: string;
+  bonuses: string[];
+  imageUrl: string | null;
+}
+
 export interface Weapon {
   id: string;
   name: string;
   description: string | null;
   baseStats: Stats | null;
+  tier: MechRank;
+  rankUpPreview: string[];
+  imageUrl: string | null;
+  iconUrl: string | null;
+  type: GameType | null;
   upgrades: UpgradeNode[];
-  skins: Skin[];
+  weaponSkins: WeaponSkinRow[];
   helpers: Helper[];
+  pilot: { id: string; name: string } | null;
+}
+
+/** Shape of GET /api/weapons rows (admin list, edit prefill, pilot form). */
+export interface WeaponSummary {
+  id: string;
+  name: string;
+  description: string | null;
+  tier: MechRank;
+  rankUpPreview: string[];
+  imageUrl: string | null;
+  iconUrl: string | null;
+  type: GameType | null;
+  mech: { id: string; name: string } | null;
+  pilot: { id: string; name: string } | null;
+  weaponSkins: WeaponSkinRow[];
+}
+
+/** Payload for POST/PUT /api/weapons. */
+export interface WeaponInput {
+  name: string;
+  description?: string | null;
+  tier?: MechRank;
+  rankUpPreview?: string[];
+  typeId?: string | null;
+  mechId?: string | null;
+  pilotId?: string | null;
+  imageUrl?: string | null;
+  iconUrl?: string | null;
+  skins?: { name: string; bonuses: string[]; imageUrl?: string | null }[];
 }
 
 export interface AwakeningNode {
@@ -116,7 +166,92 @@ export interface MechDetail extends MechSummary {
   traits: TraitLink[];
   awakeningLevels: AwakeningLevel[];
   weapon: Weapon | null;
-  accessory: { id: string; name: string; description: string | null } | null;
+  accessory: {
+    id: string;
+    name: string;
+    tier: MechRank;
+    attributes: AccessoryAttribute[];
+    exclusiveEffect: string | null;
+    imageUrl: string | null;
+    iconUrl: string | null;
+  } | null;
+  pilot: { id: string; name: string } | null;
   skins: Skin[];
   helpers: Helper[];
+}
+
+/** A catalog trait, as served by GET /api/traits. */
+export interface Trait {
+  id: string;
+  name: string;
+  color: string | null;
+}
+
+/** Payload for POST/PUT /api/mechs (admin form). */
+export interface MechInput {
+  name: string;
+  epithet?: string | null;
+  typeId?: string | null;
+  rank: MechRank;
+  quality?: string | null;
+  specialBonus?: string | null;
+  pilotName?: string | null;
+  lore?: string | null;
+  imageUrl?: string | null;
+  traitIds?: string[];
+  pilotId?: string | null;
+}
+
+/** A pilot, as served by /api/pilots (always carries its linked mech or null). */
+export interface Pilot {
+  id: string;
+  name: string;
+  unlockBoost: string | null;
+  relationshipBonus: string | null;
+  bonusPerLevel: string[];
+  iconUrl: string | null;
+  backgroundUrl: string | null;
+  mech: { id: string; name: string; rank: MechRank } | null;
+  weapon: { id: string; name: string } | null;
+}
+
+/** Payload for POST/PUT /api/pilots. */
+export interface PilotInput {
+  name: string;
+  unlockBoost?: string | null;
+  relationshipBonus?: string | null;
+  bonusPerLevel?: string[];
+  iconUrl?: string | null;
+  backgroundUrl?: string | null;
+  mechId?: string | null;
+  weaponId?: string | null;
+}
+
+/** One accessory attribute row (name + value pair). */
+export interface AccessoryAttribute {
+  name: string;
+  value: string;
+}
+
+/** Shape of GET /api/accessories rows. */
+export interface AccessorySummary {
+  id: string;
+  name: string;
+  tier: MechRank;
+  attributes: AccessoryAttribute[];
+  exclusiveEffect: string | null;
+  imageUrl: string | null;
+  iconUrl: string | null;
+  mech: { id: string; name: string } | null;
+}
+
+/** Payload for POST/PUT /api/accessories. */
+export interface AccessoryInput {
+  name: string;
+  tier?: MechRank;
+  mechId?: string | null;
+  attributes?: AccessoryAttribute[];
+  exclusiveEffect?: string | null;
+  imageUrl?: string | null;
+  iconUrl?: string | null;
 }

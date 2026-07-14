@@ -1,4 +1,4 @@
-// Prisma schema for the Mech Assemble wiki — 15 tables + 2 enums.
+// Prisma schema for the Mech Assemble wiki — 18 tables + 1 enum (MechRank).
 // Source of truth for the domain model: CLAUDE.md at the repo root.
 //
 // Conventions used throughout:
@@ -18,15 +18,6 @@ datasource db {
 
 // ---------- Enums ----------
 
-enum MechType {
-  Fire
-  Thunder
-  Physical
-  Ice
-  Energy
-  Explosive
-}
-
 enum MechRank {
   Standard
   S
@@ -38,7 +29,13 @@ model Mech {
   id           String   @id @default(uuid()) @db.Uuid
   name         String   @unique
   epithet      String? // subtitle, e.g. "Shadow Hunter"
-  type         MechType
+  // Element type is a CATALOG ROW now, not an enum: the admin manages types
+  // (name + icon) in the UI. Nullable by design — the catalog starts empty
+  // and real data gets assigned as it's entered. onDelete: Restrict is the
+  // third delete flavor in this schema: a type that's in use cannot be
+  // deleted (contrast: mech children Cascade; pilots SetNull).
+  typeId String? @map("type_id") @db.Uuid
+  type   Type?   @relation(fields: [typeId], references: [id], onDelete: Restrict)
   rank         MechRank
   quality      String? // e.g. "Supreme"
   // Deliberately a plain string like "ATK +10%" — NOT structured fields.
@@ -46,6 +43,10 @@ model Mech {
   specialBonus String?  @map("special_bonus")
   pilotName    String?  @map("pilot_name")
   lore         String?
+  // Path to the mech's image under /uploads (e.g. "/uploads/abc.png").
+  // We store the POINTER, not the image: databases are bad at large binary
+  // blobs; filesystems/CDNs are good at them.
+  imageUrl String? @map("image_url")
 
   // S-tier-only systems below are optional/empty for Standard mechs;
   // the frontend decides what to show based on `rank`.
@@ -56,8 +57,63 @@ model Mech {
   accessory       Accessory?
   skins           Skin[]
   helpers         Helper[]
+  pilot           Pilot?
 
   @@map("mechs")
+}
+
+// ---------- Pilots (S-tier only, exclusive 1:1 with a mech) ----------
+
+model Pilot {
+  id                String   @id @default(uuid()) @db.Uuid
+  name              String   @unique
+  unlockBoost       String?  @map("unlock_boost")
+  relationshipBonus String?  @map("relationship_bonus")
+  // Up to 4 per-level bonus strings (Lv.1-4). Postgres text[]; "max 4" is an
+  // app-level rule enforced by the API, same philosophy as awakening nodes.
+  bonusPerLevel     String[] @map("bonus_per_level")
+  iconUrl           String?  @map("icon_url")
+  backgroundUrl     String?  @map("background_url")
+  // The 1:1 link: nullable = a pilot may be unassigned; @unique = a mech can
+  // have at most one pilot. onDelete: SetNull — deleting a MECH must not
+  // delete the pilot, just vacate the cockpit. Deliberate contrast with the
+  // Cascade used on mech children: the pilot is a standalone entity, not a
+  // part of the mech. "S-tier only" is enforced by the API, not the DB.
+  mechId String? @unique @map("mech_id") @db.Uuid
+  mech   Mech?   @relation(fields: [mechId], references: [id], onDelete: SetNull)
+  // Either/or with mechId (app-enforced): a pilot sits in a mech OR fronts
+  // a weapon, never both. Same SetNull reasoning — pilots are standalone.
+  weaponId String? @unique @map("weapon_id") @db.Uuid
+  weapon   Weapon? @relation(fields: [weaponId], references: [id], onDelete: SetNull)
+
+  @@map("pilots")
+}
+
+model WeaponSkin {
+  id       String   @id @default(uuid()) @db.Uuid
+  weaponId String   @map("weapon_id") @db.Uuid
+  name     String
+  // Up to 5 star-bonus strings (★1-5) — deliberately a SEPARATE shape from mech skins
+  // (skins + skin_stars): the two skin systems will diverge (future SS skins).
+  bonuses  String[]
+  imageUrl String?  @map("image_url")
+
+  weapon Weapon @relation(fields: [weaponId], references: [id], onDelete: Cascade)
+
+  @@map("weapon_skins")
+}
+
+// ---------- Types (element catalog: Fire, Thunder, ... with icons) ----------
+
+model Type {
+  id      String  @id @default(uuid()) @db.Uuid
+  name    String  @unique
+  iconUrl String? @map("icon_url")
+
+  mechs   Mech[]
+  weapons Weapon[]
+
+  @@map("types")
 }
 
 // ---------- Skills + upgrade tree ----------
@@ -170,15 +226,32 @@ model AwakeningUnlock {
 
 model Weapon {
   id          String  @id @default(uuid()) @db.Uuid
-  mechId      String  @unique @map("mech_id") @db.Uuid // @unique makes this 1:1
+  // Nullable since Cycle G: a weapon can exist on its own; @unique keeps
+  // "a mech owns at most one weapon". The owner is set from the admin.
+  mechId      String? @unique @map("mech_id") @db.Uuid
   name        String
   description String?
   baseStats   Json?   @map("base_stats")
+  // Weapons carry a type in the game too. Schema + API surface only for now —
+  // the UI to assign it arrives with the future weapons editor.
+  typeId String? @map("type_id") @db.Uuid
+  type   Type?   @relation(fields: [typeId], references: [id], onDelete: Restrict)
+  // Weapons have their own S/Standard tier in the game — same values as
+  // mech rank, so the enum is shared rather than duplicated.
+  tier          MechRank @default(Standard)
+  // Up to 7 rank-up preview lines (Lv.1-7); the cap is an app rule,
+  // same pattern as pilots' bonus_per_level.
+  rankUpPreview String[] @map("rank_up_preview")
+  // Two art slots: image = the big weapon art, icon = the small square
+  // (future list badges on the public site).
+  imageUrl String? @map("image_url")
+  iconUrl  String? @map("icon_url")
 
-  mech     Mech            @relation(fields: [mechId], references: [id], onDelete: Cascade)
-  upgrades WeaponUpgrade[]
-  skins    Skin[]
-  helpers  Helper[]
+  mech        Mech?           @relation(fields: [mechId], references: [id], onDelete: Cascade)
+  upgrades    WeaponUpgrade[]
+  weaponSkins WeaponSkin[]
+  helpers     Helper[]
+  pilot       Pilot?
 
   @@map("weapons")
 }
@@ -200,16 +273,29 @@ model WeaponUpgrade {
   @@map("weapon_upgrades")
 }
 
-// ---------- Accessory (S-tier only, deliberately minimal) ----------
+// ---------- Accessory (admin-managed since Cycle H) ----------
 
 model Accessory {
-  id          String  @id @default(uuid()) @db.Uuid
-  mechId      String  @unique @map("mech_id") @db.Uuid
-  // Just name + description — explicit product decision, do not extend.
-  name        String
-  description String?
+  id String @id @default(uuid()) @db.Uuid
+  // Nullable since Cycle H: Standard accessories are generic items; @unique
+  // keeps "one accessory per mech" for the S-tier pairs. onDelete: SetNull —
+  // a standalone accessory survives its mech (same reasoning as pilots).
+  mechId String? @unique @map("mech_id") @db.Uuid
+  name   String
+  // Accessories share the Standard|S tier enum, like weapons.
+  tier MechRank @default(Standard)
+  // Attribute rows [{name, value}] — S: up to 2 rows, Standard: 1 (API rule).
+  attributes Json @default("[]")
+  // Only for mech-paired accessories — the API normalizes this to null
+  // whenever the accessory has no mech. RENAMED from `description` in
+  // Cycle H: the old free text (e.g. "Crit hits restore 1% HP") was
+  // semantically an exclusive effect all along.
+  exclusiveEffect String? @map("exclusive_effect")
+  // Two art slots, like weapons: image = big art, icon = small square badge.
+  imageUrl String? @map("image_url")
+  iconUrl  String? @map("icon_url")
 
-  mech Mech @relation(fields: [mechId], references: [id], onDelete: Cascade)
+  mech Mech? @relation(fields: [mechId], references: [id], onDelete: SetNull)
 
   @@map("accessories")
 }
@@ -218,18 +304,13 @@ model Accessory {
 
 model Skin {
   id          String  @id @default(uuid()) @db.Uuid
-  // A skin belongs to EITHER a mech OR a weapon: two nullable FKs, exactly
-  // one filled. Deliberately simple vs. polymorphic associations. Prisma
-  // can't declaratively enforce "exactly one is set" — that invariant lives
-  // in the code that writes rows (the seed, later the admin API). A Postgres
-  // CHECK constraint is the planned later-phase upgrade.
-  mechId      String? @map("mech_id") @db.Uuid
-  weaponId    String? @map("weapon_id") @db.Uuid
+  // Skins are MECH-owned only since Cycle G — weapon skins live in their own
+  // `weapon_skins` table because the two systems will diverge (future SS skins).
+  mechId      String  @map("mech_id") @db.Uuid
   name        String
   description String?
 
-  mech   Mech?      @relation(fields: [mechId], references: [id], onDelete: Cascade)
-  weapon Weapon?    @relation(fields: [weaponId], references: [id], onDelete: Cascade)
+  mech   Mech       @relation(fields: [mechId], references: [id], onDelete: Cascade)
   stars  SkinStar[]
 
   @@map("skins")

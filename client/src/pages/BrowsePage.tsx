@@ -1,22 +1,24 @@
 import { useState } from "react";
-import { useMechs } from "../api/client";
-import type { MechRank, MechType } from "../api/types";
+import { Link } from "react-router-dom";
+import { useMechs, useTypes } from "../api/client";
+import type { MechRank } from "../api/types";
 import { FilterBar } from "../components/FilterBar";
 import { MechCard } from "../components/MechCard";
 import { LoadingSkeleton } from "../components/LoadingSkeleton";
 import { ErrorPanel } from "../components/ErrorPanel";
 
 export function BrowsePage() {
-  const [type, setType] = useState<MechType | "">("");
+  const [typeId, setTypeId] = useState("");
   const [rank, setRank] = useState<MechRank | "">("");
   const [search, setSearch] = useState("");
 
-  // type/rank go to the API (it validates and filters);
+  // typeId/rank go to the API (it validates and filters);
   // search stays client-side — the list is already loaded and tiny.
   const { data, isPending, isError, refetch } = useMechs({
-    type: type || undefined,
+    typeId: typeId || undefined,
     rank: rank || undefined,
   });
+  const types = useTypes();
 
   const query = search.trim().toLowerCase();
   const visible = (data ?? []).filter(
@@ -28,14 +30,20 @@ export function BrowsePage() {
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-6">
-      <h1 className="mb-4 text-2xl font-black tracking-tight">
-        Mech <span className="text-accent">Assemble</span> Wiki
-      </h1>
+      <div className="mb-4 flex items-center justify-between">
+        <h1 className="text-2xl font-black tracking-tight">
+          Mech <span className="text-accent">Assemble</span> Wiki
+        </h1>
+        <Link to="/admin" className="text-sm text-ink-dim hover:text-accent">
+          Admin
+        </Link>
+      </div>
       <FilterBar
-        type={type}
+        types={types.data ?? []}
+        typeId={typeId}
         rank={rank}
         search={search}
-        onTypeChange={setType}
+        onTypeIdChange={setTypeId}
         onRankChange={setRank}
         onSearchChange={setSearch}
       />

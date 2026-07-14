@@ -34,8 +34,24 @@ export function OverviewTab({ mech }: { mech: MechDetail }) {
           </h2>
           <div className="rounded-xl border border-edge bg-surface p-4">
             <p className="font-semibold">{mech.accessory.name}</p>
-            {mech.accessory.description && (
-              <p className="mt-1 text-sm text-ink-dim">{mech.accessory.description}</p>
+            {mech.accessory.attributes.length > 0 && (
+              <dl className="mt-2 grid grid-cols-2 gap-2">
+                {mech.accessory.attributes.map((attr) => (
+                  <div
+                    key={attr.name}
+                    className="flex justify-between gap-2 rounded bg-surface-2 px-2 py-1 text-sm"
+                  >
+                    <dt className="text-ink-dim">{attr.name}</dt>
+                    <dd className="font-semibold">{attr.value}</dd>
+                  </div>
+                ))}
+              </dl>
+            )}
+            {mech.accessory.exclusiveEffect && (
+              <p className="mt-2 text-sm">
+                <span className="text-accent">Exclusive:</span>{" "}
+                <span className="text-ink-dim">{mech.accessory.exclusiveEffect}</span>
+              </p>
             )}
           </div>
         </section>
