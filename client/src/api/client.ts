@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { AccessoryInput, AccessorySummary, GameType, MechDetail, MechInput, MechRank, MechSummary, Pilot, PilotInput, Trait, TypeInput, WeaponInput, WeaponSummary } from "./types";
+import type { AccessoryInput, AccessorySummary, GameType, MechDetail, MechInput, MechRank, MechSummary, Pilot, PilotInput, TypeInput, WeaponInput, WeaponSummary } from "./types";
 
 const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
 
@@ -61,19 +61,6 @@ async function sendJson<T>(path: string, method: "POST" | "PUT", body: unknown):
     throw new Error(data?.error ?? `API error ${res.status}`);
   }
   return res.json() as Promise<T>;
-}
-
-export function useTraits() {
-  return useQuery({ queryKey: ["traits"], queryFn: () => fetchJson<Trait[]>("/api/traits") });
-}
-
-export function useCreateTrait() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (input: { name: string; color?: string }) =>
-      sendJson<Trait>("/api/traits", "POST", input),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["traits"] }),
-  });
 }
 
 export function useCreateMech() {

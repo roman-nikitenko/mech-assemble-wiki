@@ -43,16 +43,20 @@ model Mech {
   typeId String? @map("type_id") @db.Uuid
   type   Type?   @relation(fields: [typeId], references: [id], onDelete: Restrict)
   rank         MechRank
-  quality      String? // e.g. "Supreme"
   // Deliberately a plain string like "ATK +10%" — NOT structured fields.
   // Explicit product decision (see CLAUDE.md); do not normalize.
   specialBonus String?  @map("special_bonus")
-  pilotName    String?  @map("pilot_name")
   lore         String?
+  // Up to 7 rank-up preview lines. POSITIONAL, unlike the weapon field:
+  // index = rank position, so interior blanks ("" entries) are meaningful
+  // and preserved; only trailing blanks are trimmed by the API.
+  rankUpPreview String[] @map("rank_up_preview")
   // Path to the mech's image under /uploads (e.g. "/uploads/abc.png").
   // We store the POINTER, not the image: databases are bad at large binary
   // blobs; filesystems/CDNs are good at them.
   imageUrl String? @map("image_url")
+  // Second art slot, same Image+Icon pair weapons and accessories have.
+  iconUrl String? @map("icon_url")
 
   // S-tier-only systems below are optional/empty for Standard mechs;
   // the frontend decides what to show based on `rank`.
@@ -348,6 +352,8 @@ model Skin {
   mechId      String  @map("mech_id") @db.Uuid
   name        String
   description String?
+  // Per-skin art, same slot the weapon_skins table got in Cycle G.1.
+  imageUrl String? @map("image_url")
 
   mech   Mech       @relation(fields: [mechId], references: [id], onDelete: Cascade)
   stars  SkinStar[]

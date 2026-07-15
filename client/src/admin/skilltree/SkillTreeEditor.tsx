@@ -110,7 +110,7 @@ export function SkillTreeEditor({ drafts, onChange }: SkillTreeEditorProps) {
       <button
         type="button"
         onClick={addSkill}
-        className="mt-2 min-h-11 rounded-lg border border-edge px-4 text-sm hover:border-accent/60"
+        className="mt-2 min-h-11 cursor-pointer rounded-lg border border-edge px-4 text-sm hover:border-accent/60"
       >
         + Add skill
       </button>

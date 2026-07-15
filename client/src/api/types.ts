@@ -25,7 +25,6 @@ export interface MechSummary {
   epithet: string | null;
   type: GameType | null;
   rank: MechRank;
-  quality: string | null;
   imageUrl: string | null;
 }
 
@@ -66,6 +65,7 @@ export interface Skin {
   id: string;
   name: string;
   description: string | null;
+  imageUrl: string | null;
   stars: SkinStar[];
 }
 
@@ -182,8 +182,10 @@ export interface AwakeningLevel {
 /** Shape returned by GET /api/mechs/:id (detail page). */
 export interface MechDetail extends MechSummary {
   specialBonus: string | null;
-  pilotName: string | null;
   lore: string | null;
+  iconUrl: string | null;
+  // Positional (index = rank): interior entries may be "" on purpose.
+  rankUpPreview: string[];
   skills: Skill[];
   traits: TraitLink[];
   awakeningLevels: AwakeningLevel[];
@@ -216,12 +218,15 @@ export interface MechInput {
   epithet?: string | null;
   typeId?: string | null;
   rank: MechRank;
-  quality?: string | null;
   specialBonus?: string | null;
-  pilotName?: string | null;
   lore?: string | null;
+  rankUpPreview?: string[];
+  // Bonuses are positional (index i = ★i+1); blanks mean "no perk at that star".
+  skins?: { name: string; bonuses: string[]; imageUrl?: string | null }[];
   imageUrl?: string | null;
-  traitIds?: string[];
+  iconUrl?: string | null;
+  // Trait NAMES, not ids — the server finds-or-creates catalog rows by name.
+  traitNames?: string[];
   pilotId?: string | null;
   skills?: {
     name: string | null;

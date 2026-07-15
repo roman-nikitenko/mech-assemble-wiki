@@ -77,14 +77,9 @@ export function MechDetailPage() {
         </div>
         {mech.epithet && <p className="mt-1 text-ink-dim">{mech.epithet}</p>}
         <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-ink-dim">
-          {mech.quality && (
+          {mech.pilot && (
             <span>
-              Quality: <span className="text-ink">{mech.quality}</span>
-            </span>
-          )}
-          {mech.pilotName && (
-            <span>
-              Pilot: <span className="text-ink">{mech.pilotName}</span>
+              Pilot: <span className="text-ink">{mech.pilot.name}</span>
             </span>
           )}
           {mech.specialBonus && (

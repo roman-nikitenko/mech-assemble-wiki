@@ -19,19 +19,42 @@ afterAll(async () => {
 });
 
 describe("POST /api/mechs", () => {
-  it("creates a mech with traits and returns 201", async () => {
-    const trait = await prisma.trait.create({ data: { name: "[test:mechs] Piercer" } });
+  it("creates a mech with traits (created from names) and returns 201", async () => {
     const res = await request(app).post("/api/mechs").send({
       name: "[test:mechs] Iron Colossus",
       epithet: "Wall Breaker",
       rank: "Standard",
-      traitIds: [trait.id],
+      iconUrl: "/uploads/colossus-icon.png",
+      traitNames: ["[test:mechs] Piercer"],
     });
     expect(res.status).toBe(201);
     expect(res.body.name).toBe("[test:mechs] Iron Colossus");
     expect(res.body.imageUrl).toBeNull();
+    // The trait name should have been created in the catalog and linked.
+    const trait = await prisma.trait.findUnique({ where: { name: "[test:mechs] Piercer" } });
+    expect(trait).not.toBeNull();
     const links = await prisma.mechTrait.findMany({ where: { mechId: res.body.id } });
     expect(links).toHaveLength(1);
+    expect(links[0].traitId).toBe(trait!.id);
+    // iconUrl isn't in the summary response — verify it landed via the DB.
+    const stored = await prisma.mech.findUnique({ where: { id: res.body.id } });
+    expect(stored?.iconUrl).toBe("/uploads/colossus-icon.png");
+  });
+
+  it("reuses an existing catalog trait instead of duplicating it", async () => {
+    const existing = await prisma.trait.create({ data: { name: "[test:mechs] Shared" } });
+    const res = await request(app).post("/api/mechs").send({
+      name: "[test:mechs] Reuser",
+      rank: "Standard",
+      // Duplicate + blank entries also collapse away in parsing.
+      traitNames: ["[test:mechs] Shared", " [test:mechs] Shared ", "  "],
+    });
+    expect(res.status).toBe(201);
+    const catalog = await prisma.trait.findMany({ where: { name: "[test:mechs] Shared" } });
+    expect(catalog).toHaveLength(1);
+    const links = await prisma.mechTrait.findMany({ where: { mechId: res.body.id } });
+    expect(links).toHaveLength(1);
+    expect(links[0].traitId).toBe(existing.id);
   });
 
   it("400s on a missing name", async () => {
@@ -40,14 +63,90 @@ describe("POST /api/mechs", () => {
     expect(res.body.error).toContain("name");
   });
 
-  it("400s on unknown trait ids", async () => {
+  it("keeps rank-up preview positions (interior blanks stay, trailing drop)", async () => {
+    const res = await request(app).post("/api/mechs").send({
+      name: "[test:mechs] Ranker",
+      rank: "Standard",
+      // slot 3 deliberately empty, slots 5-7 trailing-empty
+      rankUpPreview: ["HP +100", "ATK +5%", "", "New skill slot", "", "", ""],
+    });
+    expect(res.status).toBe(201);
+    const stored = await prisma.mech.findUnique({ where: { id: res.body.id } });
+    expect(stored?.rankUpPreview).toEqual(["HP +100", "ATK +5%", "", "New skill slot"]);
+  });
+
+  it("400s on more than 7 rank-up preview lines", async () => {
+    const res = await request(app).post("/api/mechs").send({
+      name: "[test:mechs] Overranked",
+      rank: "Standard",
+      rankUpPreview: ["1", "2", "3", "4", "5", "6", "7", "8"],
+    });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toContain("7");
+  });
+
+  it("creates skins with positional star bonuses", async () => {
+    const res = await request(app).post("/api/mechs").send({
+      name: "[test:mechs] Skinner",
+      rank: "S",
+      skins: [
+        // ★2 left blank on purpose — ★3 must stay star 3.
+        { name: "Void Walker", bonuses: ["HP +5%", "", "ATK +10%"], imageUrl: "/uploads/void.png" },
+      ],
+    });
+    expect(res.status).toBe(201);
+    const skinRows = await prisma.skin.findMany({
+      where: { mechId: res.body.id },
+      include: { stars: { orderBy: { star: "asc" } } },
+    });
+    expect(skinRows).toHaveLength(1);
+    expect(skinRows[0].name).toBe("Void Walker");
+    expect(skinRows[0].imageUrl).toBe("/uploads/void.png");
+    expect(skinRows[0].stars.map((s) => [s.star, s.perk])).toEqual([
+      [1, "HP +5%"],
+      [3, "ATK +10%"],
+    ]);
+  });
+
+  it("PUT replaces the skin set", async () => {
+    const created = await request(app).post("/api/mechs").send({
+      name: "[test:mechs] Reskinned",
+      rank: "S",
+      skins: [{ name: "Old Coat", bonuses: ["DEF +1%"] }],
+    });
+    const res = await request(app).put(`/api/mechs/${created.body.id}`).send({
+      name: "[test:mechs] Reskinned",
+      rank: "S",
+      skins: [{ name: "New Coat", bonuses: ["DEF +2%"] }],
+    });
+    expect(res.status).toBe(200);
+    const skinRows = await prisma.skin.findMany({
+      where: { mechId: created.body.id },
+      include: { stars: true },
+    });
+    expect(skinRows).toHaveLength(1);
+    expect(skinRows[0].name).toBe("New Coat");
+    expect(skinRows[0].stars.map((s) => s.perk)).toEqual(["DEF +2%"]);
+  });
+
+  it("400s on a skin without a name", async () => {
+    const res = await request(app).post("/api/mechs").send({
+      name: "[test:mechs] Nameless Skin",
+      rank: "S",
+      skins: [{ name: "  ", bonuses: [] }],
+    });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toContain("name");
+  });
+
+  it("400s when traitNames is not an array of strings", async () => {
     const res = await request(app).post("/api/mechs").send({
       name: "[test:mechs] Ghost Traits",
       rank: "Standard",
-      traitIds: ["00000000-0000-4000-8000-000000000000"],
+      traitNames: [123],
     });
     expect(res.status).toBe(400);
-    expect(res.body.error).toContain("Unknown trait ids");
+    expect(res.body.error).toContain("traitNames");
   });
 
   it("409s on a duplicate name", async () => {
@@ -64,24 +163,23 @@ describe("POST /api/mechs", () => {
 
 describe("PUT /api/mechs/:id", () => {
   it("updates fields and replaces the trait set", async () => {
-    const t1 = await prisma.trait.create({ data: { name: "[test:mechs] Old Trait" } });
-    const t2 = await prisma.trait.create({ data: { name: "[test:mechs] New Trait" } });
     const created = await request(app).post("/api/mechs").send({
       name: "[test:mechs] Editable",
       rank: "Standard",
-      traitIds: [t1.id],
+      traitNames: ["[test:mechs] Old Trait"],
     });
     const res = await request(app).put(`/api/mechs/${created.body.id}`).send({
       name: "[test:mechs] Editable v2",
       rank: "S",
-      traitIds: [t2.id],
+      traitNames: ["[test:mechs] New Trait"],
     });
     expect(res.status).toBe(200);
     expect(res.body.name).toBe("[test:mechs] Editable v2");
     expect(res.body.rank).toBe("S");
+    const t2 = await prisma.trait.findUnique({ where: { name: "[test:mechs] New Trait" } });
     const links = await prisma.mechTrait.findMany({ where: { mechId: created.body.id } });
     expect(links).toHaveLength(1);
-    expect(links[0].traitId).toBe(t2.id);
+    expect(links[0].traitId).toBe(t2!.id);
   });
 
   it("404s for an absent id", async () => {

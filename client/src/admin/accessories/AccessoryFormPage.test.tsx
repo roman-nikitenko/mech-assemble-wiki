@@ -13,7 +13,6 @@ const sMechs: MechSummary[] = [
     epithet: null,
     type: null,
     rank: "S",
-    quality: null,
     imageUrl: null,
   },
 ];

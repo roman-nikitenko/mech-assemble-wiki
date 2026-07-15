@@ -12,11 +12,15 @@ const NAV = [
 ];
 
 /** Admin shell: left sidebar on lg+ screens, horizontal scrollable nav bar
-    on phones. Child pages render into the <Outlet/>. */
+    on phones. Child pages render into the <Outlet/>.
+    The sidebar is STICKY: h-screen (not min-h) caps it at the viewport so
+    top-0 pins it while the main column scrolls past — and mt-auto on the
+    "Back to site" link then means "bottom of the screen", not "bottom of
+    however tall the page content is". */
 export function AdminLayout() {
   return (
     <div className="flex min-h-screen flex-col lg:flex-row">
-      <aside className="flex shrink-0 flex-row items-center gap-1 overflow-x-auto border-b border-edge bg-surface p-3 lg:min-h-screen lg:w-56 lg:flex-col lg:items-stretch lg:border-r lg:border-b-0">
+      <aside className="sticky top-0 z-40 flex shrink-0 flex-row items-center gap-1 overflow-x-auto border-b border-edge bg-surface p-3 lg:h-screen lg:w-56 lg:flex-col lg:items-stretch lg:overflow-y-auto lg:border-r lg:border-b-0">
         <p className="hidden px-3 py-2 text-xs font-bold uppercase tracking-widest text-ink-dim lg:block">
           Admin
         </p>

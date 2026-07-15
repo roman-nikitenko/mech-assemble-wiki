@@ -24,7 +24,6 @@ beforeAll(async () => {
       epithet: "Fixture Prime",
       typeId: volt.id,
       rank: "S",
-      quality: "Supreme",
     },
   });
   alphaId = alpha.id;
@@ -95,7 +94,6 @@ describe("GET /api/mechs", () => {
       "id",
       "imageUrl",
       "name",
-      "quality",
       "rank",
       "type",
     ]);

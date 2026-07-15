@@ -15,7 +15,6 @@ const SUMMARY_SELECT = {
   epithet: true,
   type: { select: { id: true, name: true, iconUrl: true } },
   rank: true,
-  quality: true,
   imageUrl: true,
 } as const;
 
@@ -151,16 +150,7 @@ mechsRouter.get("/:id", async (req, res) => {
 mechsRouter.post("/", async (req, res) => {
   const input = parseMechInput(req.body);
   if (!input.ok) return res.status(400).json({ error: input.message });
-  const { traitIds, pilotId, skills, ...fields } = input.value;
-
-  // Check trait ids up front so the client gets a helpful 400 instead of a
-  // cryptic foreign-key error from the database.
-  const found = await prisma.trait.findMany({ where: { id: { in: traitIds } } });
-  if (found.length !== traitIds.length) {
-    const known = new Set(found.map((t) => t.id));
-    const unknown = traitIds.filter((id) => !known.has(id));
-    return res.status(400).json({ error: `Unknown trait ids: ${unknown.join(", ")}` });
-  }
+  const { traitNames, pilotId, skills, skins, ...fields } = input.value;
 
   const pilotError = await validateMechPilotLink(pilotId, fields.rank);
   if (pilotError) return res.status(400).json({ error: pilotError });
@@ -173,7 +163,26 @@ mechsRouter.post("/", async (req, res) => {
       const created = await tx.mech.create({
         data: {
           ...fields,
-          traits: { create: traitIds.map((traitId) => ({ traitId })) },
+          // Traits arrive as NAMES: link the existing catalog trait when one
+          // matches, otherwise create it — the admin never manages trait ids.
+          traits: {
+            create: traitNames.map((name) => ({
+              trait: { connectOrCreate: { where: { name }, create: { name } } },
+            })),
+          },
+          // Skin bonuses are positional: index i = ★(i+1); blanks produce no
+          // star row, so a skin with only a ★3 perk keeps its star number.
+          skins: {
+            create: skins.map((s) => ({
+              name: s.name,
+              imageUrl: s.imageUrl,
+              stars: {
+                create: s.bonuses
+                  .map((perk, i) => ({ star: i + 1, perk }))
+                  .filter((row) => row.perk !== ""),
+              },
+            })),
+          },
         },
         select: SUMMARY_SELECT,
       });
@@ -203,14 +212,7 @@ mechsRouter.put("/:id", async (req, res) => {
 
   const input = parseMechInput(req.body);
   if (!input.ok) return res.status(400).json({ error: input.message });
-  const { traitIds, pilotId, skills, ...fields } = input.value;
-
-  const found = await prisma.trait.findMany({ where: { id: { in: traitIds } } });
-  if (found.length !== traitIds.length) {
-    const known = new Set(found.map((t) => t.id));
-    const unknown = traitIds.filter((tid) => !known.has(tid));
-    return res.status(400).json({ error: `Unknown trait ids: ${unknown.join(", ")}` });
-  }
+  const { traitNames, pilotId, skills, skins, ...fields } = input.value;
 
   const pilotError = await validateMechPilotLink(pilotId, fields.rank);
   if (pilotError) return res.status(400).json({ error: pilotError });
@@ -221,11 +223,30 @@ mechsRouter.put("/:id", async (req, res) => {
   try {
     const mech = await prisma.$transaction(async (tx) => {
       await tx.mechTrait.deleteMany({ where: { mechId: id } });
+      // Replace-the-set, like traits: deleting a skin cascades to its stars.
+      await tx.skin.deleteMany({ where: { mechId: id } });
       const updated = await tx.mech.update({
         where: { id },
         data: {
           ...fields,
-          traits: { create: traitIds.map((traitId) => ({ traitId })) },
+          // Same find-or-create-by-name as POST. Unlinked traits stay in the
+          // catalog — another mech may share them.
+          traits: {
+            create: traitNames.map((name) => ({
+              trait: { connectOrCreate: { where: { name }, create: { name } } },
+            })),
+          },
+          skins: {
+            create: skins.map((s) => ({
+              name: s.name,
+              imageUrl: s.imageUrl,
+              stars: {
+                create: s.bonuses
+                  .map((perk, i) => ({ star: i + 1, perk }))
+                  .filter((row) => row.perk !== ""),
+              },
+            })),
+          },
         },
         select: SUMMARY_SELECT,
       });
