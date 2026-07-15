@@ -98,7 +98,7 @@ export function MechDetailPage() {
       <Tabs tabs={tabs} active={activeTab} onChange={setActiveTab} />
       <div className="py-4">
         {activeTab === "Overview" && <OverviewTab mech={mech} />}
-        {activeTab === "Skills" && <SkillsTab skills={mech.skills} />}
+        {activeTab === "Skills" && <SkillsTab nodes={mech.skillNodes} />}
         {activeTab === "Weapon" && mech.weapon && <WeaponTab weapon={mech.weapon} />}
         {activeTab === "Awaken" && <AwakenTab levels={mech.awakeningLevels} />}
         {activeTab === "Skins & Helpers" && (

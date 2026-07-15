@@ -64,6 +64,7 @@ model Mech {
   skins           Skin[]
   helpers         Helper[]
   pilot           Pilot?
+  skillNodes      SkillNode[]
 
   @@map("mechs")
 }
@@ -112,10 +113,14 @@ model WeaponSkin {
 // ---------- Skill tree (generic; weapons this cycle, mechs later) ----------
 
 // Replaces the old weapon_upgrades system (dormant since Cycle I; cleanup is
-// a future cycle). Mechs will join by adding a nullable mech_id alongside.
+// a future cycle). Dual-owner since Cycle J.
 model SkillNode {
-  id       String  @id @default(uuid()) @db.Uuid
-  weaponId String  @map("weapon_id") @db.Uuid
+  id String @id @default(uuid()) @db.Uuid
+  // Dual-owner since Cycle J (like helpers): EXACTLY ONE of weaponId/mechId
+  // is set — enforced by the writers (each router sets only its own owner),
+  // not by the DB.
+  weaponId String? @map("weapon_id") @db.Uuid
+  mechId   String? @map("mech_id") @db.Uuid
   // Any-depth inheritance: parent points at a node in the SAME tree.
   // Named self-relation, like the older upgrade trees.
   parentId String? @map("parent_id") @db.Uuid
@@ -128,7 +133,8 @@ model SkillNode {
   // Sibling position; written by the drag-and-drop editor.
   sortOrder Int @default(0) @map("sort_order")
 
-  weapon   Weapon      @relation(fields: [weaponId], references: [id], onDelete: Cascade)
+  weapon   Weapon?     @relation(fields: [weaponId], references: [id], onDelete: Cascade)
+  mech     Mech?       @relation(fields: [mechId], references: [id], onDelete: Cascade)
   parent   SkillNode?  @relation("SkillNodeTree", fields: [parentId], references: [id])
   children SkillNode[] @relation("SkillNodeTree")
 

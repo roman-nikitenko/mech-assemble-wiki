@@ -1,4 +1,5 @@
 import { MechRank } from "@prisma/client";
+import { parseSkillNodes, type SkillNodeInput } from "./skill-node-input";
 
 // Shared validation for POST and PUT /api/mechs. Returns either a clean,
 // typed payload or a user-facing error message. Kept out of the router so
@@ -19,6 +20,7 @@ export interface MechInput {
   // null = explicitly vacate, string = assign that pilot (moving them from
   // any other mech).
   pilotId: string | null | undefined;
+  skills: SkillNodeInput[];
 }
 
 type ParseResult = { ok: true; value: MechInput } | { ok: false; message: string };
@@ -74,6 +76,9 @@ export function parseMechInput(body: unknown): ParseResult {
     parsed[field] = v;
   }
 
+  const skillsResult = parseSkillNodes(b.skills);
+  if (!skillsResult.ok) return skillsResult;
+
   return {
     ok: true,
     value: {
@@ -88,6 +93,7 @@ export function parseMechInput(body: unknown): ParseResult {
       pilotName: parsed.pilotName,
       lore: parsed.lore,
       imageUrl: parsed.imageUrl,
+      skills: skillsResult.value,
     },
   };
 }

@@ -200,6 +200,7 @@ export interface MechDetail extends MechSummary {
   pilot: { id: string; name: string } | null;
   skins: Skin[];
   helpers: Helper[];
+  skillNodes: SkillNodeRow[];
 }
 
 /** A catalog trait, as served by GET /api/traits. */
@@ -222,6 +223,13 @@ export interface MechInput {
   imageUrl?: string | null;
   traitIds?: string[];
   pilotId?: string | null;
+  skills?: {
+    name: string | null;
+    description: string | null;
+    appearanceLevel: number;
+    type: SkillNodeType;
+    parentIndex: number | null;
+  }[];
 }
 
 /** A pilot, as served by /api/pilots (always carries its linked mech or null). */

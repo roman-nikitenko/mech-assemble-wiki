@@ -1,7 +1,8 @@
 import { Router } from "express";
 import { Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma";
-import { parseWeaponInput, WeaponSkillNodeInput } from "../lib/weapon-input";
+import { parseWeaponInput } from "../lib/weapon-input";
+import { createSkillNodes } from "../lib/skill-nodes";
 import { UUID_RE } from "../lib/uuid";
 
 export const weaponsRouter = Router();
@@ -41,34 +42,6 @@ async function validateWeaponLinks(input: {
   return null;
 }
 
-// Creates the skill tree parent-first: parentIndex always points at an
-// EARLIER entry, so by the time a child is created its parent's real id is
-// already known. sortOrder counts previous siblings (same parentIndex).
-async function createSkillNodes(
-  tx: Prisma.TransactionClient,
-  weaponId: string,
-  skills: WeaponSkillNodeInput[]
-) {
-  const createdIds: string[] = [];
-  const siblingCounts = new Map<number | null, number>();
-  for (const entry of skills) {
-    const order = siblingCounts.get(entry.parentIndex) ?? 0;
-    siblingCounts.set(entry.parentIndex, order + 1);
-    const node = await tx.skillNode.create({
-      data: {
-        weaponId,
-        parentId: entry.parentIndex === null ? null : createdIds[entry.parentIndex],
-        name: entry.name,
-        description: entry.description,
-        appearanceLevel: entry.appearanceLevel,
-        type: entry.type,
-        sortOrder: order,
-      },
-    });
-    createdIds.push(node.id);
-  }
-}
-
 // GET /api/weapons
 weaponsRouter.get("/", async (_req, res) => {
   const weapons = await prisma.weapon.findMany({
@@ -97,7 +70,7 @@ weaponsRouter.post("/", async (req, res) => {
         },
         select: { id: true },
       });
-      await createSkillNodes(tx, created.id, skills);
+      await createSkillNodes(tx, { weaponId: created.id }, skills);
       if (pilotId !== undefined && pilotId !== null) {
         // One update covers the whole either/or rule: it overwrites any
         // previous weapon link and clears any mech link.
@@ -152,7 +125,7 @@ weaponsRouter.put("/:id", async (req, res) => {
       });
       // Replace the whole skill tree — same set semantics as the skins.
       await tx.skillNode.deleteMany({ where: { weaponId: id } });
-      await createSkillNodes(tx, id, skills);
+      await createSkillNodes(tx, { weaponId: id }, skills);
       // Tri-state: undefined = leave the pilot link as-is; null = vacate;
       // string = vacate then seat (clearing the pilot's mech — either/or).
       if (pilotId !== undefined) {

@@ -141,33 +141,47 @@ function SkillRow({
   const displayName =
     draft.type === "Core" ? "Core skill" : draft.name.trim() === "" ? "(unnamed skill)" : draft.name;
 
+  // The header bar wears the skill type's color (user-specified hex values,
+  // defined as theme tokens in index.css): Normal keeps the plain surface.
+  const headerColor =
+    draft.type === "Premium"
+      ? "bg-skill-premium text-white"
+      : draft.type === "Core"
+        ? "bg-skill-core text-white"
+        : "";
+  const headerMuted = draft.type === "Normal" ? "text-ink-dim" : "text-white/70";
+
   return (
     <div
       ref={setNodeRef}
       style={{ ...style, marginLeft: depth * INDENT_PX }}
-      className="rounded-xl border border-edge bg-surface"
+      className="overflow-hidden rounded-xl border border-edge bg-surface"
     >
-      <div className="flex min-h-11 items-center gap-2 px-3 py-2">
+      <div className={`flex min-h-11 items-center gap-2 px-3 py-2 ${headerColor}`}>
         {/* drag handle — the ONLY part that starts a drag */}
         <button
           type="button"
           aria-label={`Drag ${displayName}`}
-          className="cursor-grab text-ink-dim"
+          className={`cursor-grab ${headerMuted}`}
           {...attributes}
           {...listeners}
         >
           ⠿
         </button>
-        <span className={draft.type === "Core" ? "italic text-accent" : "font-semibold"}>
+        <span
+          className={
+            draft.type === "Core" ? "italic font-semibold" : "font-semibold"
+          }
+        >
           {displayName}
         </span>
-        {depth > 0 && <span className="text-xs italic text-ink-dim">sub item</span>}
-        <span className="ml-auto text-xs text-ink-dim">{draft.type}</span>
+        {depth > 0 && <span className={`text-xs italic ${headerMuted}`}>sub item</span>}
+        <span className={`ml-auto text-xs ${headerMuted}`}>{draft.type}</span>
         <button
           type="button"
           aria-label={`Outdent ${displayName}`}
           onClick={onOutdent}
-          className="rounded border border-edge px-1.5 text-xs text-ink-dim hover:text-ink"
+          className={`rounded border border-edge px-1.5 text-xs ${headerMuted} hover:text-ink`}
         >
           ◀
         </button>
@@ -175,7 +189,7 @@ function SkillRow({
           type="button"
           aria-label={`Indent ${displayName}`}
           onClick={onIndent}
-          className="rounded border border-edge px-1.5 text-xs text-ink-dim hover:text-ink"
+          className={`rounded border border-edge px-1.5 text-xs ${headerMuted} hover:text-ink`}
         >
           ▶
         </button>
@@ -183,7 +197,7 @@ function SkillRow({
           type="button"
           aria-label={`Toggle ${displayName}`}
           onClick={() => onPatch({ expanded: !draft.expanded })}
-          className="rounded border border-edge px-1.5 text-xs text-ink-dim hover:text-ink"
+          className={`rounded border border-edge px-1.5 text-xs ${headerMuted} hover:text-ink`}
         >
           {draft.expanded ? "▲" : "▼"}
         </button>

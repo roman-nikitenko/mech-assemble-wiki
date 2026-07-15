@@ -11,6 +11,8 @@ import {
 } from "../../api/client";
 import type { MechInput, MechRank } from "../../api/types";
 import { ImageUploadField } from "../ImageUploadField";
+import { SkillTreeEditor } from "../skilltree/SkillTreeEditor";
+import { draftsFromNodes, serializeDrafts, type SkillDraft } from "../skilltree/skillTreeDrafts";
 
 const RANKS: MechRank[] = ["Standard", "S"];
 
@@ -33,6 +35,7 @@ export function MechFormPage() {
 
   const [form, setForm] = useState<MechInput>(EMPTY);
   const [newTrait, setNewTrait] = useState("");
+  const [skillDrafts, setSkillDrafts] = useState<SkillDraft[]>([]);
 
   // Prefill once the existing mech arrives (edit mode only).
   useEffect(() => {
@@ -51,6 +54,7 @@ export function MechFormPage() {
         traitIds: m.traits.map((t) => t.trait.id),
         pilotId: m.pilot?.id ?? null,
       });
+      setSkillDrafts(draftsFromNodes(m.skillNodes));
     }
   }, [isEdit, existing.data]);
 
@@ -87,10 +91,12 @@ export function MechFormPage() {
     );
   }
 
+  const skillNameMissing = skillDrafts.some((d) => d.type !== "Core" && d.name.trim() === "");
+
   function submit(e: React.FormEvent) {
     e.preventDefault();
     // A non-S mech can't keep a pilot — clear the link if rank was switched.
-    const payload = { ...form, pilotId: form.rank === "S" ? form.pilotId : null };
+    const payload = { ...form, pilotId: form.rank === "S" ? form.pilotId : null, skills: serializeDrafts(skillDrafts) };
     mutation.mutate(payload, { onSuccess: () => navigate("/admin/mechs") });
   }
 
@@ -240,11 +246,20 @@ export function MechFormPage() {
 
         <ImageUploadField value={form.imageUrl ?? null} onChange={(url) => set("imageUrl", url)} />
 
+        <fieldset>
+          <legend className="mb-1 text-sm font-semibold">Skills</legend>
+          <p className="mb-2 text-xs text-ink-dim">
+            Drag rows to reorder; drag right (or use ▶) to inherit from the
+            skill above. Core skills have no name — only a description.
+          </p>
+          <SkillTreeEditor drafts={skillDrafts} onChange={setSkillDrafts} />
+        </fieldset>
+
         {mutation.isError && <p className="text-sm text-fire">{(mutation.error as Error).message}</p>}
 
         <button
           type="submit"
-          disabled={form.name.trim() === "" || mutation.isPending}
+          disabled={form.name.trim() === "" || mutation.isPending || skillNameMissing}
           className="min-h-11 rounded-lg bg-accent px-6 font-semibold text-bg hover:brightness-110 disabled:opacity-60"
         >
           {mutation.isPending ? "Saving…" : isEdit ? "Save changes" : "Create mech"}

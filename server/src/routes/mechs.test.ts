@@ -29,23 +29,30 @@ beforeAll(async () => {
   });
   alphaId = alpha.id;
 
-  // skill with a 3-level upgrade tree (root -> child -> evolution grandchild)
-  // so the detail test still proves the tree has no depth cap.
-  const zap = await prisma.mechSkill.create({
-    data: { mechId: alpha.id, name: `${P}Zap` },
+  // 3-level NEW-system skill tree (root -> Premium child -> Core grandchild)
+  // — preserves the "no depth cap" detail assertion on skill_nodes.
+  const zapRoot = await prisma.skillNode.create({
+    data: { mechId: alpha.id, name: `${P}Zap I`, appearanceLevel: 1, sortOrder: 0 },
   });
-  const root = await prisma.skillUpgrade.create({
-    data: { skillId: zap.id, name: `${P}Zap I` },
-  });
-  const child = await prisma.skillUpgrade.create({
-    data: { skillId: zap.id, parentId: root.id, name: `${P}Zap II` },
-  });
-  await prisma.skillUpgrade.create({
+  const zapChild = await prisma.skillNode.create({
     data: {
-      skillId: zap.id,
-      parentId: child.id,
-      name: `${P}Zap Evolution`,
-      isEvolution: true,
+      mechId: alpha.id,
+      parentId: zapRoot.id,
+      name: `${P}Zap II`,
+      appearanceLevel: 3,
+      type: "Premium",
+      sortOrder: 0,
+    },
+  });
+  await prisma.skillNode.create({
+    data: {
+      mechId: alpha.id,
+      parentId: zapChild.id,
+      name: null,
+      description: `${P}core secret`,
+      appearanceLevel: 10,
+      type: "Core",
+      sortOrder: 0,
     },
   });
 
@@ -126,13 +133,16 @@ describe("GET /api/mechs/:id", () => {
     expect(res.status).toBe(200);
     expect(res.body.weapon.name).toBe(`${P}Arc Blade`);
 
-    const zap = res.body.skills.find((s: { name: string }) => s.name === `${P}Zap`);
-    // root -> child -> grandchild: proves the tree has no depth cap
-    const root = zap.upgrades.find((u: { name: string }) => u.name === `${P}Zap I`);
-    const child = root.children.find((c: { name: string }) => c.name === `${P}Zap II`);
-    const evolution = child.children[0];
-    expect(evolution.name).toBe(`${P}Zap Evolution`);
-    expect(evolution.isEvolution).toBe(true);
+    const nodes = res.body.skillNodes;
+    expect(nodes).toHaveLength(3);
+    const root = nodes.find((n: { name: string | null }) => n.name === `${P}Zap I`);
+    const child = nodes.find((n: { name: string | null }) => n.name === `${P}Zap II`);
+    const core = nodes.find((n: { type: string }) => n.type === "Core");
+    expect(root.parentId).toBeNull();
+    expect(child.parentId).toBe(root.id);
+    // grandchild depth — proves the tree has no depth cap
+    expect(core.parentId).toBe(child.id);
+    expect(core.name).toBeNull();
 
     expect(res.body.weapon.weaponSkins).toHaveLength(1);
     expect(res.body.weapon.helpers).toHaveLength(1);

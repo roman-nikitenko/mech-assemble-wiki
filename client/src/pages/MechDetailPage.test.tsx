@@ -25,6 +25,7 @@ const bareMech: MechDetail = {
   pilot: null,
   skins: [],
   helpers: [],
+  skillNodes: [],
 };
 
 /** Stubs fetch to return the given mech, then renders the page at its URL. */

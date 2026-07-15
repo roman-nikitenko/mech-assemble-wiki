@@ -3,6 +3,7 @@ import { MechRank, Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma";
 import { buildTree } from "../lib/build-tree";
 import { parseMechInput } from "../lib/mech-input";
+import { createSkillNodes } from "../lib/skill-nodes";
 import { UUID_RE } from "../lib/uuid";
 
 export const mechsRouter = Router();
@@ -108,6 +109,7 @@ const detailInclude = {
   accessory: true,
   type: { select: { id: true, name: true, iconUrl: true } },
   pilot: { select: { id: true, name: true } },
+  skillNodes: { orderBy: { sortOrder: "asc" as const } },
   skins: { include: { stars: { orderBy: { star: "asc" } } } },
   helpers: { include: { ranks: { orderBy: { rank: "asc" } } } },
 } satisfies Prisma.MechInclude;
@@ -149,7 +151,7 @@ mechsRouter.get("/:id", async (req, res) => {
 mechsRouter.post("/", async (req, res) => {
   const input = parseMechInput(req.body);
   if (!input.ok) return res.status(400).json({ error: input.message });
-  const { traitIds, pilotId, ...fields } = input.value;
+  const { traitIds, pilotId, skills, ...fields } = input.value;
 
   // Check trait ids up front so the client gets a helpful 400 instead of a
   // cryptic foreign-key error from the database.
@@ -182,6 +184,7 @@ mechsRouter.post("/", async (req, res) => {
         // either/or: seating into a mech un-seats from any weapon
         await tx.pilot.update({ where: { id: pilotId }, data: { mechId: created.id, weaponId: null } });
       }
+      await createSkillNodes(tx, { mechId: created.id }, skills);
       return created;
     });
     res.status(201).json(mech);
@@ -200,7 +203,7 @@ mechsRouter.put("/:id", async (req, res) => {
 
   const input = parseMechInput(req.body);
   if (!input.ok) return res.status(400).json({ error: input.message });
-  const { traitIds, pilotId, ...fields } = input.value;
+  const { traitIds, pilotId, skills, ...fields } = input.value;
 
   const found = await prisma.trait.findMany({ where: { id: { in: traitIds } } });
   if (found.length !== traitIds.length) {
@@ -235,6 +238,9 @@ mechsRouter.put("/:id", async (req, res) => {
           await tx.pilot.update({ where: { id: pilotId }, data: { mechId: id, weaponId: null } });
         }
       }
+      // Replace the mech's whole skill tree — same set semantics as weapons.
+      await tx.skillNode.deleteMany({ where: { mechId: id } });
+      await createSkillNodes(tx, { mechId: id }, skills);
       return updated;
     });
     res.json(mech);

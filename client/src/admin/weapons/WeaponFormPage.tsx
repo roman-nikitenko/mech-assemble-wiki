@@ -10,8 +10,8 @@ import {
 } from "../../api/client";
 import type { MechRank, WeaponInput } from "../../api/types";
 import { ImageUploadField } from "../ImageUploadField";
-import { SkillTreeEditor } from "./SkillTreeEditor";
-import { draftsFromNodes, serializeDrafts, type SkillDraft } from "./skillTreeDrafts";
+import { SkillTreeEditor } from "../skilltree/SkillTreeEditor";
+import { draftsFromNodes, serializeDrafts, type SkillDraft } from "../skilltree/skillTreeDrafts";
 
 const TIERS: MechRank[] = ["Standard", "S"];
 

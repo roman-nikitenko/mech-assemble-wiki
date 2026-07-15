@@ -1,4 +1,5 @@
-import { MechRank, SkillNodeType } from "@prisma/client";
+import { MechRank } from "@prisma/client";
+import { parseSkillNodes, type SkillNodeInput } from "./skill-node-input";
 
 // Shared validation for POST and PUT /api/weapons — the same pattern as
 // mech-input.ts / pilot-input.ts.
@@ -7,17 +8,6 @@ export interface WeaponSkinInput {
   name: string;
   bonuses: string[];
   imageUrl: string | null;
-}
-
-// One skill-tree entry in the payload's FLAT list. parentIndex points at an
-// EARLIER entry in the same array (null = root) — parents-first by
-// construction, which also makes cycles impossible.
-export interface WeaponSkillNodeInput {
-  name: string | null;
-  description: string | null;
-  appearanceLevel: number;
-  type: SkillNodeType;
-  parentIndex: number | null;
 }
 
 export interface WeaponInput {
@@ -35,7 +25,7 @@ export interface WeaponInput {
   imageUrl: string | null;
   iconUrl: string | null;
   skins: WeaponSkinInput[];
-  skills: WeaponSkillNodeInput[];
+  skills: SkillNodeInput[];
 }
 
 type ParseResult = { ok: true; value: WeaponInput } | { ok: false; message: string };
@@ -108,63 +98,9 @@ export function parseWeaponInput(body: unknown): ParseResult {
     }
   }
 
-  // Skill tree: flat list, parents first. Core skills have NO name (forced
-  // null); Normal/Premium require one. appearanceLevel is the weapon level
-  // (1-10) from which the skill is available.
-  const skills: WeaponSkillNodeInput[] = [];
-  if (b.skills !== undefined) {
-    if (!Array.isArray(b.skills)) {
-      return { ok: false, message: "skills must be an array." };
-    }
-    const validTypes = Object.values(SkillNodeType);
-    for (let i = 0; i < b.skills.length; i++) {
-      const raw = b.skills[i];
-      if (typeof raw !== "object" || raw === null) {
-        return { ok: false, message: "Every skill must be an object." };
-      }
-      const s = raw as Record<string, unknown>;
-      if (typeof s.type !== "string" || !(validTypes as string[]).includes(s.type)) {
-        return {
-          ok: false,
-          message: `Invalid skill type '${String(s.type)}'. Valid values: ${validTypes.join(", ")}`,
-        };
-      }
-      const type = s.type as SkillNodeType;
-      let name: string | null = null;
-      if (type === "Core") {
-        name = null; // Core skills have no name — forced, not trusted
-      } else {
-        if (typeof s.name !== "string" || s.name.trim() === "") {
-          return { ok: false, message: "Every Normal/Premium skill needs a name." };
-        }
-        name = s.name.trim();
-      }
-      const description = optionalString(s.description);
-      if (description === undefined) {
-        return { ok: false, message: "Skill description must be a string." };
-      }
-      if (
-        typeof s.appearanceLevel !== "number" ||
-        !Number.isInteger(s.appearanceLevel) ||
-        s.appearanceLevel < 1 ||
-        s.appearanceLevel > 10
-      ) {
-        return { ok: false, message: "Skill appearanceLevel must be an integer from 1 to 10." };
-      }
-      if (s.parentIndex !== null && s.parentIndex !== undefined) {
-        if (!Number.isInteger(s.parentIndex) || (s.parentIndex as number) < 0 || (s.parentIndex as number) >= i) {
-          return { ok: false, message: "skill parentIndex must reference an earlier entry." };
-        }
-      }
-      skills.push({
-        name,
-        description,
-        appearanceLevel: s.appearanceLevel,
-        type,
-        parentIndex: (s.parentIndex as number | null | undefined) ?? null,
-      });
-    }
-  }
+  const skillsResult = parseSkillNodes(b.skills);
+  if (!skillsResult.ok) return skillsResult;
+  const skills = skillsResult.value;
 
   for (const field of ["typeId", "mechId"] as const) {
     if (b[field] !== undefined && b[field] !== null && typeof b[field] !== "string") {

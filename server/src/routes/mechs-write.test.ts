@@ -247,3 +247,55 @@ describe("mech type link", () => {
     expect(res.body.error).toContain("Unknown type id");
   });
 });
+
+describe("mech skill tree", () => {
+  it("creates a 3-level tree on a mech via parentIndex", async () => {
+    const res = await request(app).post("/api/mechs").send({
+      name: "[test:mechs] Skilled Mech",
+      rank: "S",
+      skills: [
+        { name: "Slash", description: "base", appearanceLevel: 1, type: "Normal", parentIndex: null },
+        { name: "Double Slash", description: null, appearanceLevel: 4, type: "Premium", parentIndex: 0 },
+        { name: null, description: "hidden core", appearanceLevel: 10, type: "Core", parentIndex: 1 },
+      ],
+    });
+    expect(res.status).toBe(201);
+    const nodes = await prisma.skillNode.findMany({ where: { mechId: res.body.id } });
+    expect(nodes).toHaveLength(3);
+    const root = nodes.find((n) => n.name === "Slash")!;
+    const child = nodes.find((n) => n.name === "Double Slash")!;
+    const core = nodes.find((n) => n.type === "Core")!;
+    expect(child.parentId).toBe(root.id);
+    expect(core.parentId).toBe(child.id);
+    expect(core.name).toBeNull();
+    expect(core.weaponId).toBeNull(); // mech-owned, not weapon-owned
+  });
+
+  it("PUT replaces the mech's whole tree", async () => {
+    const created = await request(app).post("/api/mechs").send({
+      name: "[test:mechs] Retrained Mech",
+      rank: "Standard",
+      skills: [{ name: "Old", description: null, appearanceLevel: 1, type: "Normal", parentIndex: null }],
+    });
+    const res = await request(app).put(`/api/mechs/${created.body.id}`).send({
+      name: "[test:mechs] Retrained Mech",
+      rank: "Standard",
+      skills: [{ name: "New", description: null, appearanceLevel: 2, type: "Normal", parentIndex: null }],
+    });
+    expect(res.status).toBe(200);
+    const nodes = await prisma.skillNode.findMany({ where: { mechId: created.body.id } });
+    expect(nodes.map((n) => n.name)).toEqual(["New"]);
+  });
+
+  it("DELETE mech cascades its skill nodes", async () => {
+    const created = await request(app).post("/api/mechs").send({
+      name: "[test:mechs] Forgetful Mech",
+      rank: "Standard",
+      skills: [{ name: "Doomed", description: null, appearanceLevel: 1, type: "Normal", parentIndex: null }],
+    });
+    const id = created.body.id;
+    const res = await request(app).delete(`/api/mechs/${id}`);
+    expect(res.status).toBe(204);
+    expect(await prisma.skillNode.findMany({ where: { mechId: id } })).toEqual([]);
+  });
+});
