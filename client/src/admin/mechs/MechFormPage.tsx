@@ -62,6 +62,7 @@ export function MechFormPage() {
         lore: m.lore,
         imageUrl: m.imageUrl,
         iconUrl: m.iconUrl,
+        cardSkillIconUrl: m.cardSkillIconUrl,
         traitNames: m.traits.map((t) => t.trait.name),
         pilotId: m.pilot?.id ?? null,
       });
@@ -293,7 +294,7 @@ export function MechFormPage() {
           </button>
         </fieldset>
 
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-4 sm:grid-cols-3">
           <ImageUploadField
             label="Image"
             value={form.imageUrl ?? null}
@@ -303,6 +304,11 @@ export function MechFormPage() {
             label="Icon"
             value={form.iconUrl ?? null}
             onChange={(url) => set("iconUrl", url)}
+          />
+          <ImageUploadField
+            label="Card skill icon"
+            value={form.cardSkillIconUrl ?? null}
+            onChange={(url) => set("cardSkillIconUrl", url)}
           />
         </div>
 

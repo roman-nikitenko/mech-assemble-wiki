@@ -184,6 +184,8 @@ export interface MechDetail extends MechSummary {
   specialBonus: string | null;
   lore: string | null;
   iconUrl: string | null;
+  // Art shown inside this mech's skill cards (build editor).
+  cardSkillIconUrl: string | null;
   // Positional (index = rank): interior entries may be "" on purpose.
   rankUpPreview: string[];
   skills: Skill[];
@@ -225,6 +227,7 @@ export interface MechInput {
   skins?: { name: string; bonuses: string[]; imageUrl?: string | null }[];
   imageUrl?: string | null;
   iconUrl?: string | null;
+  cardSkillIconUrl?: string | null;
   // Trait NAMES, not ids — the server finds-or-creates catalog rows by name.
   traitNames?: string[];
   pilotId?: string | null;

@@ -25,6 +25,7 @@ describe("POST /api/mechs", () => {
       epithet: "Wall Breaker",
       rank: "Standard",
       iconUrl: "/uploads/colossus-icon.png",
+      cardSkillIconUrl: "/uploads/colossus-card.png",
       traitNames: ["[test:mechs] Piercer"],
     });
     expect(res.status).toBe(201);
@@ -39,6 +40,7 @@ describe("POST /api/mechs", () => {
     // iconUrl isn't in the summary response — verify it landed via the DB.
     const stored = await prisma.mech.findUnique({ where: { id: res.body.id } });
     expect(stored?.iconUrl).toBe("/uploads/colossus-icon.png");
+    expect(stored?.cardSkillIconUrl).toBe("/uploads/colossus-card.png");
   });
 
   it("reuses an existing catalog trait instead of duplicating it", async () => {

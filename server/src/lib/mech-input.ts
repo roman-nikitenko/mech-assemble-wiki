@@ -25,6 +25,7 @@ export interface MechInput {
   rankUpPreview: string[];
   imageUrl: string | null;
   iconUrl: string | null;
+  cardSkillIconUrl: string | null;
   // Trait NAMES, not ids: the admin types them as free text and the router
   // finds-or-creates the catalog rows, so the client never manages trait ids.
   traitNames: string[];
@@ -86,7 +87,7 @@ export function parseMechInput(body: unknown): ParseResult {
     return { ok: false, message: "pilotId must be a pilot id string or null." };
   }
 
-  const optionalFields = ["epithet", "specialBonus", "lore", "imageUrl", "iconUrl"] as const;
+  const optionalFields = ["epithet", "specialBonus", "lore", "imageUrl", "iconUrl", "cardSkillIconUrl"] as const;
   const parsed: Record<string, string | null> = {};
   for (const field of optionalFields) {
     const v = optionalString(b[field]);
@@ -163,6 +164,7 @@ export function parseMechInput(body: unknown): ParseResult {
       rankUpPreview,
       imageUrl: parsed.imageUrl,
       iconUrl: parsed.iconUrl,
+      cardSkillIconUrl: parsed.cardSkillIconUrl,
       skills: skillsResult.value,
       skins,
     },

@@ -14,6 +14,7 @@ const bareMech: MechDetail = {
   rank: "Standard",
   imageUrl: null,
   iconUrl: null,
+  cardSkillIconUrl: null,
   specialBonus: null,
   lore: null,
   rankUpPreview: [],

@@ -37,6 +37,8 @@ export function useMech(id: string) {
   return useQuery({
     queryKey: ["mech", id],
     queryFn: () => fetchJson<MechDetail>(`/api/mechs/${id}`),
+    // The build editor calls useMech("") before a mech is chosen — don't fetch.
+    enabled: id !== "",
     retry: (failureCount, error) =>
       !(error instanceof NotFoundError) && failureCount < 3,
   });
