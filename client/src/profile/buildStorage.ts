@@ -6,8 +6,11 @@ export interface BuildRecord {
   id: string;
   name: string;
   description: string; // "" when empty
-  mechId: string;
-  skillIds: string[]; // ≤ 8, slot order = pick order
+  // A build is for a mech OR a weapon — exactly one is set (the same
+  // either/or pattern the wiki DB uses for pilots and skill nodes).
+  mechId: string | null;
+  weaponId: string | null;
+  skillIds: string[]; // the SUBJECT's skill picks; ≤ 8, slot order = pick order
   weaponIds: string[]; // ≤ 4, the corner squares on the build banner
   // Per-weapon skill picks, keyed by weapon id (each ≤ 8, same rules).
   weaponSkillIds: Record<string, string[]>;
@@ -27,6 +30,7 @@ export function listBuilds(): BuildRecord[] {
     // so the rest of the app can trust them.
     return (parsed as BuildRecord[]).map((b) => ({
       ...b,
+      weaponId: b.weaponId ?? null,
       weaponIds: b.weaponIds ?? [],
       weaponSkillIds: b.weaponSkillIds ?? {},
     }));

@@ -6,6 +6,7 @@ const rec = (over: Partial<BuildRecord> = {}): BuildRecord => ({
   name: "Test build",
   description: "",
   mechId: "m1",
+  weaponId: null,
   skillIds: [],
   weaponIds: [],
   weaponSkillIds: {},
@@ -52,8 +53,9 @@ describe("buildStorage", () => {
   });
 
   it("defaults late-arriving fields for builds saved before they existed", () => {
-    const { weaponIds: _w, weaponSkillIds: _ws, ...legacy } = rec();
+    const { weaponId: _wid, weaponIds: _w, weaponSkillIds: _ws, ...legacy } = rec();
     localStorage.setItem("mech-wiki:builds", JSON.stringify([legacy]));
+    expect(listBuilds()[0].weaponId).toBeNull();
     expect(listBuilds()[0].weaponIds).toEqual([]);
     expect(listBuilds()[0].weaponSkillIds).toEqual({});
   });

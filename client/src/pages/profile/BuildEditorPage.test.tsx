@@ -37,6 +37,7 @@ const detail: MechDetail = {
     { id: "s2", parentId: "s1", name: "Zap II", description: "Bigger bolt", appearanceLevel: 1, type: "Premium", sortOrder: 1 },
     { id: "s3", parentId: null, name: "Overdrive", description: null, appearanceLevel: 3, type: "Normal", sortOrder: 2 },
     { id: "s4", parentId: null, name: "Dash", description: null, appearanceLevel: 1, type: "Normal", sortOrder: 3 },
+    { id: "s5", parentId: null, name: null, description: "Core power", appearanceLevel: 1, type: "Core", sortOrder: 4 },
   ],
 };
 
@@ -194,6 +195,43 @@ describe("BuildEditorPage (new build)", () => {
     expect(screen.getByLabelText("Empty weapon slot 1")).toBeInTheDocument();
   });
 
+  it("a picked Core skill fills a Core slot, not one of the 8", async () => {
+    renderEditor();
+    await userEvent.click(await screen.findByRole("button", { name: /Iron Colossus/ }));
+    expect(await screen.findByText("Core slot 1")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: /Core skill Core power/ }));
+    expect(
+      screen.getByRole("button", { name: "Remove Core skill from the build" })
+    ).toBeInTheDocument();
+    expect(screen.getByText("Slot 1")).toBeInTheDocument(); // the 8 regular slots stay empty
+    expect(screen.queryByText("Core slot 1")).not.toBeInTheDocument();
+  });
+
+  it("creates a weapon-only build from the picker's weapon section", async () => {
+    renderEditor();
+    // the picker offers weapons below the mechs
+    await userEvent.click(await screen.findByRole("button", { name: /Blade of Dawn/ }));
+    // weapon board: its skills block is open; no strip, no corner squares
+    expect(await screen.findByRole("button", { name: /Blade of Dawn skills/ })).toHaveAttribute(
+      "aria-expanded",
+      "true"
+    );
+    expect(screen.queryByLabelText("Filter weapons by name")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Empty weapon slot 1")).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: /^Slash Cuts/ }));
+    await userEvent.type(screen.getByLabelText("Build name *"), "Blade only");
+    await userEvent.click(screen.getByRole("button", { name: "Save build" }));
+    await screen.findByText("profile list");
+    expect(listBuilds()[0]).toMatchObject({
+      name: "Blade only",
+      mechId: null,
+      weaponId: "w1",
+      skillIds: ["ws1"],
+      weaponIds: [],
+      weaponSkillIds: {},
+    });
+  });
+
   it("each equipped weapon gets its own expandable skills block", async () => {
     renderEditor();
     await userEvent.click(await screen.findByRole("button", { name: /Iron Colossus/ }));
@@ -234,6 +272,7 @@ describe("BuildEditorPage (edit mode)", () => {
       name: "Saved rush",
       description: "old notes",
       mechId: "m1",
+      weaponId: null,
       skillIds: ["s1"],
       weaponIds: ["w1"],
       weaponSkillIds: {},

@@ -1,6 +1,10 @@
 import type { SkillNodeRow } from "../api/types";
 
+// Normal/Premium skills share the 8 slots per mech/weapon; Core skills are
+// ADDITIONAL and capped BUILD-WIDE: during a run you choose just 3 core
+// skills across the mech and all weapons combined.
 export const MAX_SLOTS = 8;
+export const MAX_CORE_SLOTS = 3;
 
 /** Core skills have no name by design — show a stable label instead. */
 export function skillDisplayName(skill: SkillNodeRow): string {
@@ -22,9 +26,13 @@ function parentSatisfied(candidate: SkillNodeRow, picked: SkillNodeRow[]): boole
 export function canPick(
   candidate: SkillNodeRow,
   picked: SkillNodeRow[],
-  all: SkillNodeRow[]
+  all: SkillNodeRow[],
+  globalCoreCount?: number
 ): boolean {
-  return lockReason(candidate, picked, all) === null && !picked.some((p) => p.id === candidate.id);
+  return (
+    lockReason(candidate, picked, all, globalCoreCount) === null &&
+    !picked.some((p) => p.id === candidate.id)
+  );
 }
 
 /** Why a card is locked, or null when it's pickable. An already-picked
@@ -32,10 +40,24 @@ export function canPick(
 export function lockReason(
   candidate: SkillNodeRow,
   picked: SkillNodeRow[],
-  all: SkillNodeRow[]
+  all: SkillNodeRow[],
+  // The core cap is BUILD-WIDE — the caller passes the total across the
+  // mech and every weapon. Falls back to counting `picked` when absent.
+  globalCoreCount?: number
 ): string | null {
   if (picked.some((p) => p.id === candidate.id)) return null;
-  if (picked.length >= MAX_SLOTS) return `Build is full (${MAX_SLOTS}/${MAX_SLOTS})`;
+  // Capacity: Core skills fill the build's 3 extra slots and never compete
+  // with the 8 regular ones (or vice versa).
+  if (candidate.type === "Core") {
+    const coreCount = globalCoreCount ?? picked.filter((p) => p.type === "Core").length;
+    if (coreCount >= MAX_CORE_SLOTS) {
+      return `Core slots are full (${MAX_CORE_SLOTS}/${MAX_CORE_SLOTS})`;
+    }
+  } else if (picked.filter((p) => p.type !== "Core").length >= MAX_SLOTS) {
+    return `Build is full (${MAX_SLOTS}/${MAX_SLOTS})`;
+  }
+  // The level gate still counts ALL picks (Core included) — picking any
+  // skill raises your level in the game.
   if (!levelSatisfied(candidate.appearanceLevel, picked.length)) {
     return `Unlocks after ${candidate.appearanceLevel} picks`;
   }

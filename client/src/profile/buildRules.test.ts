@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { SkillNodeRow } from "../api/types";
-import { MAX_SLOTS, canPick, familyOrder, lockReason, normalizePicks, skillDisplayName } from "./buildRules";
+import { MAX_CORE_SLOTS, MAX_SLOTS, canPick, familyOrder, lockReason, normalizePicks, skillDisplayName } from "./buildRules";
 
 let seq = 0;
 const node = (over: Partial<SkillNodeRow> = {}): SkillNodeRow => ({
@@ -51,6 +51,32 @@ describe("canPick / lockReason", () => {
     const extra = node();
     expect(canPick(extra, eight, [...eight, extra])).toBe(false);
     expect(lockReason(extra, eight, [...eight, extra])).toBe("Build is full (8/8)");
+  });
+
+  it("Core skills use the build-wide 3 extra slots, separate from the 8", () => {
+    const eightNormals = Array.from({ length: MAX_SLOTS }, () => node());
+    const core = node({ name: null, type: "Core" });
+    // regular slots full — a Core skill still fits (it's additional)
+    expect(canPick(core, eightNormals, [...eightNormals, core])).toBe(true);
+
+    const threeCores = Array.from({ length: MAX_CORE_SLOTS }, () =>
+      node({ name: null, type: "Core" })
+    );
+    const fourthCore = node({ name: null, type: "Core" });
+    expect(lockReason(fourthCore, threeCores, [...threeCores, fourthCore])).toBe(
+      "Core slots are full (3/3)"
+    );
+    // ...and full Core slots don't block a regular pick
+    const normal = node();
+    expect(canPick(normal, threeCores, [...threeCores, normal])).toBe(true);
+  });
+
+  it("the core cap counts the WHOLE build via globalCoreCount", () => {
+    const core = node({ name: null, type: "Core" });
+    // nothing picked in THIS block, but 3 cores exist elsewhere in the build
+    expect(lockReason(core, [], [core], 3)).toBe("Core slots are full (3/3)");
+    expect(canPick(core, [], [core], 3)).toBe(false);
+    expect(canPick(core, [], [core], 2)).toBe(true);
   });
 
   it("an already-picked skill is not pickable and has no lock reason", () => {
