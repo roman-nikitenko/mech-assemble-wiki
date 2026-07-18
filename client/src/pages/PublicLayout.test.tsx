@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { PublicLayout } from "./PublicLayout";
-import { BuildsPage } from "./BuildsPage";
 
 function renderAt(path: string) {
   render(
@@ -10,7 +9,8 @@ function renderAt(path: string) {
       <Routes>
         <Route element={<PublicLayout />}>
           <Route path="/" element={<p>mechs grid here</p>} />
-          <Route path="/builds" element={<BuildsPage />} />
+          {/* dummy child — BuildsPage has its own test file */}
+          <Route path="/builds" element={<p>builds here</p>} />
         </Route>
       </Routes>
     </MemoryRouter>
@@ -29,9 +29,9 @@ describe("PublicLayout", () => {
     expect(screen.getByText("mechs grid here")).toBeInTheDocument();
   });
 
-  it("renders the Builds placeholder on /builds", () => {
+  it("marks the Builds tab active on /builds", () => {
     renderAt("/builds");
-    expect(screen.getByText(/coming soon/i)).toBeInTheDocument();
+    expect(screen.getByText("builds here")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Builds" })).toHaveAttribute("aria-current", "page");
   });
 });

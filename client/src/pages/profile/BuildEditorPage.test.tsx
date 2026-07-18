@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { GameType, MechDetail, MechSummary, WeaponSummary } from "../../api/types";
 import { BuildEditorPage } from "./BuildEditorPage";
 import { listBuilds, saveBuild } from "../../profile/buildStorage";
+import { saveProfile } from "../../profile/profileStorage";
 
 const summary: MechSummary = {
   id: "m1",
@@ -101,10 +102,21 @@ function renderEditor(path = "/profile/builds/new") {
   );
 }
 
-beforeEach(() => localStorage.clear());
+beforeEach(() => {
+  localStorage.clear();
+  // Creating a build requires a nickname (see the redirect test below).
+  saveProfile({ nickname: "Tester", server: "" });
+});
 afterEach(() => vi.restoreAllMocks());
 
 describe("BuildEditorPage (new build)", () => {
+  it("redirects to the profile when no nickname is set", async () => {
+    localStorage.clear(); // wipe the seeded profile
+    renderEditor();
+    expect(await screen.findByText("profile list")).toBeInTheDocument();
+    expect(screen.queryByText("Choose a mech")).not.toBeInTheDocument();
+  });
+
   it("starts with the mech picker, then shows 8 slots and the skill palette", async () => {
     renderEditor();
     await userEvent.click(await screen.findByRole("button", { name: /Iron Colossus/ }));
@@ -229,6 +241,7 @@ describe("BuildEditorPage (new build)", () => {
       skillIds: ["ws1"],
       weaponIds: [],
       weaponSkillIds: {},
+      hearts: 0,
     });
   });
 
@@ -276,6 +289,7 @@ describe("BuildEditorPage (edit mode)", () => {
       skillIds: ["s1"],
       weaponIds: ["w1"],
       weaponSkillIds: {},
+      hearts: 0,
       createdAt: "2026-07-15T00:00:00.000Z",
       updatedAt: "2026-07-15T00:00:00.000Z",
     });

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseInline, parseNote } from "./noteMarkup";
+import { noteExcerpt, parseInline, parseNote } from "./noteMarkup";
 
 describe("parseNote (blocks)", () => {
   it("parses h2 and h3 lines, skipping blanks", () => {
@@ -37,5 +37,17 @@ describe("parseInline", () => {
 
   it("bold wins over italic when both could match", () => {
     expect(parseInline("**really**")).toEqual([{ kind: "bold", text: "really" }]);
+  });
+});
+
+describe("noteExcerpt", () => {
+  it("strips markers and turns mentions into bare names", () => {
+    expect(noteExcerpt("## Plan\nUse **Zap** on #[Iron Colossus]")).toBe(
+      "Plan Use Zap on Iron Colossus"
+    );
+  });
+
+  it("truncates long notes with an ellipsis", () => {
+    expect(noteExcerpt("a".repeat(200), 10)).toBe("aaaaaaaaaa…");
   });
 });

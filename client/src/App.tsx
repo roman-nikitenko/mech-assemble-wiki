@@ -3,6 +3,7 @@ import { PublicLayout } from "./pages/PublicLayout";
 import { BrowsePage } from "./pages/BrowsePage";
 import { MechDetailPage } from "./pages/MechDetailPage";
 import { BuildsPage } from "./pages/BuildsPage";
+import { BuildDetailPage } from "./pages/BuildDetailPage";
 import { WeaponsPage } from "./pages/WeaponsPage";
 import { AccessoriesPage } from "./pages/AccessoriesPage";
 import { PilotsPage } from "./pages/PilotsPage";
@@ -31,6 +32,7 @@ export default function App() {
         <Route path="/" element={<BrowsePage />} />
         <Route path="/mechs/:id" element={<MechDetailPage />} />
         <Route path="/builds" element={<BuildsPage />} />
+        <Route path="/builds/:buildId" element={<BuildDetailPage />} />
         <Route path="/weapons" element={<WeaponsPage />} />
         <Route path="/accessories" element={<AccessoriesPage />} />
         <Route path="/pilots" element={<PilotsPage />} />

@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
 import { imageSrc, useMech, useMechs, useTypes, useWeapons } from "../../api/client";
 import type { MechRank, WeaponSummary } from "../../api/types";
 import { getBuild, saveBuild } from "../../profile/buildStorage";
 import { MAX_CORE_SLOTS, resolvePicks } from "../../profile/buildRules";
 import { PickedSlot, SkillsBlock } from "../../profile/SkillsBlock";
 import { NotesField } from "../../profile/NotesField";
+import { loadProfile } from "../../profile/profileStorage";
 import { RankBadge } from "../../components/RankBadge";
 import { LoadingSkeleton } from "../../components/LoadingSkeleton";
 
@@ -30,6 +31,7 @@ export function BuildEditorPage() {
 
   // Loaded once — localStorage is synchronous, no query needed.
   const [existing] = useState(() => (buildId ? getBuild(buildId) : undefined));
+  const [hasNickname] = useState(() => loadProfile().nickname.trim() !== "");
   const [name, setName] = useState(existing?.name ?? "");
   const [description, setDescription] = useState(existing?.description ?? "");
   const [mechId, setMechId] = useState<string | null>(existing?.mechId ?? null);
@@ -51,6 +53,13 @@ export function BuildEditorPage() {
   const weapons = useWeapons();
   const types = useTypes();
   const allWeapons = weapons.data ?? [];
+
+  // Builds need an author: creating requires a nickname first (it stays the
+  // display name after Auth0 registration arrives). Editing existing builds
+  // is left alone.
+  if (buildId === undefined && !hasNickname) {
+    return <Navigate to="/profile" replace state={{ needNickname: true }} />;
+  }
 
   if (buildId && !existing) {
     return (
@@ -274,6 +283,7 @@ export function BuildEditorPage() {
               return [id, w ? resolvePicks(w.skillNodes, ids).map((s) => s.id) : ids];
             })
           ),
+      hearts: existing?.hearts ?? 0,
       createdAt: existing?.createdAt ?? now,
       updatedAt: now,
     });
@@ -509,6 +519,7 @@ export function BuildEditorPage() {
         cardImageUrl={mech?.cardSkillIconUrl}
         defaultExpanded
         loading={detail.isPending}
+        globalCoreCount={corePool.length}
       />
       {equipped.map((w) => (
         <SkillsBlock
@@ -518,6 +529,7 @@ export function BuildEditorPage() {
           pickedIds={weaponSkillIds[w.id] ?? []}
           onPickedChange={(ids) => setWeaponSkillIds((prev) => ({ ...prev, [w.id]: ids }))}
           cardImageUrl={w.iconUrl ?? w.imageUrl}
+          globalCoreCount={corePool.length}
         />
       ))}
 

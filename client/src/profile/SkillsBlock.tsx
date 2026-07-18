@@ -14,8 +14,9 @@ import { SKILL_CARD, SkillPickCard } from "./SkillPickCard";
 import { LoadingSkeleton } from "../components/LoadingSkeleton";
 
 /** One filled pick slot — a compact version of the palette card: same name
-    band and description, no footer. min-h-50 = 200px. Exported for the
-    build-wide Core skills section in the editor. */
+    band and description, no footer. min-h-50 = 200px. With `onRemove` it's
+    the editor's removable slot; without, a read-only card for the public
+    build pages. */
 export function PickedSlot({
   skill,
   cardImageUrl,
@@ -23,15 +24,11 @@ export function PickedSlot({
 }: {
   skill: SkillNodeRow;
   cardImageUrl?: string | null;
-  onRemove: () => void;
+  onRemove?: () => void;
 }) {
-  return (
-    <button
-      type="button"
-      aria-label={`Remove ${skillDisplayName(skill)} from the build`}
-      onClick={onRemove}
-      className={`flex min-h-50 flex-col gap-1 rounded-xl border-2 p-2 text-center ${SKILL_CARD[skill.type].frame} hover:brightness-110`}
-    >
+  const cls = `flex min-h-50 flex-col gap-1 rounded-xl border-2 p-2 text-center ${SKILL_CARD[skill.type].frame}`;
+  const content = (
+    <>
       <span
         className={`rounded-lg px-1 py-0.5 text-xs font-black ${SKILL_CARD[skill.type].header} ${
           skill.type === "Core" ? "italic" : ""
@@ -45,6 +42,17 @@ export function PickedSlot({
       {skill.description && (
         <span className="px-0.5 text-xs font-semibold">{skill.description}</span>
       )}
+    </>
+  );
+  if (!onRemove) return <div className={cls}>{content}</div>;
+  return (
+    <button
+      type="button"
+      aria-label={`Remove ${skillDisplayName(skill)} from the build`}
+      onClick={onRemove}
+      className={`${cls} hover:brightness-110`}
+    >
+      {content}
       <span className="mt-auto text-xs text-ink-dim">✕ remove</span>
     </button>
   );

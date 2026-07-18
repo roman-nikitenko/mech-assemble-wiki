@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { ProfilePage } from "./ProfilePage";
 import { saveBuild } from "../../profile/buildStorage";
+import { loadProfile } from "../../profile/profileStorage";
 
 function renderPage() {
   render(
@@ -40,6 +41,7 @@ describe("ProfilePage", () => {
       skillIds: ["s1", "s2"],
       weaponIds: [],
       weaponSkillIds: {},
+      hearts: 0,
       createdAt: "2026-07-15T00:00:00.000Z",
       updatedAt: "2026-07-15T00:00:00.000Z",
     });
@@ -58,6 +60,30 @@ describe("ProfilePage", () => {
     expect(screen.getByRole("button", { name: "Post" })).toBeDisabled();
   });
 
+  it("saves nickname and server from the Settings tab", async () => {
+    renderPage();
+    await userEvent.click(screen.getByRole("tab", { name: "Settings" }));
+    // nickname is required — Save stays locked until it's filled
+    expect(screen.getByRole("button", { name: "Save settings" })).toBeDisabled();
+    await userEvent.type(screen.getByLabelText("Nickname *"), "BanzaiFun");
+    await userEvent.type(screen.getByLabelText("Game server"), "EU-7");
+    await userEvent.click(screen.getByRole("button", { name: "Save settings" }));
+    expect(loadProfile()).toEqual({ nickname: "BanzaiFun", server: "EU-7" });
+    expect(screen.getByText("✓ Saved")).toBeInTheDocument();
+  });
+
+  it("opens Settings with the warning when redirected for a missing nickname", () => {
+    render(
+      <MemoryRouter initialEntries={[{ pathname: "/profile", state: { needNickname: true } }]}>
+        <Routes>
+          <Route path="/profile" element={<ProfilePage />} />
+        </Routes>
+      </MemoryRouter>
+    );
+    expect(screen.getByLabelText("Nickname *")).toBeInTheDocument();
+    expect(screen.getByText(/You need to fill in a nickname first/)).toBeInTheDocument();
+  });
+
   it("deletes a build after confirmation", async () => {
     saveBuild({
       id: "b1",
@@ -68,6 +94,7 @@ describe("ProfilePage", () => {
       skillIds: [],
       weaponIds: [],
       weaponSkillIds: {},
+      hearts: 0,
       createdAt: "2026-07-15T00:00:00.000Z",
       updatedAt: "2026-07-15T00:00:00.000Z",
     });

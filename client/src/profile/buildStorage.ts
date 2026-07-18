@@ -14,6 +14,9 @@ export interface BuildRecord {
   weaponIds: string[]; // ≤ 4, the corner squares on the build banner
   // Per-weapon skill picks, keyed by weapon id (each ≤ 8, same rules).
   weaponSkillIds: Record<string, string[]>;
+  // Like count shown on the public Builds tab. Always 0 until real
+  // accounts arrive — only registered users will be able to heart.
+  hearts: number;
   createdAt: string; // ISO
   updatedAt: string; // ISO
 }
@@ -33,6 +36,7 @@ export function listBuilds(): BuildRecord[] {
       weaponId: b.weaponId ?? null,
       weaponIds: b.weaponIds ?? [],
       weaponSkillIds: b.weaponSkillIds ?? {},
+      hearts: b.hearts ?? 0,
     }));
   } catch {
     // Corrupt storage shouldn't crash the profile page — start fresh.

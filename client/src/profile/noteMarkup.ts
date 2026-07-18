@@ -37,6 +37,20 @@ export function parseInline(text: string): NoteInline[] {
   return parts;
 }
 
+/** Plain-text excerpt of a note (markers stripped, mentions become bare
+    names) — used by the public Builds list cards. */
+export function noteExcerpt(text: string, maxLength = 120): string {
+  const plain = parseNote(text)
+    .map((block) =>
+      block.kind === "p"
+        ? block.parts.map((p) => (p.kind === "mention" ? p.name : p.text)).join("")
+        : block.text
+    )
+    .join(" ")
+    .trim();
+  return plain.length <= maxLength ? plain : `${plain.slice(0, maxLength).trimEnd()}…`;
+}
+
 export function parseNote(text: string): NoteBlock[] {
   const blocks: NoteBlock[] = [];
   for (const raw of text.split("\n")) {
