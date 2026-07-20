@@ -1,38 +1,42 @@
-import { useState } from "react";
 import { Link } from "react-router-dom";
-import { imageSrc, useMechs, useWeapons } from "../api/client";
-import { listBuilds } from "../profile/buildStorage";
-import { loadProfile } from "../profile/profileStorage";
+import { useAuth0 } from "@auth0/auth0-react";
+import { imageSrc, useMechs, usePostedBuilds, useWeapons } from "../api/client";
+import { useMe } from "../auth/useMe";
+import { useDeletePostedBuild, useToggleHeart } from "../auth/useBuilds";
 import { AuthorTag } from "../profile/AuthorTag";
 import { noteExcerpt } from "../profile/noteMarkup";
 import { formatDate } from "../lib/date";
 import { ShareButton } from "../profile/ShareButton";
 
-/** Public build list. MVP: builds still live in THIS browser's storage —
-    once accounts exist this becomes everyone's builds, and the heart
-    button comes alive (only registered users will be able to like). */
+/** Public community build feed. Shows all builds posted by any user. */
 export function BuildsPage() {
-  const [builds] = useState(() => listBuilds());
-  // All local builds share this browser's author until accounts arrive.
-  const [profile] = useState(() => loadProfile());
+  const { isAuthenticated } = useAuth0();
+  const me = useMe();
+  const posted = usePostedBuilds();
+  const deleteBuild = useDeletePostedBuild();
+  const toggleHeart = useToggleHeart();
   const mechs = useMechs({});
   const weapons = useWeapons();
   const mechById = new Map((mechs.data ?? []).map((m) => [m.id, m]));
   const weaponById = new Map((weapons.data ?? []).map((w) => [w.id, w]));
 
+  const builds = posted.data ?? [];
+
   return (
     <main className="mx-auto max-w-6xl px-4 py-6">
       <h2 className="text-xl font-bold">Builds</h2>
       <p className="mb-4 mt-1 text-xs text-ink-dim">
-        Shown from this browser for now — shared community builds arrive with accounts.
+        Community builds — post your own from{" "}
+        <Link to="/profile" className="text-accent underline">
+          My Profile
+        </Link>
+        .
       </p>
-      {builds.length === 0 ? (
+      {posted.isPending ? (
+        <p className="mt-8 text-center text-ink-dim">Loading…</p>
+      ) : builds.length === 0 ? (
         <p className="mt-8 text-center text-ink-dim">
-          No builds yet — create one in{" "}
-          <Link to="/profile" className="text-accent underline">
-            My Profile
-          </Link>
-          .
+          No builds posted yet — be the first!
         </p>
       ) : (
         <div className="flex flex-col gap-3">
@@ -41,39 +45,60 @@ export function BuildsPage() {
             const weapon = b.weaponId ? weaponById.get(b.weaponId) : undefined;
             const image = mech?.imageUrl ?? weapon?.iconUrl ?? weapon?.imageUrl;
             const excerpt = noteExcerpt(b.description);
+            const isOwn = !!me.data && b.author.nickname === me.data.nickname;
             return (
               <div key={b.id} className="rounded-xl border border-edge bg-surface p-4 flex gap-3">
                 {image && (
-                  <Link to={`/builds/${b.id}`}>
+                  <Link to={`/builds/${b.id}`} className="shrink-0">
                     <img
                       src={imageSrc(image)}
                       alt=""
-                      className=" h-32 w-full rounded-lg border border-edge object-cover"
+                      className="h-32 w-24 rounded-lg border border-edge object-cover"
                     />
                   </Link>
                 )}
-                <div className="flex flex-col items-start">
+                <div className="flex flex-col items-start flex-1 min-w-0">
                   <Link to={`/builds/${b.id}`} className="font-bold hover:text-accent">
                     {b.name}
                   </Link>
                   <p className="mt-0.5 text-xs text-ink-dim">
-                    by <AuthorTag nickname={profile.nickname} server={profile.server} /> · updated{" "}
-                    {formatDate(b.updatedAt)}
+                    by{" "}
+                    <AuthorTag
+                      nickname={b.author.nickname}
+                      server={b.author.server}
+                    />{" "}
+                    · updated {formatDate(b.updatedAt)}
                   </p>
-                  {excerpt && <p className="mt-1 line-clamp-2 text-sm text-ink-dim">{excerpt}</p>}
-                  <div className="mt-3 mt-auto flex gap-2">
+                  {excerpt && (
+                    <p className="mt-1 line-clamp-2 text-sm text-ink-dim">{excerpt}</p>
+                  )}
+                  <div className="mt-auto pt-3 flex gap-2">
                     <button
                       type="button"
-                      disabled
-                      title="Sign in to like — accounts are coming soon"
-                      className="flex min-h-9 items-center gap-1.5 rounded-lg border border-edge px-3 text-sm text-ink-dim opacity-70"
+                      disabled={!isAuthenticated || toggleHeart.isPending}
+                      title={isAuthenticated ? undefined : "Sign in to like"}
+                      onClick={() => isAuthenticated && toggleHeart.mutate(b.id)}
+                      className="flex min-h-9 items-center gap-1.5 rounded-lg border border-edge px-3 text-sm hover:bg-surface-2 disabled:cursor-default disabled:opacity-60"
                     >
-                      <span className="text-fire">♥</span> {b.hearts}
+                      <span className={b.userHearted ? "text-fire" : "text-ink-dim"}>♥</span>
+                      {b.hearts}
                     </button>
                     <ShareButton buildId={b.id} />
+                    {isOwn && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (window.confirm("Remove this build from the community feed?")) {
+                            deleteBuild.mutate(b.id);
+                          }
+                        }}
+                        className="flex min-h-9 items-center rounded-lg border border-fire/40 px-3 text-sm text-fire hover:bg-fire/10"
+                      >
+                        Remove
+                      </button>
+                    )}
                   </div>
                 </div>
-
               </div>
             );
           })}

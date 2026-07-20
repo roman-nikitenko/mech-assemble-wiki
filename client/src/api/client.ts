@@ -1,7 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { AccessoryInput, AccessorySummary, GameType, MechDetail, MechInput, MechRank, MechSummary, Pilot, PilotInput, TypeInput, WeaponInput, WeaponSummary } from "./types";
+import type { AccessoryInput, AccessorySummary, GameType, MechDetail, MechInput, MechRank, MechSummary, Pilot, PilotInput, PostedBuild, TypeInput, WeaponInput, WeaponSummary } from "./types";
+import { adminHeaders } from "../auth/adminSession";
 
-const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
+export const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
 
 /** Thrown on HTTP 404 so pages can show "not found" instead of a generic error. */
 export class NotFoundError extends Error {}
@@ -55,7 +56,7 @@ export function imageSrc(path: string) {
 async function sendJson<T>(path: string, method: "POST" | "PUT", body: unknown): Promise<T> {
   const res = await fetch(`${API_URL}${path}`, {
     method,
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...adminHeaders() },
     body: JSON.stringify(body),
   });
   if (!res.ok) {
@@ -94,7 +95,7 @@ export function useDeleteMech() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
-      const res = await fetch(`${API_URL}/api/mechs/${id}`, { method: "DELETE" });
+      const res = await fetch(`${API_URL}/api/mechs/${id}`, { method: "DELETE", headers: adminHeaders() });
       if (!res.ok) {
         const data = await res.json().catch(() => null);
         throw new Error(data?.error ?? `API error ${res.status}`);
@@ -109,7 +110,7 @@ export async function uploadImage(file: File): Promise<string> {
   const form = new FormData();
   form.append("image", file);
   // NOTE: no Content-Type header — the browser sets the multipart boundary.
-  const res = await fetch(`${API_URL}/api/uploads`, { method: "POST", body: form });
+  const res = await fetch(`${API_URL}/api/uploads`, { method: "POST", headers: adminHeaders(), body: form });
   if (!res.ok) {
     const data = await res.json().catch(() => null);
     throw new Error(data?.error ?? `Upload failed (${res.status})`);
@@ -151,7 +152,7 @@ export function useDeletePilot() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
-      const res = await fetch(`${API_URL}/api/pilots/${id}`, { method: "DELETE" });
+      const res = await fetch(`${API_URL}/api/pilots/${id}`, { method: "DELETE", headers: adminHeaders() });
       if (!res.ok) {
         const data = await res.json().catch(() => null);
         throw new Error(data?.error ?? `API error ${res.status}`);
@@ -194,7 +195,7 @@ export function useDeleteType() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
-      const res = await fetch(`${API_URL}/api/types/${id}`, { method: "DELETE" });
+      const res = await fetch(`${API_URL}/api/types/${id}`, { method: "DELETE", headers: adminHeaders() });
       if (!res.ok) {
         const data = await res.json().catch(() => null);
         throw new Error(data?.error ?? `API error ${res.status}`);
@@ -239,7 +240,7 @@ export function useDeleteWeapon() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
-      const res = await fetch(`${API_URL}/api/weapons/${id}`, { method: "DELETE" });
+      const res = await fetch(`${API_URL}/api/weapons/${id}`, { method: "DELETE", headers: adminHeaders() });
       if (!res.ok) {
         const data = await res.json().catch(() => null);
         throw new Error(data?.error ?? `API error ${res.status}`);
@@ -286,7 +287,7 @@ export function useDeleteAccessory() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
-      const res = await fetch(`${API_URL}/api/accessories/${id}`, { method: "DELETE" });
+      const res = await fetch(`${API_URL}/api/accessories/${id}`, { method: "DELETE", headers: adminHeaders() });
       if (!res.ok) {
         const data = await res.json().catch(() => null);
         throw new Error(data?.error ?? `API error ${res.status}`);
@@ -297,5 +298,22 @@ export function useDeleteAccessory() {
       qc.invalidateQueries({ queryKey: ["mech"] });
       qc.invalidateQueries({ queryKey: ["mechs"] });
     },
+  });
+}
+
+/** Community build feed — all posted builds, newest first. Public, no auth. */
+export function usePostedBuilds() {
+  return useQuery({
+    queryKey: ["posted-builds"],
+    queryFn: () => fetchJson<PostedBuild[]>("/api/builds"),
+  });
+}
+
+/** Single posted build by id — used by the detail page. */
+export function usePostedBuild(id: string) {
+  return useQuery({
+    queryKey: ["posted-builds", id],
+    queryFn: () => fetchJson<PostedBuild>(`/api/builds/${id}`),
+    retry: (failureCount, error) => !(error instanceof NotFoundError) && failureCount < 3,
   });
 }

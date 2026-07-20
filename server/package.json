@@ -9,7 +9,8 @@
     "migrate": "prisma migrate dev",
     "backup": "bash scripts/backup.sh",
     "studio": "prisma studio",
-    "admin:hash": "tsx scripts/admin-hash.ts"
+    "admin:hash": "tsx scripts/admin-hash.ts",
+    "admin:check": "tsx scripts/admin-check.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.0.0",

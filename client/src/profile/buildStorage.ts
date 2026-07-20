@@ -1,7 +1,8 @@
-/** A personal mech build. LOCAL-ONLY by explicit decision (2026-07-15):
-    builds live in this browser's localStorage — no accounts yet. Only ids
-    are stored; live mech/skill data is fetched when a build is opened, so
-    a build survives wiki edits (and degrades politely if its mech is gone). */
+/** A personal mech build. Stored in localStorage keyed by Auth0 user id so
+    each account sees only its own builds. Anonymous key (no user) is kept for
+    the logged-out state. Only ids are stored; live mech/skill data is fetched
+    when a build is opened, so a build survives wiki edits (and degrades
+    politely if its mech is gone). */
 export interface BuildRecord {
   id: string;
   name: string;
@@ -17,15 +18,21 @@ export interface BuildRecord {
   // Like count shown on the public Builds tab. Always 0 until real
   // accounts arrive — only registered users will be able to heart.
   hearts: number;
+  // Server-side id if this local draft has been posted to the community feed.
+  // Set after a successful Post so the button turns green.
+  postedId?: string;
   createdAt: string; // ISO
   updatedAt: string; // ISO
 }
 
-const KEY = "mech-wiki:builds";
+// Builds are namespaced by Auth0 user id so accounts don't share data.
+// null → falls back to the anonymous key (logged-out / no user yet).
+const storageKey = (userId: string | null): string =>
+  userId ? `mech-wiki:builds:${userId}` : "mech-wiki:builds";
 
-export function listBuilds(): BuildRecord[] {
+export function listBuilds(userId: string | null = null): BuildRecord[] {
   try {
-    const raw = localStorage.getItem(KEY);
+    const raw = localStorage.getItem(storageKey(userId));
     if (!raw) return [];
     const parsed: unknown = JSON.parse(raw);
     if (!Array.isArray(parsed)) return [];
@@ -44,19 +51,23 @@ export function listBuilds(): BuildRecord[] {
   }
 }
 
-export function getBuild(id: string): BuildRecord | undefined {
-  return listBuilds().find((b) => b.id === id);
+export function getBuild(id: string, userId: string | null = null): BuildRecord | undefined {
+  return listBuilds(userId).find((b) => b.id === id);
 }
 
-export function saveBuild(record: BuildRecord): void {
+export function saveBuild(record: BuildRecord, userId: string | null = null): void {
+  const key = storageKey(userId);
   const stamped = { ...record, updatedAt: new Date().toISOString() };
-  const builds = listBuilds();
+  const builds = listBuilds(userId);
   const i = builds.findIndex((b) => b.id === record.id);
   if (i === -1) builds.push(stamped);
   else builds[i] = stamped;
-  localStorage.setItem(KEY, JSON.stringify(builds));
+  localStorage.setItem(key, JSON.stringify(builds));
 }
 
-export function deleteBuild(id: string): void {
-  localStorage.setItem(KEY, JSON.stringify(listBuilds().filter((b) => b.id !== id)));
+export function deleteBuild(id: string, userId: string | null = null): void {
+  localStorage.setItem(
+    storageKey(userId),
+    JSON.stringify(listBuilds(userId).filter((b) => b.id !== id))
+  );
 }

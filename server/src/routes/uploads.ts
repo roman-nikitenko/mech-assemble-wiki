@@ -3,6 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { Router } from "express";
 import multer from "multer";
+import { requireAdmin } from "../lib/auth";
 
 // Where uploaded images live on disk — server/uploads/, next to src/.
 // Resolved from THIS file's location so it works no matter which directory
@@ -39,7 +40,7 @@ export const uploadsRouter = Router();
 // Returns the public URL the client should store as the mech's imageUrl.
 // Invoking multer manually (instead of as route middleware) lets us turn its
 // errors into our standard JSON 400s instead of HTML error pages.
-uploadsRouter.post("/", (req, res) => {
+uploadsRouter.post("/", requireAdmin, (req, res) => {
   upload.single("image")(req, res, (err: unknown) => {
     if (err) {
       const message =

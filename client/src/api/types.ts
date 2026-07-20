@@ -283,6 +283,35 @@ export interface AccessorySummary {
   mech: { id: string; name: string } | null;
 }
 
+/** A build posted to the community feed (GET /api/builds). */
+export interface PostedBuild {
+  id: string;
+  name: string;
+  description: string;
+  mechId: string | null;
+  weaponId: string | null;
+  skillIds: string[];
+  weaponIds: string[];
+  weaponSkillIds: Record<string, string[]>;
+  hearts: number;
+  // Set by the client after a heart toggle — not included in GET responses.
+  userHearted?: boolean;
+  createdAt: string;
+  updatedAt: string;
+  author: { nickname: string | null; server: string | null };
+}
+
+/** Payload for POST /api/builds. */
+export interface BuildPostInput {
+  name: string;
+  description: string;
+  mechId: string | null;
+  weaponId: string | null;
+  skillIds: string[];
+  weaponIds: string[];
+  weaponSkillIds: Record<string, string[]>;
+}
+
 /** Payload for POST/PUT /api/accessories. */
 export interface AccessoryInput {
   name: string;

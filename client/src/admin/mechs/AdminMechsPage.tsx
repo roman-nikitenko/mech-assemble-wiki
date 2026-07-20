@@ -19,7 +19,7 @@ export function AdminMechsPage() {
         <h1 className="text-2xl font-black tracking-tight">Mechs</h1>
         <Link
           to="/admin/mechs/new"
-          className="min-h-11 rounded-lg bg-accent px-4 py-2 font-semibold text-bg hover:brightness-110"
+          className="rounded-lg bg-accent px-4 py-2 font-semibold text-bg hover:brightness-110"
         >
           + New mech
         </Link>

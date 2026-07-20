@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma";
+import { requireAdmin } from "../lib/auth";
 import { parseWeaponInput } from "../lib/weapon-input";
 import { createSkillNodes } from "../lib/skill-nodes";
 import { UUID_RE } from "../lib/uuid";
@@ -52,8 +53,7 @@ weaponsRouter.get("/", async (_req, res) => {
 });
 
 // POST /api/weapons — weapon + inline skins + optional links, atomically.
-// ⚠️ No auth yet (deliberate, local-only) — must be protected before deploy.
-weaponsRouter.post("/", async (req, res) => {
+weaponsRouter.post("/", requireAdmin, async (req, res) => {
   const input = parseWeaponInput(req.body);
   if (!input.ok) return res.status(400).json({ error: input.message });
   const { pilotId, skins, skills, ...fields } = input.value;
@@ -101,7 +101,7 @@ weaponsRouter.post("/", async (req, res) => {
 
 // PUT /api/weapons/:id — update fields, REPLACE the skins set, and apply the
 // tri-state pilot link, all atomically.
-weaponsRouter.put("/:id", async (req, res) => {
+weaponsRouter.put("/:id", requireAdmin, async (req, res) => {
   const { id } = req.params;
   if (!UUID_RE.test(id)) return res.status(404).json({ error: "Weapon not found" });
 
@@ -161,7 +161,7 @@ weaponsRouter.put("/:id", async (req, res) => {
 
 // DELETE /api/weapons/:id — cascades weapon_upgrades and weapon_skins; the
 // pilot is freed (SetNull); the owning mech and the type are untouched.
-weaponsRouter.delete("/:id", async (req, res) => {
+weaponsRouter.delete("/:id", requireAdmin, async (req, res) => {
   const { id } = req.params;
   if (!UUID_RE.test(id)) return res.status(404).json({ error: "Weapon not found" });
   try {

@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma";
+import { requireAdmin } from "../lib/auth";
 import { UUID_RE } from "../lib/uuid";
 
 export const typesRouter = Router();
@@ -33,8 +34,7 @@ typesRouter.get("/", async (_req, res) => {
 });
 
 // POST /api/types
-// ⚠️ No auth yet (deliberate, local-only) — must be protected before deploy.
-typesRouter.post("/", async (req, res) => {
+typesRouter.post("/", requireAdmin, async (req, res) => {
   const input = parseTypeInput(req.body);
   if (!input.ok) return res.status(400).json({ error: input.message });
   try {
@@ -49,7 +49,7 @@ typesRouter.post("/", async (req, res) => {
 });
 
 // PUT /api/types/:id
-typesRouter.put("/:id", async (req, res) => {
+typesRouter.put("/:id", requireAdmin, async (req, res) => {
   const { id } = req.params;
   if (!UUID_RE.test(id)) return res.status(404).json({ error: "Type not found" });
   const input = parseTypeInput(req.body);
@@ -71,7 +71,7 @@ typesRouter.put("/:id", async (req, res) => {
 // DELETE /api/types/:id — BLOCKED while anything uses the type. We count
 // usage ourselves for a friendly message; the DB's onDelete: Restrict is the
 // backstop if something slips in between the count and the delete.
-typesRouter.delete("/:id", async (req, res) => {
+typesRouter.delete("/:id", requireAdmin, async (req, res) => {
   const { id } = req.params;
   if (!UUID_RE.test(id)) return res.status(404).json({ error: "Type not found" });
   const type = await prisma.type.findUnique({ where: { id } });

@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma";
+import { requireAdmin } from "../lib/auth";
 import { parseAccessoryInput } from "../lib/accessory-input";
 import { UUID_RE } from "../lib/uuid";
 
@@ -41,8 +42,7 @@ accessoriesRouter.get("/", async (_req, res) => {
 });
 
 // POST /api/accessories
-// ⚠️ No auth yet (deliberate, local-only) — must be protected before deploy.
-accessoriesRouter.post("/", async (req, res) => {
+accessoriesRouter.post("/", requireAdmin, async (req, res) => {
   const input = parseAccessoryInput(req.body);
   if (!input.ok) return res.status(400).json({ error: input.message });
 
@@ -66,7 +66,7 @@ accessoriesRouter.post("/", async (req, res) => {
 });
 
 // PUT /api/accessories/:id
-accessoriesRouter.put("/:id", async (req, res) => {
+accessoriesRouter.put("/:id", requireAdmin, async (req, res) => {
   const { id } = req.params;
   if (!UUID_RE.test(id)) return res.status(404).json({ error: "Accessory not found" });
 
@@ -97,7 +97,7 @@ accessoriesRouter.put("/:id", async (req, res) => {
 });
 
 // DELETE /api/accessories/:id — the mech is unaffected (FK lives here).
-accessoriesRouter.delete("/:id", async (req, res) => {
+accessoriesRouter.delete("/:id", requireAdmin, async (req, res) => {
   const { id } = req.params;
   if (!UUID_RE.test(id)) return res.status(404).json({ error: "Accessory not found" });
   try {

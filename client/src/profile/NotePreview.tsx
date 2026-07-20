@@ -1,6 +1,6 @@
 import type { MechSummary, WeaponSummary } from "../api/types";
 import { imageSrc } from "../api/client";
-import { parseNote, type NoteInline } from "./noteMarkup";
+import { parseNote, parseInline, type NoteInline } from "./noteMarkup";
 
 interface NotePreviewProps {
   text: string;
@@ -64,9 +64,17 @@ export function NotePreview({ text, mechs, weapons }: NotePreviewProps) {
     <div className="space-y-2 text-sm">
       {blocks.map((block, i) =>
         block.kind === "h2" ? (
-          <h2 key={i} className="text-lg font-black tracking-tight">{block.text}</h2>
+          <h2 key={i} className="text-lg font-black tracking-tight">
+            {parseInline(block.text).map((part, j) => (
+              <Inline key={j} part={part} mechs={mechs} weapons={weapons} />
+            ))}
+          </h2>
         ) : block.kind === "h3" ? (
-          <h3 key={i} className="text-base font-bold">{block.text}</h3>
+          <h3 key={i} className="text-base font-bold">
+            {parseInline(block.text).map((part, j) => (
+              <Inline key={j} part={part} mechs={mechs} weapons={weapons} />
+            ))}
+          </h3>
         ) : (
           <p key={i}>
             {block.parts.map((part, j) => (

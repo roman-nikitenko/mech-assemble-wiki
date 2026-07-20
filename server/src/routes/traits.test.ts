@@ -2,6 +2,9 @@ import { afterAll, describe, expect, it } from "vitest";
 import request from "supertest";
 import { app } from "../app";
 import { prisma } from "../lib/prisma";
+import { testAdminToken } from "../test/admin-token";
+
+const ADMIN = { "x-admin-token": testAdminToken() };
 
 // Write-capable tests share the dev DB. Cleanup discipline: every record we
 // create is prefixed "[test:traits] " and removed in afterAll. Per-file
@@ -34,6 +37,7 @@ describe("POST /api/traits", () => {
   it("creates a trait", async () => {
     const res = await request(app)
       .post("/api/traits")
+      .set(ADMIN)
       .send({ name: "[test:traits] Piercing", color: "#123456" });
     expect(res.status).toBe(201);
     expect(res.body.name).toBe("[test:traits] Piercing");
@@ -41,14 +45,14 @@ describe("POST /api/traits", () => {
   });
 
   it("rejects a blank name", async () => {
-    const res = await request(app).post("/api/traits").send({ name: "   " });
+    const res = await request(app).post("/api/traits").set(ADMIN).send({ name: "   " });
     expect(res.status).toBe(400);
     expect(res.body.error).toContain("name");
   });
 
   it("rejects a duplicate name with 409", async () => {
-    await request(app).post("/api/traits").send({ name: "[test:traits] Dup" });
-    const res = await request(app).post("/api/traits").send({ name: "[test:traits] Dup" });
+    await request(app).post("/api/traits").set(ADMIN).send({ name: "[test:traits] Dup" });
+    const res = await request(app).post("/api/traits").set(ADMIN).send({ name: "[test:traits] Dup" });
     expect(res.status).toBe(409);
     expect(res.body.error).toContain("[test:traits] Dup");
   });

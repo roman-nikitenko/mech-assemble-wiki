@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
+import { useAuth0 } from "@auth0/auth0-react";
 import { imageSrc, useMech, useMechs, useTypes, useWeapons } from "../../api/client";
 import type { MechRank, WeaponSummary } from "../../api/types";
 import { getBuild, saveBuild } from "../../profile/buildStorage";
 import { MAX_CORE_SLOTS, resolvePicks } from "../../profile/buildRules";
 import { PickedSlot, SkillsBlock } from "../../profile/SkillsBlock";
 import { NotesField } from "../../profile/NotesField";
-import { loadProfile } from "../../profile/profileStorage";
+import { useMe } from "../../auth/useMe";
 import { RankBadge } from "../../components/RankBadge";
 import { LoadingSkeleton } from "../../components/LoadingSkeleton";
 
@@ -21,17 +22,32 @@ const WEAPON_SLOT_POS = [
   "right-[8%] bottom-[14%]",
 ];
 
+/** Thin shell that waits for Auth0 to resolve before mounting the real
+    editor — this prevents the lazy useState initializer from reading
+    localStorage with the wrong (null) userId during the auth-loading phase. */
+export function BuildEditorPage() {
+  const { isLoading } = useAuth0();
+  if (isLoading) {
+    return (
+      <main className="mx-auto max-w-6xl px-4 py-16 text-center text-ink-dim">Loading…</main>
+    );
+  }
+  return <BuildEditorContent />;
+}
+
 /** Two-step build editor. Step 1 picks the SUBJECT: a mech (full build —
     8 skills + 4 weapons, each weapon with its own skills) or a single
     weapon (lean build — just that weapon's skills). One component for
     /new and /:buildId/edit — the route param decides. */
-export function BuildEditorPage() {
+function BuildEditorContent() {
   const { buildId } = useParams<{ buildId: string }>();
   const navigate = useNavigate();
+  const { isAuthenticated, isLoading, user } = useAuth0();
+  const userId = user?.sub ?? null;
+  const me = useMe();
 
   // Loaded once — localStorage is synchronous, no query needed.
-  const [existing] = useState(() => (buildId ? getBuild(buildId) : undefined));
-  const [hasNickname] = useState(() => loadProfile().nickname.trim() !== "");
+  const [existing] = useState(() => (buildId ? getBuild(buildId, userId) : undefined));
   const [name, setName] = useState(existing?.name ?? "");
   const [description, setDescription] = useState(existing?.description ?? "");
   const [mechId, setMechId] = useState<string | null>(existing?.mechId ?? null);
@@ -54,11 +70,15 @@ export function BuildEditorPage() {
   const types = useTypes();
   const allWeapons = weapons.data ?? [];
 
-  // Builds need an author: creating requires a nickname first (it stays the
-  // display name after Auth0 registration arrives). Editing existing builds
-  // is left alone.
-  if (buildId === undefined && !hasNickname) {
-    return <Navigate to="/profile" replace state={{ needNickname: true }} />;
+  // Creating requires a logged-in user with a nickname (the author).
+  if (buildId === undefined) {
+    if (isLoading || (isAuthenticated && me.isPending)) {
+      return <main className="mx-auto max-w-6xl px-4 py-16 text-center text-ink-dim">Loading…</main>;
+    }
+    if (!isAuthenticated) return <Navigate to="/profile" replace />;
+    if ((me.data?.nickname ?? "").trim() === "") {
+      return <Navigate to="/profile" replace state={{ needNickname: true }} />;
+    }
   }
 
   if (buildId && !existing) {
@@ -286,7 +306,7 @@ export function BuildEditorPage() {
       hearts: existing?.hearts ?? 0,
       createdAt: existing?.createdAt ?? now,
       updatedAt: now,
-    });
+    }, userId);
     navigate("/profile");
   }
 

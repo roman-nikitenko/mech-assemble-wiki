@@ -2,6 +2,9 @@ import { afterAll, describe, expect, it } from "vitest";
 import request from "supertest";
 import { app } from "../app";
 import { prisma } from "../lib/prisma";
+import { testAdminToken } from "../test/admin-token";
+
+const ADMIN = { "x-admin-token": testAdminToken() };
 
 // Per-file prefix "[test:accessories] " for everything this file creates.
 afterAll(async () => {
@@ -30,7 +33,7 @@ describe("GET /api/accessories", () => {
 describe("POST /api/accessories", () => {
   it("creates a full S-tier accessory", async () => {
     const mech = await createSMech("[test:accessories] Full Wearer");
-    const res = await request(app).post("/api/accessories").send({
+    const res = await request(app).post("/api/accessories").set(ADMIN).send({
       name: "[test:accessories] Pendant",
       tier: "S",
       mechId: mech.id,
@@ -52,13 +55,13 @@ describe("POST /api/accessories", () => {
   });
 
   it("400s on a blank name", async () => {
-    const res = await request(app).post("/api/accessories").send({ name: " " });
+    const res = await request(app).post("/api/accessories").set(ADMIN).send({ name: " " });
     expect(res.status).toBe(400);
     expect(res.body.error).toContain("name");
   });
 
   it("400s on 3 attributes for S tier", async () => {
-    const res = await request(app).post("/api/accessories").send({
+    const res = await request(app).post("/api/accessories").set(ADMIN).send({
       name: "[test:accessories] Overloaded",
       tier: "S",
       attributes: [
@@ -72,7 +75,7 @@ describe("POST /api/accessories", () => {
   });
 
   it("400s on 2 attributes for Standard tier", async () => {
-    const res = await request(app).post("/api/accessories").send({
+    const res = await request(app).post("/api/accessories").set(ADMIN).send({
       name: "[test:accessories] Too Standard",
       tier: "Standard",
       attributes: [
@@ -86,7 +89,7 @@ describe("POST /api/accessories", () => {
 
   it("400s when a Standard accessory links a mech", async () => {
     const mech = await createSMech("[test:accessories] Wrong Pair");
-    const res = await request(app).post("/api/accessories").send({
+    const res = await request(app).post("/api/accessories").set(ADMIN).send({
       name: "[test:accessories] Mispaired",
       tier: "Standard",
       mechId: mech.id,
@@ -99,7 +102,7 @@ describe("POST /api/accessories", () => {
     const standard = await prisma.mech.create({
       data: { name: "[test:accessories] Small Wearer", rank: "Standard" },
     });
-    const res = await request(app).post("/api/accessories").send({
+    const res = await request(app).post("/api/accessories").set(ADMIN).send({
       name: "[test:accessories] Wrong Wearer",
       tier: "S",
       mechId: standard.id,
@@ -112,17 +115,19 @@ describe("POST /api/accessories", () => {
     const mech = await createSMech("[test:accessories] Greedy Wearer");
     const first = await request(app)
       .post("/api/accessories")
+      .set(ADMIN)
       .send({ name: "[test:accessories] First Charm", tier: "S", mechId: mech.id });
     expect(first.status).toBe(201);
     const res = await request(app)
       .post("/api/accessories")
+      .set(ADMIN)
       .send({ name: "[test:accessories] Second Charm", tier: "S", mechId: mech.id });
     expect(res.status).toBe(409);
     expect(res.body.error).toContain("already has an accessory");
   });
 
   it("normalizes exclusiveEffect to null when there is no mech", async () => {
-    const res = await request(app).post("/api/accessories").send({
+    const res = await request(app).post("/api/accessories").set(ADMIN).send({
       name: "[test:accessories] Unlinked",
       tier: "S",
       exclusiveEffect: "should vanish",
@@ -137,8 +142,9 @@ describe("PUT /api/accessories/:id", () => {
     const mech = await createSMech("[test:accessories] New Wearer");
     const created = await request(app)
       .post("/api/accessories")
+      .set(ADMIN)
       .send({ name: "[test:accessories] Mover", tier: "Standard" });
-    const res = await request(app).put(`/api/accessories/${created.body.id}`).send({
+    const res = await request(app).put(`/api/accessories/${created.body.id}`).set(ADMIN).send({
       name: "[test:accessories] Mover v2",
       tier: "S",
       mechId: mech.id,
@@ -154,6 +160,7 @@ describe("PUT /api/accessories/:id", () => {
   it("404s for an absent id", async () => {
     const res = await request(app)
       .put("/api/accessories/00000000-0000-4000-8000-000000000000")
+      .set(ADMIN)
       .send({ name: "[test:accessories] Nobody" });
     expect(res.status).toBe(404);
     expect(res.body).toEqual({ error: "Accessory not found" });
@@ -165,14 +172,15 @@ describe("DELETE /api/accessories/:id", () => {
     const mech = await createSMech("[test:accessories] Survivor");
     const created = await request(app)
       .post("/api/accessories")
+      .set(ADMIN)
       .send({ name: "[test:accessories] Doomed", tier: "S", mechId: mech.id });
-    const res = await request(app).delete(`/api/accessories/${created.body.id}`);
+    const res = await request(app).delete(`/api/accessories/${created.body.id}`).set(ADMIN);
     expect(res.status).toBe(204);
     expect(await prisma.mech.findUnique({ where: { id: mech.id } })).not.toBeNull();
   });
 
   it("404s for a malformed id", async () => {
-    const res = await request(app).delete("/api/accessories/abc");
+    const res = await request(app).delete("/api/accessories/abc").set(ADMIN);
     expect(res.status).toBe(404);
     expect(res.body).toEqual({ error: "Accessory not found" });
   });

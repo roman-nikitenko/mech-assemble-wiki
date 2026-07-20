@@ -8,6 +8,7 @@ import { WeaponsPage } from "./pages/WeaponsPage";
 import { AccessoriesPage } from "./pages/AccessoriesPage";
 import { PilotsPage } from "./pages/PilotsPage";
 import { AdminLayout } from "./admin/AdminLayout";
+import { AdminLoginPage } from "./admin/AdminLoginPage";
 import { DashboardPage } from "./admin/DashboardPage";
 import { UsersPage } from "./admin/UsersPage";
 import { SettingsPage } from "./admin/SettingsPage";
@@ -40,6 +41,8 @@ export default function App() {
         <Route path="/profile/builds/new" element={<BuildEditorPage />} />
         <Route path="/profile/builds/:buildId/edit" element={<BuildEditorPage />} />
       </Route>
+
+      <Route path="/admin/login" element={<AdminLoginPage />} />
 
       {/* Admin area: AdminLayout renders the sidebar, children fill the Outlet. */}
       <Route path="/admin" element={<AdminLayout />}>

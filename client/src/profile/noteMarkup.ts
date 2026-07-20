@@ -5,7 +5,7 @@
       **bold**        → bold
       *italic*        → italic
       #[Iron Colossus]→ mention   (brackets because names contain spaces)
-    Headings take the rest of their line verbatim — no inline markup inside.
+    Headings support inline markup (bold, italic, mentions) just like paragraphs.
     Unmatched markers are left as literal text, never errors. */
 
 export type NoteInline =

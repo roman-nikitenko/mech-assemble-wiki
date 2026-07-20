@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { MechRank, Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma";
+import { requireAdmin } from "../lib/auth";
 import { buildTree } from "../lib/build-tree";
 import { parseMechInput } from "../lib/mech-input";
 import { createSkillNodes } from "../lib/skill-nodes";
@@ -146,8 +147,7 @@ mechsRouter.get("/:id", async (req, res) => {
 
 // POST /api/mechs — create a mech (admin). Core identity + traits only;
 // nested systems (skills, weapon, ...) are managed elsewhere for now.
-// ⚠️ No auth yet (deliberate, local-only) — must be protected before deploy.
-mechsRouter.post("/", async (req, res) => {
+mechsRouter.post("/", requireAdmin, async (req, res) => {
   const input = parseMechInput(req.body);
   if (!input.ok) return res.status(400).json({ error: input.message });
   const { traitNames, pilotId, skills, skins, ...fields } = input.value;
@@ -206,7 +206,7 @@ mechsRouter.post("/", async (req, res) => {
 });
 
 // PUT /api/mechs/:id — update core fields and REPLACE the trait set.
-mechsRouter.put("/:id", async (req, res) => {
+mechsRouter.put("/:id", requireAdmin, async (req, res) => {
   const { id } = req.params;
   if (!UUID_RE.test(id)) return res.status(404).json({ error: "Mech not found" });
 
@@ -288,7 +288,7 @@ mechsRouter.put("/:id", async (req, res) => {
 // entire kit: skills, upgrades, weapon, accessory, skins, helpers, awakening.
 // The admin UI warns before calling this. The image FILE is not deleted
 // (acceptable orphan for now — future cleanup job).
-mechsRouter.delete("/:id", async (req, res) => {
+mechsRouter.delete("/:id", requireAdmin, async (req, res) => {
   const { id } = req.params;
   if (!UUID_RE.test(id)) return res.status(404).json({ error: "Mech not found" });
   try {

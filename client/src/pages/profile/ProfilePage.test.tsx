@@ -1,25 +1,74 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import React from "react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ProfilePage } from "./ProfilePage";
 import { saveBuild } from "../../profile/buildStorage";
-import { loadProfile } from "../../profile/profileStorage";
 
-function renderPage() {
+const auth0State = vi.hoisted(() => ({
+  isAuthenticated: true,
+  isLoading: false,
+  user: undefined as { sub?: string; nickname?: string } | undefined,
+  loginWithRedirect: vi.fn(),
+  logout: vi.fn(),
+  getAccessTokenSilently: vi.fn().mockResolvedValue("fake-token"),
+}));
+
+vi.mock("@auth0/auth0-react", () => ({
+  useAuth0: () => auth0State,
+  Auth0Provider: ({ children }: { children: React.ReactNode }) => children,
+}));
+
+function renderPage(path = "/profile", state?: Record<string, unknown>) {
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   render(
-    <MemoryRouter initialEntries={["/profile"]}>
-      <Routes>
-        <Route path="/profile" element={<ProfilePage />} />
-      </Routes>
-    </MemoryRouter>
+    <QueryClientProvider client={qc}>
+      <MemoryRouter initialEntries={[{ pathname: path, state: state ?? null }]}>
+        <Routes>
+          <Route path="/profile" element={<ProfilePage />} />
+        </Routes>
+      </MemoryRouter>
+    </QueryClientProvider>
   );
 }
 
 beforeEach(() => {
+  auth0State.isAuthenticated = true;
+  auth0State.isLoading = false;
+  auth0State.user = undefined;
   localStorage.clear();
-  vi.restoreAllMocks();
+  vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
+    const url =
+      typeof input === "string"
+        ? input
+        : input instanceof URL
+          ? input.toString()
+          : (input as Request).url;
+    // PUT /api/me — echo the body back
+    if (url.includes("/api/me") && (init as RequestInit | undefined)?.method === "PUT") {
+      const body = JSON.parse((init as RequestInit).body as string) as Record<string, unknown>;
+      return new Response(
+        JSON.stringify({ id: "u1", isNew: false, ...body }),
+        { status: 200, headers: { "Content-Type": "application/json" } }
+      );
+    }
+    // GET /api/me
+    if (url.includes("/api/me")) {
+      return new Response(
+        JSON.stringify({ id: "u1", nickname: "Tester", server: "EU-1", isNew: false }),
+        { status: 200, headers: { "Content-Type": "application/json" } }
+      );
+    }
+    return new Response(JSON.stringify([]), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
+  });
 });
+
+afterEach(() => vi.restoreAllMocks());
 
 describe("ProfilePage", () => {
   it("shows the empty state and a New build link", () => {
@@ -56,30 +105,29 @@ describe("ProfilePage", () => {
       "href",
       "/profile/builds/b1/edit"
     );
-    // Post is a placeholder until builds can go public
-    expect(screen.getByRole("button", { name: "Post" })).toBeDisabled();
+    // Post publishes to the community feed
+    expect(screen.getByRole("button", { name: "Post" })).toBeEnabled();
   });
 
-  it("saves nickname and server from the Settings tab", async () => {
+  it("loads settings from the server and saves changes", async () => {
     renderPage();
     await userEvent.click(screen.getByRole("tab", { name: "Settings" }));
-    // nickname is required — Save stays locked until it's filled
+    const nick = await screen.findByLabelText("Nickname *");
+    await waitFor(() => expect(nick).toHaveValue("Tester"));
+    // Save is disabled when the field is empty
+    await userEvent.clear(nick);
     expect(screen.getByRole("button", { name: "Save settings" })).toBeDisabled();
-    await userEvent.type(screen.getByLabelText("Nickname *"), "BanzaiFun");
-    await userEvent.type(screen.getByLabelText("Game server"), "EU-7");
+    await userEvent.type(nick, "NewName");
     await userEvent.click(screen.getByRole("button", { name: "Save settings" }));
-    expect(loadProfile()).toEqual({ nickname: "BanzaiFun", server: "EU-7" });
-    expect(screen.getByText("✓ Saved")).toBeInTheDocument();
+    expect(await screen.findByText("✓ Saved")).toBeInTheDocument();
+    const putCall = (globalThis.fetch as ReturnType<typeof vi.fn>).mock.calls.find(
+      ([, init]) => (init as RequestInit | undefined)?.method === "PUT"
+    );
+    expect(JSON.parse((putCall![1] as RequestInit).body as string).nickname).toBe("NewName");
   });
 
   it("opens Settings with the warning when redirected for a missing nickname", () => {
-    render(
-      <MemoryRouter initialEntries={[{ pathname: "/profile", state: { needNickname: true } }]}>
-        <Routes>
-          <Route path="/profile" element={<ProfilePage />} />
-        </Routes>
-      </MemoryRouter>
-    );
+    renderPage("/profile", { needNickname: true });
     expect(screen.getByLabelText("Nickname *")).toBeInTheDocument();
     expect(screen.getByText(/You need to fill in a nickname first/)).toBeInTheDocument();
   });
@@ -103,5 +151,12 @@ describe("ProfilePage", () => {
     await userEvent.click(screen.getByRole("button", { name: "Delete" }));
     expect(screen.queryByText("Doomed build")).not.toBeInTheDocument();
     expect(screen.getByText(/No builds yet/)).toBeInTheDocument();
+  });
+
+  it("shows the Log in prompt when logged out", () => {
+    auth0State.isAuthenticated = false;
+    renderPage();
+    expect(screen.getByRole("button", { name: "Log in" })).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "+ New build" })).not.toBeInTheDocument();
   });
 });

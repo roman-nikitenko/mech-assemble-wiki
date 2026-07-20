@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma";
+import { requireAdmin } from "../lib/auth";
 
 export const traitsRouter = Router();
 
@@ -10,9 +11,8 @@ traitsRouter.get("/", async (_req, res) => {
   res.json(traits);
 });
 
-// POST /api/traits — create a trait. The app's first WRITE endpoint.
-// ⚠️ No auth yet (deliberate, local-only) — must be protected before deploy.
-traitsRouter.post("/", async (req, res) => {
+// POST /api/traits — create a trait.
+traitsRouter.post("/", requireAdmin, async (req, res) => {
   const { name, color } = req.body ?? {};
   if (typeof name !== "string" || name.trim() === "") {
     return res.status(400).json({ error: "Trait name is required." });

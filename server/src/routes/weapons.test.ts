@@ -2,6 +2,9 @@ import { afterAll, describe, expect, it } from "vitest";
 import request from "supertest";
 import { app } from "../app";
 import { prisma } from "../lib/prisma";
+import { testAdminToken } from "../test/admin-token";
+
+const ADMIN = { "x-admin-token": testAdminToken() };
 
 // Per-file prefix "[test:weapons] " for EVERYTHING this file creates.
 // Cleanup order: pilots first (they reference weapons), then weapons,
@@ -43,7 +46,7 @@ describe("POST /api/weapons", () => {
       data: { name: "[test:weapons] Face", mechId: otherMech.id },
     });
 
-    const res = await request(app).post("/api/weapons").send({
+    const res = await request(app).post("/api/weapons").set(ADMIN).send({
       name: "[test:weapons] Doom Cannon",
       description: "Big boom.",
       tier: "S",
@@ -81,13 +84,13 @@ describe("POST /api/weapons", () => {
   });
 
   it("400s on a blank name", async () => {
-    const res = await request(app).post("/api/weapons").send({ name: " " });
+    const res = await request(app).post("/api/weapons").set(ADMIN).send({ name: " " });
     expect(res.status).toBe(400);
     expect(res.body.error).toContain("name");
   });
 
   it("400s on more than 7 rank-up lines", async () => {
-    const res = await request(app).post("/api/weapons").send({
+    const res = await request(app).post("/api/weapons").set(ADMIN).send({
       name: "[test:weapons] Overranked",
       rankUpPreview: ["1", "2", "3", "4", "5", "6", "7", "8"],
     });
@@ -96,7 +99,7 @@ describe("POST /api/weapons", () => {
   });
 
   it("400s on a skin without a name", async () => {
-    const res = await request(app).post("/api/weapons").send({
+    const res = await request(app).post("/api/weapons").set(ADMIN).send({
       name: "[test:weapons] Nameless Skin",
       skins: [{ name: "  ", bonuses: [] }],
     });
@@ -105,14 +108,14 @@ describe("POST /api/weapons", () => {
   });
 
   it("accepts a skin with exactly 5 bonuses and 400s on 6", async () => {
-    const ok = await request(app).post("/api/weapons").send({
+    const ok = await request(app).post("/api/weapons").set(ADMIN).send({
       name: "[test:weapons] Five Stars",
       skins: [{ name: "[test:weapons] Maxed", bonuses: ["a", "b", "c", "d", "e"] }],
     });
     expect(ok.status).toBe(201);
     expect(ok.body.weaponSkins[0].bonuses).toHaveLength(5);
 
-    const res = await request(app).post("/api/weapons").send({
+    const res = await request(app).post("/api/weapons").set(ADMIN).send({
       name: "[test:weapons] Bonus Overload",
       skins: [{ name: "[test:weapons] Greedy", bonuses: ["a", "b", "c", "d", "e", "f"] }],
     });
@@ -124,7 +127,7 @@ describe("POST /api/weapons", () => {
     const standard = await prisma.mech.create({
       data: { name: "[test:weapons] Small Owner", rank: "Standard" },
     });
-    const res = await request(app).post("/api/weapons").send({
+    const res = await request(app).post("/api/weapons").set(ADMIN).send({
       name: "[test:weapons] Misowned",
       mechId: standard.id,
     });
@@ -136,17 +139,19 @@ describe("POST /api/weapons", () => {
     const mech = await prisma.mech.create({ data: { name: "[test:weapons] Greedy Owner", rank: "S" } });
     const first = await request(app)
       .post("/api/weapons")
+      .set(ADMIN)
       .send({ name: "[test:weapons] First Arm", mechId: mech.id });
     expect(first.status).toBe(201);
     const res = await request(app)
       .post("/api/weapons")
+      .set(ADMIN)
       .send({ name: "[test:weapons] Second Arm", mechId: mech.id });
     expect(res.status).toBe(409);
     expect(res.body.error).toContain("already owns a weapon");
   });
 
   it("400s on an unknown pilot id", async () => {
-    const res = await request(app).post("/api/weapons").send({
+    const res = await request(app).post("/api/weapons").set(ADMIN).send({
       name: "[test:weapons] Ghost Pilot",
       pilotId: "00000000-0000-4000-8000-000000000000",
     });
@@ -157,11 +162,11 @@ describe("POST /api/weapons", () => {
 
 describe("PUT /api/weapons/:id", () => {
   it("updates fields and REPLACES the skins set", async () => {
-    const created = await request(app).post("/api/weapons").send({
+    const created = await request(app).post("/api/weapons").set(ADMIN).send({
       name: "[test:weapons] Editable",
       skins: [{ name: "[test:weapons] Old Skin", bonuses: ["a"] }],
     });
-    const res = await request(app).put(`/api/weapons/${created.body.id}`).send({
+    const res = await request(app).put(`/api/weapons/${created.body.id}`).set(ADMIN).send({
       name: "[test:weapons] Editable v2",
       tier: "S",
       skins: [
@@ -179,9 +184,11 @@ describe("PUT /api/weapons/:id", () => {
     const pilot = await prisma.pilot.create({ data: { name: "[test:weapons] Freed" } });
     const created = await request(app)
       .post("/api/weapons")
+      .set(ADMIN)
       .send({ name: "[test:weapons] Crewed", pilotId: pilot.id });
     const res = await request(app)
       .put(`/api/weapons/${created.body.id}`)
+      .set(ADMIN)
       .send({ name: "[test:weapons] Crewed", pilotId: null });
     expect(res.status).toBe(200);
     expect(res.body.pilot).toBeNull();
@@ -192,6 +199,7 @@ describe("PUT /api/weapons/:id", () => {
   it("404s for an absent id", async () => {
     const res = await request(app)
       .put("/api/weapons/00000000-0000-4000-8000-000000000000")
+      .set(ADMIN)
       .send({ name: "[test:weapons] Nobody" });
     expect(res.status).toBe(404);
     expect(res.body).toEqual({ error: "Weapon not found" });
@@ -204,9 +212,11 @@ describe("PUT /api/weapons/:id", () => {
     });
     const created = await request(app)
       .post("/api/weapons")
+      .set(ADMIN)
       .send({ name: "[test:weapons] Poaching Arm" });
     const res = await request(app)
       .put(`/api/weapons/${created.body.id}`)
+      .set(ADMIN)
       .send({ name: "[test:weapons] Poaching Arm", pilotId: pilot.id });
     expect(res.status).toBe(200);
     const moved = await prisma.pilot.findUnique({ where: { id: pilot.id } });
@@ -220,14 +230,14 @@ describe("DELETE /api/weapons/:id", () => {
     const type = await prisma.type.create({ data: { name: "[test:weapons] Spared Type" } });
     const mech = await prisma.mech.create({ data: { name: "[test:weapons] Spared Mech", rank: "S" } });
     const pilot = await prisma.pilot.create({ data: { name: "[test:weapons] Ejected" } });
-    const created = await request(app).post("/api/weapons").send({
+    const created = await request(app).post("/api/weapons").set(ADMIN).send({
       name: "[test:weapons] Doomed Arm",
       typeId: type.id,
       mechId: mech.id,
       pilotId: pilot.id,
       skins: [{ name: "[test:weapons] Doomed Skin", bonuses: [] }],
     });
-    const res = await request(app).delete(`/api/weapons/${created.body.id}`);
+    const res = await request(app).delete(`/api/weapons/${created.body.id}`).set(ADMIN);
     expect(res.status).toBe(204);
     expect(await prisma.weaponSkin.findMany({ where: { weaponId: created.body.id } })).toEqual([]);
     const freed = await prisma.pilot.findUnique({ where: { id: pilot.id } });
@@ -238,7 +248,7 @@ describe("DELETE /api/weapons/:id", () => {
   });
 
   it("404s for a malformed id", async () => {
-    const res = await request(app).delete("/api/weapons/abc");
+    const res = await request(app).delete("/api/weapons/abc").set(ADMIN);
     expect(res.status).toBe(404);
     expect(res.body).toEqual({ error: "Weapon not found" });
   });
@@ -246,7 +256,7 @@ describe("DELETE /api/weapons/:id", () => {
 
 describe("weapon skill tree", () => {
   it("creates a 3-level tree via parentIndex and returns flat nodes", async () => {
-    const res = await request(app).post("/api/weapons").send({
+    const res = await request(app).post("/api/weapons").set(ADMIN).send({
       name: "[test:weapons] Skilled",
       skills: [
         { name: "Root Strike", description: "Base.", appearanceLevel: 1, type: "Normal", parentIndex: null },
@@ -273,7 +283,7 @@ describe("weapon skill tree", () => {
   });
 
   it("nulls the name on Core skills even when one is sent", async () => {
-    const res = await request(app).post("/api/weapons").send({
+    const res = await request(app).post("/api/weapons").set(ADMIN).send({
       name: "[test:weapons] Core Namer",
       skills: [
         { name: "should vanish", description: "core", appearanceLevel: 5, type: "Core", parentIndex: null },
@@ -284,7 +294,7 @@ describe("weapon skill tree", () => {
   });
 
   it("400s a Normal skill without a name", async () => {
-    const res = await request(app).post("/api/weapons").send({
+    const res = await request(app).post("/api/weapons").set(ADMIN).send({
       name: "[test:weapons] Nameless Skill",
       skills: [{ name: "  ", description: null, appearanceLevel: 1, type: "Normal", parentIndex: null }],
     });
@@ -294,7 +304,7 @@ describe("weapon skill tree", () => {
 
   it("400s appearanceLevel outside 1-10", async () => {
     for (const appearanceLevel of [0, 11]) {
-      const res = await request(app).post("/api/weapons").send({
+      const res = await request(app).post("/api/weapons").set(ADMIN).send({
         name: "[test:weapons] Bad Level",
         skills: [{ name: "X", description: null, appearanceLevel, type: "Normal", parentIndex: null }],
       });
@@ -305,7 +315,7 @@ describe("weapon skill tree", () => {
   });
 
   it("400s a parentIndex that doesn't reference an earlier entry", async () => {
-    const res = await request(app).post("/api/weapons").send({
+    const res = await request(app).post("/api/weapons").set(ADMIN).send({
       name: "[test:weapons] Time Traveler",
       skills: [{ name: "X", description: null, appearanceLevel: 1, type: "Normal", parentIndex: 0 }],
     });
@@ -314,11 +324,11 @@ describe("weapon skill tree", () => {
   });
 
   it("PUT replaces the whole tree", async () => {
-    const created = await request(app).post("/api/weapons").send({
+    const created = await request(app).post("/api/weapons").set(ADMIN).send({
       name: "[test:weapons] Retrained",
       skills: [{ name: "Old Skill", description: null, appearanceLevel: 1, type: "Normal", parentIndex: null }],
     });
-    const res = await request(app).put(`/api/weapons/${created.body.id}`).send({
+    const res = await request(app).put(`/api/weapons/${created.body.id}`).set(ADMIN).send({
       name: "[test:weapons] Retrained",
       skills: [
         { name: "New Root", description: null, appearanceLevel: 2, type: "Normal", parentIndex: null },
@@ -331,11 +341,11 @@ describe("weapon skill tree", () => {
   });
 
   it("DELETE cascades skill nodes", async () => {
-    const created = await request(app).post("/api/weapons").send({
+    const created = await request(app).post("/api/weapons").set(ADMIN).send({
       name: "[test:weapons] Forgetful",
       skills: [{ name: "Doomed Skill", description: null, appearanceLevel: 1, type: "Normal", parentIndex: null }],
     });
-    const res = await request(app).delete(`/api/weapons/${created.body.id}`);
+    const res = await request(app).delete(`/api/weapons/${created.body.id}`).set(ADMIN);
     expect(res.status).toBe(204);
     expect(await prisma.skillNode.findMany({ where: { weaponId: created.body.id } })).toEqual([]);
   });

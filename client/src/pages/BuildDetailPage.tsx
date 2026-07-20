@@ -1,9 +1,6 @@
-import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { imageSrc, useMech, useMechs, useWeapons } from "../api/client";
+import { imageSrc, useMech, useMechs, usePostedBuild, useWeapons } from "../api/client";
 import type { WeaponSummary } from "../api/types";
-import { getBuild } from "../profile/buildStorage";
-import { loadProfile } from "../profile/profileStorage";
 import { AuthorTag } from "../profile/AuthorTag";
 import { resolvePicks } from "../profile/buildRules";
 import { PickedSlot } from "../profile/SkillsBlock";
@@ -23,49 +20,50 @@ function SkillGrid({ children }: { children: React.ReactNode }) {
   return <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-8">{children}</div>;
 }
 
-/** Public, read-only view of one build: banner with the attached weapons,
-    the picked skills (never the full palettes), and the note. */
+/** Public, read-only view of one posted build. Fetches from /api/builds/:id. */
 export function BuildDetailPage() {
   const { buildId } = useParams<{ buildId: string }>();
-  const [build] = useState(() => (buildId ? getBuild(buildId) : undefined));
-  const [profile] = useState(() => loadProfile());
-
+  const build = usePostedBuild(buildId ?? "");
   const mechs = useMechs({});
-  const detail = useMech(build?.mechId ?? "");
+  const detail = useMech(build.data?.mechId ?? "");
   const weapons = useWeapons();
   const allWeapons = weapons.data ?? [];
 
-  if (!build) {
+  if (build.isPending) {
+    return (
+      <main className="mx-auto max-w-6xl px-4 py-16 text-center text-ink-dim">Loading…</main>
+    );
+  }
+
+  if (!build.data) {
     return (
       <main className="mx-auto max-w-6xl px-4 py-16 text-center">
-        <p className="text-ink-dim">Build not found in this browser.</p>
+        <p className="text-ink-dim">Build not found.</p>
         <Link to="/builds" className="text-accent underline">Back to builds</Link>
       </main>
     );
   }
 
-  const isWeaponBuild = build.weaponId !== null;
-  const buildWeapon = isWeaponBuild
-    ? allWeapons.find((w) => w.id === build.weaponId)
-    : undefined;
+  const b = build.data;
+  const isWeaponBuild = b.weaponId !== null;
+  const buildWeapon = isWeaponBuild ? allWeapons.find((w) => w.id === b.weaponId) : undefined;
   const mech = detail.data;
 
   const subjectSkills = isWeaponBuild ? (buildWeapon?.skillNodes ?? []) : (mech?.skillNodes ?? []);
   const subjectArt = isWeaponBuild
     ? (buildWeapon?.iconUrl ?? buildWeapon?.imageUrl)
     : mech?.cardSkillIconUrl;
-  const subjectPicks = resolvePicks(subjectSkills, build.skillIds);
+  const subjectPicks = resolvePicks(subjectSkills, b.skillIds);
   const subjectRegular = subjectPicks.filter((s) => s.type !== "Core");
 
-  const equipped = build.weaponIds
+  const equipped = b.weaponIds
     .map((id) => allWeapons.find((w) => w.id === id))
     .filter((w): w is WeaponSummary => w !== undefined);
   const weaponPicks = equipped.map((w) => ({
     weapon: w,
-    picks: resolvePicks(w.skillNodes, build.weaponSkillIds[w.id] ?? []),
+    picks: resolvePicks(w.skillNodes, b.weaponSkillIds[w.id] ?? []),
   }));
 
-  // The build-wide core pool: subject cores + every weapon's cores.
   const corePool = [
     ...subjectPicks
       .filter((s) => s.type === "Core")
@@ -84,7 +82,6 @@ export function BuildDetailPage() {
     <main className="mx-auto max-w-6xl px-4 py-6">
       <Link to="/builds" className="text-sm text-ink-dim hover:text-accent">← All builds</Link>
 
-      {/* banner with the attached weapons in their corner squares */}
       <div className="relative mt-3 h-96 overflow-hidden rounded-xl border border-edge bg-surface">
         {bannerImage && (
           <img src={imageSrc(bannerImage)} alt="" className="absolute inset-0 h-full w-full object-cover" />
@@ -110,12 +107,12 @@ export function BuildDetailPage() {
       </div>
 
       <div className="mt-4 flex items-center justify-between gap-2">
-        <h1 className="text-3xl font-black tracking-tight">{build.name}</h1>
-        <ShareButton buildId={build.id} />
+        <h1 className="text-3xl font-black tracking-tight">{b.name}</h1>
+        <ShareButton buildId={b.id} />
       </div>
       <p className="mt-1 text-sm text-ink-dim">
-        by <AuthorTag nickname={profile.nickname} server={profile.server} /> · updated{" "}
-        {formatDate(build.updatedAt)}
+        by <AuthorTag nickname={b.author.nickname} server={b.author.server} /> · updated{" "}
+        {formatDate(b.updatedAt)}
       </p>
 
       {corePool.length > 0 && (
@@ -159,9 +156,9 @@ export function BuildDetailPage() {
         );
       })}
 
-      {build.description.trim() !== "" && (
+      {b.description.trim() !== "" && (
         <div className="mt-8 max-w-3xl rounded-xl border border-edge bg-surface p-5">
-          <NotePreview text={build.description} mechs={mechs.data ?? []} weapons={allWeapons} />
+          <NotePreview text={b.description} mechs={mechs.data ?? []} weapons={allWeapons} />
         </div>
       )}
     </main>

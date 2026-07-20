@@ -66,7 +66,11 @@ export function verifyAdminToken(token: string): boolean {
 
 /** Guards every admin WRITE endpoint. Reads x-admin-token (separate header
     so it never collides with the players' Authorization Bearer). */
-export const requireAdmin: RequestHandler = (req, res, next) => {
+// Typed as RequestHandler<any> so it composes with parameterised routes
+// (e.g. "/:id") without breaking TypeScript's template-literal params inference.
+// The middleware never reads req.params, so the looser typing has no runtime
+// impact.
+export const requireAdmin: RequestHandler<any, any, any, any> = (req, res, next) => {
   const token = req.header("x-admin-token");
   if (!token || !verifyAdminToken(token)) {
     res.status(401).json({ error: "Admin login required" });

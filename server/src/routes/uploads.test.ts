@@ -4,6 +4,9 @@ import path from "node:path";
 import request from "supertest";
 import { app } from "../app";
 import { uploadsDir } from "./uploads";
+import { testAdminToken } from "../test/admin-token";
+
+const ADMIN = { "x-admin-token": testAdminToken() };
 
 // A real 1x1 transparent PNG — tiny but a genuinely valid image file.
 const PNG_1PX = Buffer.from(
@@ -25,6 +28,7 @@ describe("POST /api/uploads", () => {
   it("accepts a png and returns its public url", async () => {
     const res = await request(app)
       .post("/api/uploads")
+      .set(ADMIN)
       .attach("image", PNG_1PX, { filename: "pixel.png", contentType: "image/png" });
     expect(res.status).toBe(201);
     expect(res.body.url).toMatch(/^\/uploads\/[0-9a-f-]+\.png$/);
@@ -37,13 +41,14 @@ describe("POST /api/uploads", () => {
   it("rejects a non-image file", async () => {
     const res = await request(app)
       .post("/api/uploads")
+      .set(ADMIN)
       .attach("image", Buffer.from("hello"), { filename: "note.txt", contentType: "text/plain" });
     expect(res.status).toBe(400);
     expect(res.body.error).toContain("PNG");
   });
 
   it("rejects a request with no file", async () => {
-    const res = await request(app).post("/api/uploads");
+    const res = await request(app).post("/api/uploads").set(ADMIN);
     expect(res.status).toBe(400);
   });
 });

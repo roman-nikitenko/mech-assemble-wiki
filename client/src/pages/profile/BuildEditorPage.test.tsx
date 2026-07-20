@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import React from "react";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
@@ -6,7 +7,20 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { GameType, MechDetail, MechSummary, WeaponSummary } from "../../api/types";
 import { BuildEditorPage } from "./BuildEditorPage";
 import { listBuilds, saveBuild } from "../../profile/buildStorage";
-import { saveProfile } from "../../profile/profileStorage";
+
+const auth0State = vi.hoisted(() => ({
+  isAuthenticated: true,
+  isLoading: false,
+  user: undefined as { sub?: string; nickname?: string } | undefined,
+  loginWithRedirect: vi.fn(),
+  logout: vi.fn(),
+  getAccessTokenSilently: vi.fn().mockResolvedValue("fake-token"),
+}));
+
+vi.mock("@auth0/auth0-react", () => ({
+  useAuth0: () => auth0State,
+  Auth0Provider: ({ children }: { children: React.ReactNode }) => children,
+}));
 
 const summary: MechSummary = {
   id: "m1",
@@ -73,14 +87,26 @@ const weaponsFixture: WeaponSummary[] = [
   weaponFixture({ id: "w2", name: "Thunder Pike", tier: "Standard" }),
 ];
 
+// Mutable so individual tests can override it to simulate no nickname.
+let meNickname: string | null = "Tester";
+
 function renderEditor(path = "/profile/builds/new") {
-  vi.spyOn(globalThis, "fetch").mockImplementation((input) => {
+  vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
     const url = String(input);
     let body: unknown;
-    if (url.includes("/api/mechs/m1")) body = detail;
-    else if (url.includes("/api/weapons")) body = weaponsFixture;
-    else if (url.includes("/api/types")) body = [fireType];
-    else body = [summary];
+    // /api/me check must come before /api/mechs to avoid false-prefix match
+    // ("/api/mechs/m1" starts with "/api/me", so we use endsWith for /api/me)
+    if (url.endsWith("/api/me")) {
+      body = { id: "u1", nickname: meNickname, server: "", isNew: false };
+    } else if (url.includes("/api/mechs/m1")) {
+      body = detail;
+    } else if (url.includes("/api/weapons")) {
+      body = weaponsFixture;
+    } else if (url.includes("/api/types")) {
+      body = [fireType];
+    } else {
+      body = [summary];
+    }
     return Promise.resolve(
       new Response(JSON.stringify(body), {
         status: 200,
@@ -103,18 +129,25 @@ function renderEditor(path = "/profile/builds/new") {
 }
 
 beforeEach(() => {
+  auth0State.isAuthenticated = true;
+  auth0State.isLoading = false;
+  meNickname = "Tester";
   localStorage.clear();
-  // Creating a build requires a nickname (see the redirect test below).
-  saveProfile({ nickname: "Tester", server: "" });
 });
 afterEach(() => vi.restoreAllMocks());
 
 describe("BuildEditorPage (new build)", () => {
-  it("redirects to the profile when no nickname is set", async () => {
-    localStorage.clear(); // wipe the seeded profile
+  it("redirects to the profile when not logged in", async () => {
+    auth0State.isAuthenticated = false;
     renderEditor();
     expect(await screen.findByText("profile list")).toBeInTheDocument();
     expect(screen.queryByText("Choose a mech")).not.toBeInTheDocument();
+  });
+
+  it("redirects to the profile when logged in but nickname is null", async () => {
+    meNickname = null;
+    renderEditor();
+    expect(await screen.findByText("profile list")).toBeInTheDocument();
   });
 
   it("starts with the mech picker, then shows 8 slots and the skill palette", async () => {

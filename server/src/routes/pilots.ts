@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma";
+import { requireAdmin } from "../lib/auth";
 import { parsePilotInput } from "../lib/pilot-input";
 import { UUID_RE } from "../lib/uuid";
 
@@ -60,8 +61,7 @@ pilotsRouter.get("/", async (_req, res) => {
 });
 
 // POST /api/pilots
-// ⚠️ No auth yet (deliberate, local-only) — must be protected before deploy.
-pilotsRouter.post("/", async (req, res) => {
+pilotsRouter.post("/", requireAdmin, async (req, res) => {
   const input = parsePilotInput(req.body);
   if (!input.ok) return res.status(400).json({ error: input.message });
 
@@ -85,7 +85,7 @@ pilotsRouter.post("/", async (req, res) => {
 });
 
 // PUT /api/pilots/:id
-pilotsRouter.put("/:id", async (req, res) => {
+pilotsRouter.put("/:id", requireAdmin, async (req, res) => {
   const { id } = req.params;
   if (!UUID_RE.test(id)) return res.status(404).json({ error: "Pilot not found" });
 
@@ -117,7 +117,7 @@ pilotsRouter.put("/:id", async (req, res) => {
 
 // DELETE /api/pilots/:id — removes the PILOT only. The linked mech is not
 // affected (the FK lives on pilots, so there is nothing to cascade).
-pilotsRouter.delete("/:id", async (req, res) => {
+pilotsRouter.delete("/:id", requireAdmin, async (req, res) => {
   const { id } = req.params;
   if (!UUID_RE.test(id)) return res.status(404).json({ error: "Pilot not found" });
   try {
