@@ -13,7 +13,6 @@ const mechs: MechSummary[] = [
     epithet: "Shadow Hunter",
     type: null,
     rank: "S",
-    quality: "Supreme",
     imageUrl: null,
   },
 ];

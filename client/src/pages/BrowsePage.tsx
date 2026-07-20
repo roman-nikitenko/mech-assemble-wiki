@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
 import { useMechs, useTypes } from "../api/client";
 import type { MechRank } from "../api/types";
 import { FilterBar } from "../components/FilterBar";
@@ -30,14 +29,7 @@ export function BrowsePage() {
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-6">
-      <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-2xl font-black tracking-tight">
-          Mech <span className="text-accent">Assemble</span> Wiki
-        </h1>
-        <Link to="/admin" className="text-sm text-ink-dim hover:text-accent">
-          Admin
-        </Link>
-      </div>
+      {/* Title + Admin link live in PublicLayout now. */}
       <FilterBar
         types={types.data ?? []}
         typeId={typeId}

@@ -1,8 +1,10 @@
 import { Router } from "express";
 import { MechRank, Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma";
+import { requireAdmin } from "../lib/auth";
 import { buildTree } from "../lib/build-tree";
 import { parseMechInput } from "../lib/mech-input";
+import { createSkillNodes } from "../lib/skill-nodes";
 import { UUID_RE } from "../lib/uuid";
 
 export const mechsRouter = Router();
@@ -14,7 +16,6 @@ const SUMMARY_SELECT = {
   epithet: true,
   type: { select: { id: true, name: true, iconUrl: true } },
   rank: true,
-  quality: true,
   imageUrl: true,
 } as const;
 
@@ -99,6 +100,7 @@ const detailInclude = {
     include: {
       upgrades: { orderBy: { name: "asc" } },
       weaponSkins: true,
+      skillNodes: { orderBy: { sortOrder: "asc" as const } },
       helpers: { include: { ranks: { orderBy: { rank: "asc" } } } },
       type: { select: { id: true, name: true, iconUrl: true } },
       pilot: { select: { id: true, name: true } },
@@ -107,6 +109,7 @@ const detailInclude = {
   accessory: true,
   type: { select: { id: true, name: true, iconUrl: true } },
   pilot: { select: { id: true, name: true } },
+  skillNodes: { orderBy: { sortOrder: "asc" as const } },
   skins: { include: { stars: { orderBy: { star: "asc" } } } },
   helpers: { include: { ranks: { orderBy: { rank: "asc" } } } },
 } satisfies Prisma.MechInclude;
@@ -144,20 +147,10 @@ mechsRouter.get("/:id", async (req, res) => {
 
 // POST /api/mechs — create a mech (admin). Core identity + traits only;
 // nested systems (skills, weapon, ...) are managed elsewhere for now.
-// ⚠️ No auth yet (deliberate, local-only) — must be protected before deploy.
-mechsRouter.post("/", async (req, res) => {
+mechsRouter.post("/", requireAdmin, async (req, res) => {
   const input = parseMechInput(req.body);
   if (!input.ok) return res.status(400).json({ error: input.message });
-  const { traitIds, pilotId, ...fields } = input.value;
-
-  // Check trait ids up front so the client gets a helpful 400 instead of a
-  // cryptic foreign-key error from the database.
-  const found = await prisma.trait.findMany({ where: { id: { in: traitIds } } });
-  if (found.length !== traitIds.length) {
-    const known = new Set(found.map((t) => t.id));
-    const unknown = traitIds.filter((id) => !known.has(id));
-    return res.status(400).json({ error: `Unknown trait ids: ${unknown.join(", ")}` });
-  }
+  const { traitNames, pilotId, skills, skins, ...fields } = input.value;
 
   const pilotError = await validateMechPilotLink(pilotId, fields.rank);
   if (pilotError) return res.status(400).json({ error: pilotError });
@@ -170,7 +163,26 @@ mechsRouter.post("/", async (req, res) => {
       const created = await tx.mech.create({
         data: {
           ...fields,
-          traits: { create: traitIds.map((traitId) => ({ traitId })) },
+          // Traits arrive as NAMES: link the existing catalog trait when one
+          // matches, otherwise create it — the admin never manages trait ids.
+          traits: {
+            create: traitNames.map((name) => ({
+              trait: { connectOrCreate: { where: { name }, create: { name } } },
+            })),
+          },
+          // Skin bonuses are positional: index i = ★(i+1); blanks produce no
+          // star row, so a skin with only a ★3 perk keeps its star number.
+          skins: {
+            create: skins.map((s) => ({
+              name: s.name,
+              imageUrl: s.imageUrl,
+              stars: {
+                create: s.bonuses
+                  .map((perk, i) => ({ star: i + 1, perk }))
+                  .filter((row) => row.perk !== ""),
+              },
+            })),
+          },
         },
         select: SUMMARY_SELECT,
       });
@@ -181,6 +193,7 @@ mechsRouter.post("/", async (req, res) => {
         // either/or: seating into a mech un-seats from any weapon
         await tx.pilot.update({ where: { id: pilotId }, data: { mechId: created.id, weaponId: null } });
       }
+      await createSkillNodes(tx, { mechId: created.id }, skills);
       return created;
     });
     res.status(201).json(mech);
@@ -193,20 +206,13 @@ mechsRouter.post("/", async (req, res) => {
 });
 
 // PUT /api/mechs/:id — update core fields and REPLACE the trait set.
-mechsRouter.put("/:id", async (req, res) => {
+mechsRouter.put("/:id", requireAdmin, async (req, res) => {
   const { id } = req.params;
   if (!UUID_RE.test(id)) return res.status(404).json({ error: "Mech not found" });
 
   const input = parseMechInput(req.body);
   if (!input.ok) return res.status(400).json({ error: input.message });
-  const { traitIds, pilotId, ...fields } = input.value;
-
-  const found = await prisma.trait.findMany({ where: { id: { in: traitIds } } });
-  if (found.length !== traitIds.length) {
-    const known = new Set(found.map((t) => t.id));
-    const unknown = traitIds.filter((tid) => !known.has(tid));
-    return res.status(400).json({ error: `Unknown trait ids: ${unknown.join(", ")}` });
-  }
+  const { traitNames, pilotId, skills, skins, ...fields } = input.value;
 
   const pilotError = await validateMechPilotLink(pilotId, fields.rank);
   if (pilotError) return res.status(400).json({ error: pilotError });
@@ -217,11 +223,30 @@ mechsRouter.put("/:id", async (req, res) => {
   try {
     const mech = await prisma.$transaction(async (tx) => {
       await tx.mechTrait.deleteMany({ where: { mechId: id } });
+      // Replace-the-set, like traits: deleting a skin cascades to its stars.
+      await tx.skin.deleteMany({ where: { mechId: id } });
       const updated = await tx.mech.update({
         where: { id },
         data: {
           ...fields,
-          traits: { create: traitIds.map((traitId) => ({ traitId })) },
+          // Same find-or-create-by-name as POST. Unlinked traits stay in the
+          // catalog — another mech may share them.
+          traits: {
+            create: traitNames.map((name) => ({
+              trait: { connectOrCreate: { where: { name }, create: { name } } },
+            })),
+          },
+          skins: {
+            create: skins.map((s) => ({
+              name: s.name,
+              imageUrl: s.imageUrl,
+              stars: {
+                create: s.bonuses
+                  .map((perk, i) => ({ star: i + 1, perk }))
+                  .filter((row) => row.perk !== ""),
+              },
+            })),
+          },
         },
         select: SUMMARY_SELECT,
       });
@@ -234,6 +259,9 @@ mechsRouter.put("/:id", async (req, res) => {
           await tx.pilot.update({ where: { id: pilotId }, data: { mechId: id, weaponId: null } });
         }
       }
+      // Replace the mech's whole skill tree — same set semantics as weapons.
+      await tx.skillNode.deleteMany({ where: { mechId: id } });
+      await createSkillNodes(tx, { mechId: id }, skills);
       return updated;
     });
     res.json(mech);
@@ -260,7 +288,7 @@ mechsRouter.put("/:id", async (req, res) => {
 // entire kit: skills, upgrades, weapon, accessory, skins, helpers, awakening.
 // The admin UI warns before calling this. The image FILE is not deleted
 // (acceptable orphan for now — future cleanup job).
-mechsRouter.delete("/:id", async (req, res) => {
+mechsRouter.delete("/:id", requireAdmin, async (req, res) => {
   const { id } = req.params;
   if (!UUID_RE.test(id)) return res.status(404).json({ error: "Mech not found" });
   try {

@@ -12,11 +12,12 @@ const bareMech: MechDetail = {
   epithet: null,
   type: null,
   rank: "Standard",
-  quality: null,
   imageUrl: null,
+  iconUrl: null,
+  cardSkillIconUrl: null,
   specialBonus: null,
-  pilotName: null,
   lore: null,
+  rankUpPreview: [],
   skills: [],
   traits: [],
   awakeningLevels: [],
@@ -25,6 +26,7 @@ const bareMech: MechDetail = {
   pilot: null,
   skins: [],
   helpers: [],
+  skillNodes: [],
 };
 
 /** Stubs fetch to return the given mech, then renders the page at its URL. */
@@ -83,6 +85,7 @@ describe("MechDetailPage tabs are driven by data", () => {
         weaponSkins: [],
         helpers: [],
         pilot: null,
+        skillNodes: [],
       },
       awakeningLevels: [
         {
@@ -95,7 +98,7 @@ describe("MechDetailPage tabs are driven by data", () => {
           unlocks: [],
         },
       ],
-      skins: [{ id: "s1", name: "Skin", description: null, stars: [] }],
+      skins: [{ id: "s1", name: "Skin", description: null, imageUrl: null, stars: [] }],
     });
     expect(await screen.findByRole("tab", { name: "Weapon" })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: "Awaken" })).toBeInTheDocument();

@@ -1,7 +1,7 @@
 import type { Weapon } from "../../api/types";
 import { imageSrc } from "../../api/client";
+import { SkillNodeBranch } from "../../components/SkillNodeBranch";
 import { StatBlock } from "../../components/StatBlock";
-import { UpgradeTree } from "../../components/UpgradeTree";
 import { RankBadge } from "../../components/RankBadge";
 import { HelperCard } from "../../components/HelperCard";
 
@@ -20,12 +20,12 @@ export function WeaponTab({ weapon }: { weapon: Weapon }) {
           <StatBlock stats={weapon.baseStats} />
         </div>
       </section>
-      {weapon.upgrades.length > 0 && (
+      {weapon.skillNodes.length > 0 && (
         <section>
           <h3 className="mb-2 text-sm font-bold uppercase tracking-wider text-ink-dim">
-            Upgrade tree
+            Skills
           </h3>
-          <UpgradeTree roots={weapon.upgrades} />
+          <SkillNodeBranch nodes={weapon.skillNodes} parentId={null} />
         </section>
       )}
       {weapon.weaponSkins.length > 0 && (
@@ -73,3 +73,4 @@ export function WeaponTab({ weapon }: { weapon: Weapon }) {
     </div>
   );
 }
+

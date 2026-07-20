@@ -1,7 +1,9 @@
 import { Router } from "express";
 import { Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma";
+import { requireAdmin } from "../lib/auth";
 import { parseWeaponInput } from "../lib/weapon-input";
+import { createSkillNodes } from "../lib/skill-nodes";
 import { UUID_RE } from "../lib/uuid";
 
 export const weaponsRouter = Router();
@@ -12,6 +14,7 @@ const WEAPON_INCLUDE = {
   mech: { select: { id: true, name: true } },
   pilot: { select: { id: true, name: true } },
   weaponSkins: true,
+  skillNodes: { orderBy: { sortOrder: "asc" as const } },
 } satisfies Prisma.WeaponInclude;
 
 // Shared by POST and PUT: link validations that need the database.
@@ -50,11 +53,10 @@ weaponsRouter.get("/", async (_req, res) => {
 });
 
 // POST /api/weapons — weapon + inline skins + optional links, atomically.
-// ⚠️ No auth yet (deliberate, local-only) — must be protected before deploy.
-weaponsRouter.post("/", async (req, res) => {
+weaponsRouter.post("/", requireAdmin, async (req, res) => {
   const input = parseWeaponInput(req.body);
   if (!input.ok) return res.status(400).json({ error: input.message });
-  const { pilotId, skins, ...fields } = input.value;
+  const { pilotId, skins, skills, ...fields } = input.value;
 
   const linkError = await validateWeaponLinks(input.value);
   if (linkError) return res.status(400).json({ error: linkError });
@@ -68,6 +70,7 @@ weaponsRouter.post("/", async (req, res) => {
         },
         select: { id: true },
       });
+      await createSkillNodes(tx, { weaponId: created.id }, skills);
       if (pilotId !== undefined && pilotId !== null) {
         // One update covers the whole either/or rule: it overwrites any
         // previous weapon link and clears any mech link.
@@ -98,13 +101,13 @@ weaponsRouter.post("/", async (req, res) => {
 
 // PUT /api/weapons/:id — update fields, REPLACE the skins set, and apply the
 // tri-state pilot link, all atomically.
-weaponsRouter.put("/:id", async (req, res) => {
+weaponsRouter.put("/:id", requireAdmin, async (req, res) => {
   const { id } = req.params;
   if (!UUID_RE.test(id)) return res.status(404).json({ error: "Weapon not found" });
 
   const input = parseWeaponInput(req.body);
   if (!input.ok) return res.status(400).json({ error: input.message });
-  const { pilotId, skins, ...fields } = input.value;
+  const { pilotId, skins, skills, ...fields } = input.value;
 
   const linkError = await validateWeaponLinks(input.value);
   if (linkError) return res.status(400).json({ error: linkError });
@@ -120,6 +123,9 @@ weaponsRouter.put("/:id", async (req, res) => {
           weaponSkins: { create: skins },
         },
       });
+      // Replace the whole skill tree — same set semantics as the skins.
+      await tx.skillNode.deleteMany({ where: { weaponId: id } });
+      await createSkillNodes(tx, { weaponId: id }, skills);
       // Tri-state: undefined = leave the pilot link as-is; null = vacate;
       // string = vacate then seat (clearing the pilot's mech — either/or).
       if (pilotId !== undefined) {
@@ -155,7 +161,7 @@ weaponsRouter.put("/:id", async (req, res) => {
 
 // DELETE /api/weapons/:id — cascades weapon_upgrades and weapon_skins; the
 // pilot is freed (SetNull); the owning mech and the type are untouched.
-weaponsRouter.delete("/:id", async (req, res) => {
+weaponsRouter.delete("/:id", requireAdmin, async (req, res) => {
   const { id } = req.params;
   if (!UUID_RE.test(id)) return res.status(404).json({ error: "Weapon not found" });
   try {

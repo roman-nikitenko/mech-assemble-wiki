@@ -18,6 +18,7 @@ const weapons: WeaponSummary[] = [
     mech: { id: "m1", name: "Ninja" },
     pilot: { id: "p1", name: "Darren" },
     weaponSkins: [],
+    skillNodes: [],
   },
 ];
 

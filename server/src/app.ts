@@ -10,6 +10,9 @@ import { pilotsRouter } from "./routes/pilots";
 import { typesRouter } from "./routes/types";
 import { weaponsRouter } from "./routes/weapons";
 import { accessoriesRouter } from "./routes/accessories";
+import { meRouter } from "./routes/me";
+import { buildsRouter } from "./routes/builds";
+import { adminRouter } from "./routes/admin";
 
 export const app = express();
 
@@ -24,6 +27,9 @@ app.use("/api/pilots", pilotsRouter);
 app.use("/api/types", typesRouter);
 app.use("/api/weapons", weaponsRouter);
 app.use("/api/accessories", accessoriesRouter);
+app.use("/api/me", meRouter);
+app.use("/api/builds", buildsRouter);
+app.use("/api/admin", adminRouter);
 app.use("/api/uploads", uploadsRouter);
 // Serve uploaded images as plain static files: GET /uploads/<name>.
 app.use("/uploads", express.static(uploadsDir));

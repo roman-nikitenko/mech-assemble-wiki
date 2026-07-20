@@ -24,6 +24,10 @@
   --color-ice: #6fd8f0;
   --color-energy: #a583f7;
   --color-explosive: #fb923c;
+
+  /* skill-type header colors in the admin skill-tree editor */
+  --color-skill-premium: #af6b10;
+  --color-skill-core: #813eaf;
 }
 
 body {

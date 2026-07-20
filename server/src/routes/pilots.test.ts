@@ -2,6 +2,9 @@ import { afterAll, describe, expect, it } from "vitest";
 import request from "supertest";
 import { app } from "../app";
 import { prisma } from "../lib/prisma";
+import { testAdminToken } from "../test/admin-token";
+
+const ADMIN = { "x-admin-token": testAdminToken() };
 
 // Write-capable tests share the dev DB. Per-file prefix "[test:pilots] " for
 // EVERYTHING this file creates (pilots AND mechs), so parallel test files
@@ -35,7 +38,7 @@ describe("GET /api/pilots", () => {
 describe("POST /api/pilots", () => {
   it("creates a pilot with all fields and returns 201", async () => {
     const mech = await createSMech("[test:pilots] Full Kit Mech");
-    const res = await request(app).post("/api/pilots").send({
+    const res = await request(app).post("/api/pilots").set(ADMIN).send({
       name: "[test:pilots] Kael",
       unlockBoost: "ATK +5%",
       relationshipBonus: "Thunder damage +10%",
@@ -50,13 +53,13 @@ describe("POST /api/pilots", () => {
   });
 
   it("400s on a blank name", async () => {
-    const res = await request(app).post("/api/pilots").send({ name: " " });
+    const res = await request(app).post("/api/pilots").set(ADMIN).send({ name: " " });
     expect(res.status).toBe(400);
     expect(res.body.error).toContain("name");
   });
 
   it("400s on more than 4 level bonuses", async () => {
-    const res = await request(app).post("/api/pilots").send({
+    const res = await request(app).post("/api/pilots").set(ADMIN).send({
       name: "[test:pilots] Overachiever",
       bonusPerLevel: ["a", "b", "c", "d", "e"],
     });
@@ -68,7 +71,7 @@ describe("POST /api/pilots", () => {
     const standard = await prisma.mech.create({
       data: { name: "[test:pilots] Standard Mech", rank: "Standard" },
     });
-    const res = await request(app).post("/api/pilots").send({
+    const res = await request(app).post("/api/pilots").set(ADMIN).send({
       name: "[test:pilots] Wrong Cockpit",
       mechId: standard.id,
     });
@@ -79,10 +82,12 @@ describe("POST /api/pilots", () => {
   it("409s on a duplicate pilot name", async () => {
     const first = await request(app)
       .post("/api/pilots")
+      .set(ADMIN)
       .send({ name: "[test:pilots] Twin" });
     expect(first.status).toBe(201);
     const res = await request(app)
       .post("/api/pilots")
+      .set(ADMIN)
       .send({ name: "[test:pilots] Twin" });
     expect(res.status).toBe(409);
   });
@@ -91,9 +96,11 @@ describe("POST /api/pilots", () => {
     const mech = await createSMech("[test:pilots] Crowded Mech");
     await request(app)
       .post("/api/pilots")
+      .set(ADMIN)
       .send({ name: "[test:pilots] First In", mechId: mech.id });
     const res = await request(app)
       .post("/api/pilots")
+      .set(ADMIN)
       .send({ name: "[test:pilots] Second In", mechId: mech.id });
     expect(res.status).toBe(409);
     expect(res.body.error).toContain("already has a pilot");
@@ -106,8 +113,9 @@ describe("PUT /api/pilots/:id", () => {
     const m2 = await createSMech("[test:pilots] Second Ride");
     const created = await request(app)
       .post("/api/pilots")
+      .set(ADMIN)
       .send({ name: "[test:pilots] Mover", mechId: m1.id });
-    const res = await request(app).put(`/api/pilots/${created.body.id}`).send({
+    const res = await request(app).put(`/api/pilots/${created.body.id}`).set(ADMIN).send({
       name: "[test:pilots] Mover v2",
       unlockBoost: "DEF +10%",
       bonusPerLevel: ["a", "b"],
@@ -122,6 +130,7 @@ describe("PUT /api/pilots/:id", () => {
   it("404s for an absent id", async () => {
     const res = await request(app)
       .put("/api/pilots/00000000-0000-4000-8000-000000000000")
+      .set(ADMIN)
       .send({ name: "[test:pilots] Nobody" });
     expect(res.status).toBe(404);
     expect(res.body).toEqual({ error: "Pilot not found" });
@@ -133,8 +142,9 @@ describe("DELETE /api/pilots/:id", () => {
     const mech = await createSMech("[test:pilots] Survivor Mech");
     const created = await request(app)
       .post("/api/pilots")
+      .set(ADMIN)
       .send({ name: "[test:pilots] Doomed Pilot", mechId: mech.id });
-    const res = await request(app).delete(`/api/pilots/${created.body.id}`);
+    const res = await request(app).delete(`/api/pilots/${created.body.id}`).set(ADMIN);
     expect(res.status).toBe(204);
     expect(await prisma.pilot.findUnique({ where: { id: created.body.id } })).toBeNull();
     // the mech is untouched
@@ -142,7 +152,7 @@ describe("DELETE /api/pilots/:id", () => {
   });
 
   it("404s for a malformed id", async () => {
-    const res = await request(app).delete("/api/pilots/abc");
+    const res = await request(app).delete("/api/pilots/abc").set(ADMIN);
     expect(res.status).toBe(404);
     expect(res.body).toEqual({ error: "Pilot not found" });
   });
@@ -153,6 +163,7 @@ describe("pilot <-> weapon link (either/or)", () => {
     const weapon = await prisma.weapon.create({ data: { name: "[test:pilots] Fronted Arm" } });
     const res = await request(app)
       .post("/api/pilots")
+      .set(ADMIN)
       .send({ name: "[test:pilots] Weapon Face", weaponId: weapon.id });
     expect(res.status).toBe(201);
     expect(res.body.weapon.name).toBe("[test:pilots] Fronted Arm");
@@ -162,7 +173,7 @@ describe("pilot <-> weapon link (either/or)", () => {
   it("400s when both mechId and weaponId are sent", async () => {
     const mech = await createSMech("[test:pilots] Both Seat");
     const weapon = await prisma.weapon.create({ data: { name: "[test:pilots] Both Arm" } });
-    const res = await request(app).post("/api/pilots").send({
+    const res = await request(app).post("/api/pilots").set(ADMIN).send({
       name: "[test:pilots] Greedy",
       mechId: mech.id,
       weaponId: weapon.id,
@@ -176,9 +187,11 @@ describe("pilot <-> weapon link (either/or)", () => {
     const mech = await createSMech("[test:pilots] Next Seat");
     const created = await request(app)
       .post("/api/pilots")
+      .set(ADMIN)
       .send({ name: "[test:pilots] Switcher", weaponId: weapon.id });
     const res = await request(app)
       .put(`/api/pilots/${created.body.id}`)
+      .set(ADMIN)
       .send({ name: "[test:pilots] Switcher", mechId: mech.id });
     expect(res.status).toBe(200);
     expect(res.body.mech.name).toBe("[test:pilots] Next Seat");
@@ -190,9 +203,11 @@ describe("pilot <-> weapon link (either/or)", () => {
     const weapon = await prisma.weapon.create({ data: { name: "[test:pilots] Next Arm" } });
     const created = await request(app)
       .post("/api/pilots")
+      .set(ADMIN)
       .send({ name: "[test:pilots] Backswitcher", mechId: mech.id });
     const res = await request(app)
       .put(`/api/pilots/${created.body.id}`)
+      .set(ADMIN)
       .send({ name: "[test:pilots] Backswitcher", weaponId: weapon.id });
     expect(res.status).toBe(200);
     expect(res.body.weapon.name).toBe("[test:pilots] Next Arm");

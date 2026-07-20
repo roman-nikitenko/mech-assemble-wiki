@@ -1,7 +1,14 @@
 import { Link, Route, Routes } from "react-router-dom";
+import { PublicLayout } from "./pages/PublicLayout";
 import { BrowsePage } from "./pages/BrowsePage";
 import { MechDetailPage } from "./pages/MechDetailPage";
+import { BuildsPage } from "./pages/BuildsPage";
+import { BuildDetailPage } from "./pages/BuildDetailPage";
+import { WeaponsPage } from "./pages/WeaponsPage";
+import { AccessoriesPage } from "./pages/AccessoriesPage";
+import { PilotsPage } from "./pages/PilotsPage";
 import { AdminLayout } from "./admin/AdminLayout";
+import { AdminLoginPage } from "./admin/AdminLoginPage";
 import { DashboardPage } from "./admin/DashboardPage";
 import { UsersPage } from "./admin/UsersPage";
 import { SettingsPage } from "./admin/SettingsPage";
@@ -15,12 +22,27 @@ import { AdminPilotsPage } from "./admin/pilots/AdminPilotsPage";
 import { PilotFormPage } from "./admin/pilots/PilotFormPage";
 import { AdminTypesPage } from "./admin/types/AdminTypesPage";
 import { TypeFormPage } from "./admin/types/TypeFormPage";
+import { ProfilePage } from "./pages/profile/ProfilePage";
+import { BuildEditorPage } from "./pages/profile/BuildEditorPage";
 
 export default function App() {
   return (
     <Routes>
-      <Route path="/" element={<BrowsePage />} />
-      <Route path="/mechs/:id" element={<MechDetailPage />} />
+      {/* Public site: PublicLayout renders the header + section tabs. */}
+      <Route element={<PublicLayout />}>
+        <Route path="/" element={<BrowsePage />} />
+        <Route path="/mechs/:id" element={<MechDetailPage />} />
+        <Route path="/builds" element={<BuildsPage />} />
+        <Route path="/builds/:buildId" element={<BuildDetailPage />} />
+        <Route path="/weapons" element={<WeaponsPage />} />
+        <Route path="/accessories" element={<AccessoriesPage />} />
+        <Route path="/pilots" element={<PilotsPage />} />
+        <Route path="/profile" element={<ProfilePage />} />
+        <Route path="/profile/builds/new" element={<BuildEditorPage />} />
+        <Route path="/profile/builds/:buildId/edit" element={<BuildEditorPage />} />
+      </Route>
+
+      <Route path="/admin/login" element={<AdminLoginPage />} />
 
       {/* Admin area: AdminLayout renders the sidebar, children fill the Outlet. */}
       <Route path="/admin" element={<AdminLayout />}>

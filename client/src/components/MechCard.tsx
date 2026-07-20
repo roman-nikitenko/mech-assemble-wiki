@@ -34,7 +34,6 @@ export function MechCard({ mech }: { mech: MechSummary }) {
       </div>
       <div className="mt-3 flex items-center gap-2">
         {mech.type && <TypeBadge type={mech.type} />}
-        {mech.quality && <span className="text-xs text-ink-dim">{mech.quality}</span>}
       </div>
     </Link>
   );

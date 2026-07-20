@@ -1,4 +1,5 @@
 import { MechRank } from "@prisma/client";
+import { parseSkillNodes, type SkillNodeInput } from "./skill-node-input";
 
 // Shared validation for POST and PUT /api/weapons — the same pattern as
 // mech-input.ts / pilot-input.ts.
@@ -24,6 +25,7 @@ export interface WeaponInput {
   imageUrl: string | null;
   iconUrl: string | null;
   skins: WeaponSkinInput[];
+  skills: SkillNodeInput[];
 }
 
 type ParseResult = { ok: true; value: WeaponInput } | { ok: false; message: string };
@@ -96,6 +98,10 @@ export function parseWeaponInput(body: unknown): ParseResult {
     }
   }
 
+  const skillsResult = parseSkillNodes(b.skills);
+  if (!skillsResult.ok) return skillsResult;
+  const skills = skillsResult.value;
+
   for (const field of ["typeId", "mechId"] as const) {
     if (b[field] !== undefined && b[field] !== null && typeof b[field] !== "string") {
       return { ok: false, message: `${field} must be an id string or null.` };
@@ -125,6 +131,7 @@ export function parseWeaponInput(body: unknown): ParseResult {
       imageUrl,
       iconUrl,
       skins,
+      skills,
     },
   };
 }
