@@ -11,6 +11,7 @@ export interface SkillNodeInput {
   appearanceLevel: number;
   type: SkillNodeType;
   parentIndex: number | null;
+  repeatable: boolean;
 }
 
 type ParseSkillsResult =
@@ -76,6 +77,9 @@ export function parseSkillNodes(raw: unknown): ParseSkillsResult {
       appearanceLevel: s.appearanceLevel,
       type,
       parentIndex: (s.parentIndex as number | null | undefined) ?? null,
+      // Repeatable is a Normal-only flag — forced false for Premium/Core,
+      // the same "forced, not trusted" pattern used for Core names above.
+      repeatable: type === "Normal" && s.repeatable === true,
     });
   }
   return { ok: true, value: skills };

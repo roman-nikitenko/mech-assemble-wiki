@@ -4,9 +4,49 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import type { GameType, MechDetail, MechSummary, WeaponSummary } from "../../api/types";
+import type {
+  BuildStatus,
+  GameType,
+  MechDetail,
+  MechSummary,
+  PostedBuild,
+  WeaponSummary,
+} from "../../api/types";
 import { BuildEditorPage } from "./BuildEditorPage";
-import { listBuilds, saveBuild } from "../../profile/buildStorage";
+
+// Builds the editor can load in edit mode (GET /api/builds/mine).
+let myBuilds: PostedBuild[] = [];
+
+const postedBuild = (over: Partial<PostedBuild> = {}): PostedBuild => ({
+  id: "b1",
+  name: "Saved rush",
+  description: "",
+  mechId: "m1",
+  weaponId: null,
+  skillIds: [],
+  weaponIds: [],
+  weaponSkillIds: {},
+  status: "Draft" as BuildStatus,
+  hearts: 0,
+  createdAt: "2026-07-15T00:00:00.000Z",
+  updatedAt: "2026-07-15T00:00:00.000Z",
+  author: { nickname: "Tester", server: "" },
+  ...over,
+});
+
+/** The JSON body of the last create/edit request (POST or PUT /api/builds). */
+function lastSavedInput(): Record<string, unknown> {
+  const calls = (globalThis.fetch as ReturnType<typeof vi.fn>).mock.calls;
+  const call = [...calls].reverse().find(([u, init]) => {
+    const url = String(u);
+    const method = (init as RequestInit | undefined)?.method;
+    return (
+      (url.endsWith("/api/builds") && method === "POST") ||
+      (/\/api\/builds\/[^/]+$/.test(url) && method === "PUT")
+    );
+  });
+  return JSON.parse((call![1] as RequestInit).body as string);
+}
 
 const auth0State = vi.hoisted(() => ({
   isAuthenticated: true,
@@ -48,11 +88,11 @@ const detail: MechDetail = {
   skins: [],
   helpers: [],
   skillNodes: [
-    { id: "s1", parentId: null, name: "Zap", description: "Bolt", appearanceLevel: 1, type: "Normal", sortOrder: 0 },
-    { id: "s2", parentId: "s1", name: "Zap II", description: "Bigger bolt", appearanceLevel: 1, type: "Premium", sortOrder: 1 },
-    { id: "s3", parentId: null, name: "Overdrive", description: null, appearanceLevel: 3, type: "Normal", sortOrder: 2 },
-    { id: "s4", parentId: null, name: "Dash", description: null, appearanceLevel: 1, type: "Normal", sortOrder: 3 },
-    { id: "s5", parentId: null, name: null, description: "Core power", appearanceLevel: 1, type: "Core", sortOrder: 4 },
+    { id: "s1", parentId: null, name: "Zap", description: "Bolt", appearanceLevel: 1, type: "Normal", sortOrder: 0, repeatable: false },
+    { id: "s2", parentId: "s1", name: "Zap II", description: "Bigger bolt", appearanceLevel: 1, type: "Premium", sortOrder: 1, repeatable: false },
+    { id: "s3", parentId: null, name: "Overdrive", description: null, appearanceLevel: 3, type: "Normal", sortOrder: 2, repeatable: false },
+    { id: "s4", parentId: null, name: "Dash", description: null, appearanceLevel: 1, type: "Normal", sortOrder: 3, repeatable: false },
+    { id: "s5", parentId: null, name: null, description: "Core power", appearanceLevel: 1, type: "Core", sortOrder: 4, repeatable: false },
   ],
 };
 
@@ -81,7 +121,7 @@ const weaponsFixture: WeaponSummary[] = [
     tier: "S",
     type: fireType,
     skillNodes: [
-      { id: "ws1", parentId: null, name: "Slash", description: "Cuts", appearanceLevel: 1, type: "Normal", sortOrder: 0 },
+      { id: "ws1", parentId: null, name: "Slash", description: "Cuts", appearanceLevel: 1, type: "Normal", sortOrder: 0, repeatable: false },
     ],
   }),
   weaponFixture({ id: "w2", name: "Thunder Pike", tier: "Standard" }),
@@ -91,13 +131,25 @@ const weaponsFixture: WeaponSummary[] = [
 let meNickname: string | null = "Tester";
 
 function renderEditor(path = "/profile/builds/new") {
-  vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
+  vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
     const url = String(input);
+    const method = (init as RequestInit | undefined)?.method ?? "GET";
     let body: unknown;
+    let status = 200;
     // /api/me check must come before /api/mechs to avoid false-prefix match
     // ("/api/mechs/m1" starts with "/api/me", so we use endsWith for /api/me)
     if (url.endsWith("/api/me")) {
       body = { id: "u1", nickname: meNickname, server: "", isNew: false };
+    } else if (url.includes("/api/builds/mine")) {
+      body = myBuilds;
+    } else if (url.endsWith("/api/builds") && method === "POST") {
+      // Create — echo the input back as a new Draft row.
+      const input = JSON.parse((init as RequestInit).body as string);
+      body = postedBuild({ id: "new1", ...input });
+      status = 201;
+    } else if (/\/api\/builds\/[^/]+$/.test(url) && method === "PUT") {
+      const input = JSON.parse((init as RequestInit).body as string);
+      body = postedBuild({ ...input });
     } else if (url.includes("/api/mechs/m1")) {
       body = detail;
     } else if (url.includes("/api/weapons")) {
@@ -109,7 +161,7 @@ function renderEditor(path = "/profile/builds/new") {
     }
     return Promise.resolve(
       new Response(JSON.stringify(body), {
-        status: 200,
+        status,
         headers: { "Content-Type": "application/json" },
       })
     );
@@ -132,6 +184,7 @@ beforeEach(() => {
   auth0State.isAuthenticated = true;
   auth0State.isLoading = false;
   meNickname = "Tester";
+  myBuilds = [];
   localStorage.clear();
 });
 afterEach(() => vi.restoreAllMocks());
@@ -179,7 +232,7 @@ describe("BuildEditorPage (new build)", () => {
     expect(screen.queryByRole("button", { name: "Remove Zap from the build" })).not.toBeInTheDocument();
   });
 
-  it("saves a named build to localStorage and navigates back", async () => {
+  it("saves a named build through the API and navigates back", async () => {
     renderEditor();
     await userEvent.click(await screen.findByRole("button", { name: /Iron Colossus/ }));
     await userEvent.click(await screen.findByRole("button", { name: /^Zap Bolt/ }));
@@ -187,11 +240,9 @@ describe("BuildEditorPage (new build)", () => {
     expect(save).toBeDisabled(); // no name yet
     await userEvent.click(await screen.findByRole("button", { name: /Blade of Dawn/ }));
     await userEvent.type(screen.getByLabelText("Build name *"), "Zap rush");
-    await userEvent.click(save);
+    await userEvent.click(screen.getByRole("button", { name: "Save build" }));
     expect(await screen.findByText("profile list")).toBeInTheDocument();
-    const stored = listBuilds();
-    expect(stored).toHaveLength(1);
-    expect(stored[0]).toMatchObject({
+    expect(lastSavedInput()).toMatchObject({
       name: "Zap rush",
       mechId: "m1",
       skillIds: ["s1"],
@@ -267,14 +318,13 @@ describe("BuildEditorPage (new build)", () => {
     await userEvent.type(screen.getByLabelText("Build name *"), "Blade only");
     await userEvent.click(screen.getByRole("button", { name: "Save build" }));
     await screen.findByText("profile list");
-    expect(listBuilds()[0]).toMatchObject({
+    expect(lastSavedInput()).toMatchObject({
       name: "Blade only",
       mechId: null,
       weaponId: "w1",
       skillIds: ["ws1"],
       weaponIds: [],
       weaponSkillIds: {},
-      hearts: 0,
     });
   });
 
@@ -294,7 +344,7 @@ describe("BuildEditorPage (new build)", () => {
     await userEvent.type(screen.getByLabelText("Build name *"), "Armed build");
     await userEvent.click(screen.getByRole("button", { name: "Save build" }));
     await screen.findByText("profile list");
-    expect(listBuilds()[0].weaponSkillIds).toEqual({ w1: ["ws1"] });
+    expect(lastSavedInput().weaponSkillIds).toEqual({ w1: ["ws1"] });
   });
 
   it("filters the weapon strip by name and tier", async () => {
@@ -313,19 +363,18 @@ describe("BuildEditorPage (new build)", () => {
 
 describe("BuildEditorPage (edit mode)", () => {
   it("skips the picker and prefills the stored build", async () => {
-    saveBuild({
-      id: "b1",
-      name: "Saved rush",
-      description: "old notes",
-      mechId: "m1",
-      weaponId: null,
-      skillIds: ["s1"],
-      weaponIds: ["w1"],
-      weaponSkillIds: {},
-      hearts: 0,
-      createdAt: "2026-07-15T00:00:00.000Z",
-      updatedAt: "2026-07-15T00:00:00.000Z",
-    });
+    myBuilds = [
+      postedBuild({
+        id: "b1",
+        name: "Saved rush",
+        description: "old notes",
+        mechId: "m1",
+        weaponId: null,
+        skillIds: ["s1"],
+        weaponIds: ["w1"],
+        weaponSkillIds: {},
+      }),
+    ];
     renderEditor("/profile/builds/b1/edit");
     // no picker step — straight to the board with the picks restored
     expect(screen.queryByText("Choose a mech")).not.toBeInTheDocument();
@@ -339,9 +388,9 @@ describe("BuildEditorPage (edit mode)", () => {
     expect(screen.getByLabelText("Notes")).toHaveValue("old notes");
   });
 
-  it("shows a friendly state for an unknown build id", () => {
+  it("shows a friendly state for an unknown build id", async () => {
     renderEditor("/profile/builds/nope/edit");
-    expect(screen.getByText("Build not found in this browser.")).toBeInTheDocument();
+    expect(await screen.findByText("Build not found.")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Back to profile" })).toHaveAttribute(
       "href",
       "/profile"

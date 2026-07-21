@@ -100,13 +100,40 @@ export function SkillsBlock({
     onPickedChange([...picks.map((p) => p.id), skill.id]);
   }
 
-  function removeSkill(id: string) {
-    const result = normalizePicks(picks.filter((p) => p.id !== id));
+  function noteRemoved(removed: SkillNodeRow[]) {
     setRemovedNote(
-      result.removed.length > 0
-        ? `Also removed: ${result.removed.map(skillDisplayName).join(", ")} — requirements no longer met.`
+      removed.length > 0
+        ? `Also removed: ${removed.map(skillDisplayName).join(", ")} — requirements no longer met.`
         : null
     );
+  }
+
+  // Remove exactly one copy — the `slotIndex`-th normal pick. Maps that slot
+  // position to its absolute index in `picks` so duplicate ids each remove
+  // independently and Core picks stay untouched.
+  function removeSlot(slotIndex: number) {
+    let seen = -1;
+    let absolute = -1;
+    for (let j = 0; j < picks.length; j++) {
+      if (picks[j].type !== "Core") {
+        seen += 1;
+        if (seen === slotIndex) {
+          absolute = j;
+          break;
+        }
+      }
+    }
+    if (absolute === -1) return;
+    const result = normalizePicks(picks.filter((_, j) => j !== absolute));
+    noteRemoved(result.removed);
+    onPickedChange(result.picks.map((p) => p.id));
+  }
+
+  // Remove every copy of an id — only used by the non-repeatable palette
+  // toggle, where there is exactly one copy anyway.
+  function removeById(id: string) {
+    const result = normalizePicks(picks.filter((p) => p.id !== id));
+    noteRemoved(result.removed);
     onPickedChange(result.picks.map((p) => p.id));
   }
 
@@ -138,10 +165,10 @@ export function SkillsBlock({
               const s = normalPicks[i];
               return s ? (
                 <PickedSlot
-                  key={s.id}
+                  key={`slot-${i}`}
                   skill={s}
                   cardImageUrl={cardImageUrl}
-                  onRemove={() => removeSkill(s.id)}
+                  onRemove={() => removeSlot(i)}
                 />
               ) : (
                 <div
@@ -162,19 +189,24 @@ export function SkillsBlock({
           ) : (
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
               {palette.map((skill) => {
-                const picked = picks.some((p) => p.id === skill.id);
+                const count = picks.filter((p) => p.id === skill.id).length;
+                // Only NON-repeatable skills use the toggle-off "picked" card.
+                const picked = !skill.repeatable && count > 0;
                 const reason = lockReason(skill, picks, skills, globalCoreCount);
+                const addable = canPick(skill, picks, skills, globalCoreCount);
                 return (
                   <SkillPickCard
                     key={skill.id}
                     skill={skill}
                     state={picked ? "picked" : reason ? "locked" : "available"}
                     lockReason={reason}
-                    // Second click on a picked card un-picks it.
+                    count={skill.repeatable ? count : 0}
+                    // Non-repeatable: second click un-picks. Repeatable: click
+                    // adds another copy while a slot is free.
                     onClick={
                       picked
-                        ? () => removeSkill(skill.id)
-                        : canPick(skill, picks, skills, globalCoreCount)
+                        ? () => removeById(skill.id)
+                        : addable
                           ? () => addSkill(skill)
                           : undefined
                     }

@@ -31,7 +31,7 @@ export function canPick(
 ): boolean {
   return (
     lockReason(candidate, picked, all, globalCoreCount) === null &&
-    !picked.some((p) => p.id === candidate.id)
+    (candidate.repeatable || !picked.some((p) => p.id === candidate.id))
   );
 }
 
@@ -45,7 +45,10 @@ export function lockReason(
   // mech and every weapon. Falls back to counting `picked` when absent.
   globalCoreCount?: number
 ): string | null {
-  if (picked.some((p) => p.id === candidate.id)) return null;
+  // An already-picked skill is normally a no-lock "picked" state. A
+  // repeatable one, though, must still face the capacity gate below so
+  // it stops being addable once the 8 slots are full.
+  if (!candidate.repeatable && picked.some((p) => p.id === candidate.id)) return null;
   // Capacity: Core skills fill the build's 3 extra slots and never compete
   // with the 8 regular ones (or vice versa).
   if (candidate.type === "Core") {

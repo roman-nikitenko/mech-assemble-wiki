@@ -14,7 +14,7 @@ export function MechCard({ mech }: { mech: MechSummary }) {
         <img
           src={imageSrc(mech.imageUrl)}
           alt={mech.name}
-          className="mb-3 h-32 w-full rounded-lg object-cover"
+          className="mb-3 h-42 w-full rounded-lg object-cover"
         />
       ) : (
         // themed placeholder keeps the grid rhythm when there's no art yet

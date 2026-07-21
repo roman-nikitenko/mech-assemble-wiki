@@ -2,12 +2,12 @@ import { useState } from "react";
 import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
 import { useAuth0 } from "@auth0/auth0-react";
 import { imageSrc, useMech, useMechs, useTypes, useWeapons } from "../../api/client";
-import type { MechRank, WeaponSummary } from "../../api/types";
-import { getBuild, saveBuild } from "../../profile/buildStorage";
+import type { MechRank, PostedBuild, WeaponSummary } from "../../api/types";
 import { MAX_CORE_SLOTS, resolvePicks } from "../../profile/buildRules";
 import { PickedSlot, SkillsBlock } from "../../profile/SkillsBlock";
 import { NotesField } from "../../profile/NotesField";
 import { useMe } from "../../auth/useMe";
+import { useCreateBuild, useMyBuilds, useUpdateBuild } from "../../auth/useBuilds";
 import { RankBadge } from "../../components/RankBadge";
 import { LoadingSkeleton } from "../../components/LoadingSkeleton";
 
@@ -22,32 +22,40 @@ const WEAPON_SLOT_POS = [
   "right-[8%] bottom-[14%]",
 ];
 
-/** Thin shell that waits for Auth0 to resolve before mounting the real
-    editor — this prevents the lazy useState initializer from reading
-    localStorage with the wrong (null) userId during the auth-loading phase. */
+/** Thin shell that resolves the build to edit BEFORE mounting the real editor.
+    Builds now live server-side, so in edit mode we wait for the owner's build
+    list to load and hand the row down as a prop — that keeps the editor's lazy
+    useState initializers (which seed every field from `existing`) working, the
+    same way they did when the build was read synchronously from localStorage. */
 export function BuildEditorPage() {
-  const { isLoading } = useAuth0();
-  if (isLoading) {
-    return (
-      <main className="mx-auto max-w-6xl px-4 py-16 text-center text-ink-dim">Loading…</main>
-    );
+  const { isLoading, isAuthenticated } = useAuth0();
+  const { buildId } = useParams<{ buildId: string }>();
+  const myBuilds = useMyBuilds();
+
+  const loading = "mx-auto max-w-6xl px-4 py-16 text-center text-ink-dim";
+  if (isLoading) return <main className={loading}>Loading…</main>;
+  // Editing requires the owner's build list; creating (no buildId) does not.
+  if (buildId) {
+    if (!isAuthenticated) return <Navigate to="/profile" replace />;
+    if (myBuilds.isPending) return <main className={loading}>Loading…</main>;
   }
-  return <BuildEditorContent />;
+  const existing = buildId ? myBuilds.data?.find((b) => b.id === buildId) : undefined;
+  // Remount when the target build changes so the initializers re-run.
+  return <BuildEditorContent key={buildId ?? "new"} existing={existing} />;
 }
 
 /** Two-step build editor. Step 1 picks the SUBJECT: a mech (full build —
     8 skills + 4 weapons, each weapon with its own skills) or a single
     weapon (lean build — just that weapon's skills). One component for
     /new and /:buildId/edit — the route param decides. */
-function BuildEditorContent() {
+function BuildEditorContent({ existing }: { existing: PostedBuild | undefined }) {
   const { buildId } = useParams<{ buildId: string }>();
   const navigate = useNavigate();
-  const { isAuthenticated, isLoading, user } = useAuth0();
-  const userId = user?.sub ?? null;
+  const { isAuthenticated, isLoading } = useAuth0();
   const me = useMe();
+  const createBuild = useCreateBuild();
+  const updateBuild = useUpdateBuild();
 
-  // Loaded once — localStorage is synchronous, no query needed.
-  const [existing] = useState(() => (buildId ? getBuild(buildId, userId) : undefined));
   const [name, setName] = useState(existing?.name ?? "");
   const [description, setDescription] = useState(existing?.description ?? "");
   const [mechId, setMechId] = useState<string | null>(existing?.mechId ?? null);
@@ -84,7 +92,7 @@ function BuildEditorContent() {
   if (buildId && !existing) {
     return (
       <main className="mx-auto max-w-6xl px-4 py-16 text-center">
-        <p className="text-ink-dim">Build not found in this browser.</p>
+        <p className="text-ink-dim">Build not found.</p>
         <Link to="/profile" className="text-accent underline">Back to profile</Link>
       </main>
     );
@@ -111,7 +119,7 @@ function BuildEditorContent() {
                   <img
                     src={imageSrc(m.imageUrl)}
                     alt=""
-                    className="mb-2 h-28 w-full rounded-lg border border-edge object-cover"
+                    className="mb-2 h-48 w-full rounded-lg border border-edge object-cover"
                   />
                 )}
                 <div className="flex items-start justify-between gap-2">
@@ -140,7 +148,7 @@ function BuildEditorContent() {
                   <img
                     src={imageSrc(w.iconUrl ?? w.imageUrl!)}
                     alt=""
-                    className="mb-2 h-28 w-full rounded-lg border border-edge object-cover"
+                    className="mb-2 h-48 w-full rounded-lg border border-edge object-cover"
                   />
                 )}
                 <div className="flex items-start justify-between gap-2">
@@ -280,14 +288,14 @@ function BuildEditorContent() {
     setPickedIds([]);
   }
 
+  const saving = createBuild.isPending || updateBuild.isPending;
+
   function save() {
-    const now = new Date().toISOString();
     // Only prune stale ids once the live lists have loaded — saving during
     // a fetch must not silently drop equipment or picks.
     const subjectSkills = isWeaponBuild ? (buildWeapon?.skillNodes ?? []) : skills;
     const savedWeaponIds = isWeaponBuild ? [] : weapons.data ? equipped.map((w) => w.id) : weaponIds;
-    saveBuild({
-      id: existing?.id ?? crypto.randomUUID(),
+    const input = {
       name: name.trim(),
       description: description.trim(),
       mechId: isWeaponBuild ? null : mechId,
@@ -303,11 +311,12 @@ function BuildEditorContent() {
               return [id, w ? resolvePicks(w.skillNodes, ids).map((s) => s.id) : ids];
             })
           ),
-      hearts: existing?.hearts ?? 0,
-      createdAt: existing?.createdAt ?? now,
-      updatedAt: now,
-    }, userId);
-    navigate("/profile");
+    };
+    const onSuccess = () => navigate("/profile");
+    // Editing keeps the same row (and its status/hearts); creating makes a
+    // new Draft the player can publish from their profile.
+    if (existing) updateBuild.mutate({ id: existing.id, input }, { onSuccess });
+    else createBuild.mutate(input, { onSuccess });
   }
 
   const fieldCls = "min-h-11 w-full rounded-lg border border-edge bg-surface px-3 text-sm";
@@ -334,11 +343,20 @@ function BuildEditorContent() {
       <button
         type="button"
         onClick={save}
-        disabled={name.trim() === "" || (isWeaponBuild ? buildWeapon === undefined : mech === undefined)}
+        disabled={
+          saving ||
+          name.trim() === "" ||
+          (isWeaponBuild ? buildWeapon === undefined : mech === undefined)
+        }
         className="min-h-11 rounded-lg bg-accent px-6 font-semibold text-bg hover:brightness-110 disabled:opacity-60"
       >
-        Save build
+        {saving ? "Saving…" : "Save build"}
       </button>
+      {(createBuild.isError || updateBuild.isError) && (
+        <p className="text-sm text-fire">
+          {((createBuild.error ?? updateBuild.error) as Error).message}
+        </p>
+      )}
     </div>
   );
 

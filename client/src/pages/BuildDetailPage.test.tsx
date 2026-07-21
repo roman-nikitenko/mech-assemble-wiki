@@ -45,8 +45,8 @@ const mechDetail: MechDetail = {
   skins: [],
   helpers: [],
   skillNodes: [
-    { id: "s1", parentId: null, name: "Zap", description: "Bolt", appearanceLevel: 1, type: "Normal", sortOrder: 0 },
-    { id: "s5", parentId: null, name: null, description: "Core power", appearanceLevel: 1, type: "Core", sortOrder: 1 },
+    { id: "s1", parentId: null, name: "Zap", description: "Bolt", appearanceLevel: 1, type: "Normal", sortOrder: 0, repeatable: false },
+    { id: "s5", parentId: null, name: null, description: "Core power", appearanceLevel: 1, type: "Core", sortOrder: 1, repeatable: false },
   ],
 };
 
@@ -63,7 +63,7 @@ const weapon: WeaponSummary = {
   pilot: null,
   weaponSkins: [],
   skillNodes: [
-    { id: "ws1", parentId: null, name: "Slash", description: "Cuts", appearanceLevel: 1, type: "Normal", sortOrder: 0 },
+    { id: "ws1", parentId: null, name: "Slash", description: "Cuts", appearanceLevel: 1, type: "Normal", sortOrder: 0, repeatable: false },
   ],
 };
 

@@ -13,6 +13,8 @@ beforeAll(() => {
 
 afterAll(async () => {
   await prisma.type.deleteMany({ where: { name: { startsWith: "[test:admin] " } } });
+  // Cascades take the builds/hearts of these users with them.
+  await prisma.user.deleteMany({ where: { auth0Sub: { startsWith: "test|adminusers-" } } });
   await prisma.$disconnect();
 });
 
@@ -50,5 +52,49 @@ describe("admin write guard", () => {
       .set("x-admin-token", testAdminToken())
       .send({ name: "[test:admin] Guarded" });
     expect(withToken.status).toBe(201);
+  });
+});
+
+describe("admin user management", () => {
+  it("lists users (with build counts) only for an authenticated admin", async () => {
+    const user = await prisma.user.create({
+      data: { auth0Sub: "test|adminusers-list", name: "Listed User", nickname: "[test:admin] Listed" },
+    });
+    await prisma.build.create({
+      data: { userId: user.id, name: "[test:admin] a build", skillIds: [], weaponIds: [] },
+    });
+
+    const noToken = await request(app).get("/api/admin/users");
+    expect(noToken.status).toBe(401);
+
+    const res = await request(app).get("/api/admin/users").set("x-admin-token", testAdminToken());
+    expect(res.status).toBe(200);
+    const row = res.body.find((u: { id: string }) => u.id === user.id);
+    expect(row).toMatchObject({
+      name: "Listed User",
+      nickname: "[test:admin] Listed",
+      buildCount: 1,
+    });
+  });
+
+  it("deletes a user (cascading their builds) and 404s an unknown id", async () => {
+    const user = await prisma.user.create({
+      data: { auth0Sub: "test|adminusers-del", nickname: "[test:admin] Doomed" },
+    });
+    const build = await prisma.build.create({
+      data: { userId: user.id, name: "[test:admin] doomed build", skillIds: [], weaponIds: [] },
+    });
+
+    const del = await request(app)
+      .delete(`/api/admin/users/${user.id}`)
+      .set("x-admin-token", testAdminToken());
+    expect(del.status).toBe(204);
+    expect(await prisma.user.findUnique({ where: { id: user.id } })).toBeNull();
+    expect(await prisma.build.findUnique({ where: { id: build.id } })).toBeNull();
+
+    const missing = await request(app)
+      .delete(`/api/admin/users/${user.id}`)
+      .set("x-admin-token", testAdminToken());
+    expect(missing.status).toBe(404);
   });
 });

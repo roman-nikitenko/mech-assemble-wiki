@@ -1,53 +1,66 @@
-import { MockBadge } from "./MockBadge";
+import { useAdminUsers, useDeleteUser } from "../api/client";
+import { formatDate } from "../lib/date";
 
-const SAMPLE_USERS = [
-  { name: "ZombieSlayer99", email: "slayer@example.com", joined: "2026-05-02", posts: 14 },
-  { name: "MechaFan", email: "mecha.fan@example.com", joined: "2026-05-17", posts: 6 },
-  { name: "PilotKael", email: "kael@example.com", joined: "2026-06-01", posts: 22 },
-];
-
-const INERT_HINT = "Activates when user accounts exist (future phase).";
-
+/** Admin Users list — real registered accounts from the DB. "Name" is the
+    Auth0 display name captured at login (dash until the user next signs in
+    after this shipped). Deleting a user cascades away their builds + hearts. */
 export function UsersPage() {
+  const users = useAdminUsers();
+  const deleteUser = useDeleteUser();
+
+  function remove(id: string, label: string) {
+    if (!window.confirm(`Delete ${label}? This also removes all their builds.`)) return;
+    deleteUser.mutate(id);
+  }
+
   return (
     <div>
-      <div className="flex items-center gap-3">
-        <h1 className="text-2xl font-black tracking-tight">Users</h1>
-        <MockBadge hint={INERT_HINT} />
-      </div>
-      <div className="mt-6 overflow-x-auto rounded-xl border border-edge">
-        <table className="w-full min-w-[520px] text-left text-sm">
-          <thead className="bg-surface text-ink-dim">
-            <tr>
-              <th className="px-4 py-3">Name</th>
-              <th className="px-4 py-3">Email</th>
-              <th className="px-4 py-3">Joined</th>
-              <th className="px-4 py-3">Posts</th>
-              <th className="px-4 py-3">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {SAMPLE_USERS.map((u) => (
-              <tr key={u.email} className="border-t border-edge">
-                <td className="px-4 py-3 font-semibold">{u.name}</td>
-                <td className="px-4 py-3 text-ink-dim">{u.email}</td>
-                <td className="px-4 py-3 text-ink-dim">{u.joined}</td>
-                <td className="px-4 py-3">{u.posts}</td>
-                <td className="px-4 py-3">
-                  <div className="flex gap-2">
-                    <button disabled title={INERT_HINT} className="rounded border border-edge px-2 py-1 text-xs text-ink-dim opacity-60">
-                      Hide posts
-                    </button>
-                    <button disabled title={INERT_HINT} className="rounded border border-fire/40 px-2 py-1 text-xs text-fire opacity-60">
+      <h1 className="text-2xl font-black tracking-tight">Users</h1>
+
+      {users.isPending ? (
+        <p className="mt-6 text-ink-dim">Loading…</p>
+      ) : users.isError ? (
+        <p className="mt-6 text-fire">{(users.error as Error).message}</p>
+      ) : users.data.length === 0 ? (
+        <p className="mt-6 text-ink-dim">No registered users yet.</p>
+      ) : (
+        <div className="mt-6 overflow-x-auto rounded-xl border border-edge">
+          <table className="w-full min-w-[560px] text-left text-sm">
+            <thead className="bg-surface text-ink-dim">
+              <tr>
+                <th className="px-4 py-3">Name</th>
+                <th className="px-4 py-3">Server</th>
+                <th className="px-4 py-3">Joined</th>
+                <th className="px-4 py-3">Builds</th>
+                <th className="px-4 py-3">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {users.data.map((u) => (
+                <tr key={u.id} className="border-t border-edge">
+                  <td className="px-4 py-3 font-semibold">{u.name ?? "—"}</td>
+                  <td className="px-4 py-3 text-ink-dim">{u.server ?? "—"}</td>
+                  <td className="px-4 py-3 text-ink-dim">{formatDate(u.createdAt)}</td>
+                  <td className="px-4 py-3">{u.buildCount}</td>
+                  <td className="px-4 py-3">
+                    <button
+                      type="button"
+                      disabled={deleteUser.isPending}
+                      onClick={() => remove(u.id, u.name ?? u.nickname ?? "this user")}
+                      className="rounded border border-fire/40 px-2 py-1 text-xs text-fire hover:bg-fire/10 disabled:opacity-60"
+                    >
                       Delete
                     </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      {deleteUser.isError && (
+        <p className="mt-3 text-sm text-fire">{(deleteUser.error as Error).message}</p>
+      )}
     </div>
   );
 }

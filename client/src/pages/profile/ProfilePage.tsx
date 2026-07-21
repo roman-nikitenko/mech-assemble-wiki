@@ -1,9 +1,16 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth0 } from "@auth0/auth0-react";
-import { deleteBuild, listBuilds, saveBuild, type BuildRecord } from "../../profile/buildStorage";
+import { clearLocalBuilds, listBuilds } from "../../profile/buildStorage";
 import { useMe, useUpdateMe } from "../../auth/useMe";
-import { usePostBuild } from "../../auth/useBuilds";
+import {
+  useCreateBuild,
+  useDeletePostedBuild,
+  useMyBuilds,
+  usePublishBuild,
+  useUnpostBuild,
+} from "../../auth/useBuilds";
+import type { PostedBuild } from "../../api/types";
 import { Tabs } from "../../components/Tabs";
 import { SavedToast } from "../../admin/SavedToast";
 import { formatDate } from "../../lib/date";
@@ -14,24 +21,48 @@ import { formatDate } from "../../lib/date";
 export function ProfilePage() {
   const location = useLocation();
   const { isAuthenticated, isLoading, loginWithRedirect, user } = useAuth0();
-  const userId = user?.sub ?? null;
   const me = useMe();
   const updateMe = useUpdateMe();
-  const postBuild = usePostBuild();
+  const myBuilds = useMyBuilds();
+  const createBuild = useCreateBuild();
+  const publishBuild = usePublishBuild();
+  const unpostBuild = useUnpostBuild();
+  const deletePostedBuild = useDeletePostedBuild();
 
   // The build editor redirects here when creating without a nickname —
   // land straight on Settings with the explanation banner.
   const needNickname =
     (location.state as { needNickname?: boolean } | null)?.needNickname ?? false;
-  const [builds, setBuilds] = useState<BuildRecord[]>([]);
   const [tab, setTab] = useState(needNickname ? "Settings" : "Builds");
   const [form, setForm] = useState({ nickname: "", server: "" });
   const [saved, setSaved] = useState(false);
 
-  // Reload builds whenever the logged-in user changes (or on first mount).
+  // One-time migration: import any builds this browser saved before builds
+  // moved server-side, then clear the local copy so it never runs twice.
+  // Legacy builds come in as Drafts (publishing is now a separate step).
+  const migratedRef = useRef(false);
   useEffect(() => {
-    setBuilds(listBuilds(userId));
-  }, [userId]);
+    if (!isAuthenticated || migratedRef.current) return;
+    const userId = user?.sub ?? null;
+    const legacy = [...listBuilds(userId), ...listBuilds(null)];
+    if (legacy.length === 0) return;
+    migratedRef.current = true;
+    (async () => {
+      for (const b of legacy) {
+        await createBuild.mutateAsync({
+          name: b.name,
+          description: b.description,
+          mechId: b.mechId,
+          weaponId: b.weaponId,
+          skillIds: b.skillIds,
+          weaponIds: b.weaponIds,
+          weaponSkillIds: b.weaponSkillIds,
+        });
+      }
+      clearLocalBuilds(userId);
+      clearLocalBuilds(null);
+    })();
+  }, [isAuthenticated, user, createBuild]);
 
   // Seed the form ONCE per page visit. Without the ref, the refetch after a
   // successful save would re-fire this effect and silently overwrite
@@ -58,8 +89,7 @@ export function ProfilePage() {
 
   function remove(id: string) {
     if (!window.confirm("Delete this build?")) return;
-    deleteBuild(id, userId);
-    setBuilds(listBuilds(userId));
+    deletePostedBuild.mutate(id);
   }
 
   const btnCls = "min-h-9 rounded-lg border px-3 text-sm";
@@ -82,6 +112,8 @@ export function ProfilePage() {
     );
   }
 
+  const builds = myBuilds.data ?? [];
+
   return (
     <main className="mx-auto max-w-6xl px-4 py-6">
       <SavedToast show={saved} onHide={() => setSaved(false)} />
@@ -95,7 +127,8 @@ export function ProfilePage() {
         </Link>
       </div>
       <p className="mb-4 text-xs text-ink-dim">
-        Builds are saved in this browser, scoped to your account.
+        Post a build to share it in the community feed. Posted builds can be
+        unposted anytime.
       </p>
 
       <div className="mb-4">
@@ -156,6 +189,8 @@ export function ProfilePage() {
             <p className="text-sm text-fire">{(updateMe.error as Error).message}</p>
           )}
         </div>
+      ) : myBuilds.isPending ? (
+        <p className="mt-8 text-center text-ink-dim">Loading…</p>
       ) : builds.length === 0 ? (
         <p className="mt-8 text-center text-ink-dim">
           No builds yet — create your first one!
@@ -192,40 +227,14 @@ export function ProfilePage() {
                       >
                         Edit
                       </Link>
-                      {b.postedId ? (
-                        <button
-                          type="button"
-                          disabled
-                          className={`${btnCls} cursor-default border-green-500/60 bg-green-500/10 text-green-400`}
-                        >
-                          ✓ Posted
-                        </button>
-                      ) : (
-                        <button
-                          type="button"
-                          disabled={postBuild.isPending}
-                          onClick={() =>
-                            postBuild.mutate({
-                              name: b.name,
-                              description: b.description,
-                              mechId: b.mechId,
-                              weaponId: b.weaponId,
-                              skillIds: b.skillIds,
-                              weaponIds: b.weaponIds,
-                              weaponSkillIds: b.weaponSkillIds,
-                            }, {
-                              onSuccess: (posted) => {
-                                saveBuild({ ...b, postedId: posted.id }, userId);
-                                setBuilds(listBuilds(userId));
-                                setSaved(true);
-                              },
-                            })
-                          }
-                          className={`${btnCls} border-accent/60 text-accent hover:bg-accent/10`}
-                        >
-                          Post
-                        </button>
-                      )}
+                      <PostButton
+                        build={b}
+                        btnCls={btnCls}
+                        publishing={publishBuild.isPending}
+                        unposting={unpostBuild.isPending}
+                        onPublish={() => publishBuild.mutate(b.id)}
+                        onUnpost={() => unpostBuild.mutate(b.id)}
+                      />
                       <button
                         type="button"
                         onClick={() => remove(b.id)}
@@ -242,5 +251,49 @@ export function ProfilePage() {
         </div>
       )}
     </main>
+  );
+}
+
+/** The publish toggle. Published builds show a green "Posted" button that
+    unposts on click; Draft/Unposted builds show a yellow "Post" button that
+    publishes — matching the WordPress-style Draft → Published → Unposted flow. */
+function PostButton({
+  build,
+  btnCls,
+  publishing,
+  unposting,
+  onPublish,
+  onUnpost,
+}: {
+  build: PostedBuild;
+  btnCls: string;
+  publishing: boolean;
+  unposting: boolean;
+  onPublish: () => void;
+  onUnpost: () => void;
+}) {
+  if (build.status === "Published") {
+    return (
+      <button
+        type="button"
+        disabled={unposting}
+        title="Click to remove from the community feed"
+        onClick={onUnpost}
+        className={`${btnCls} border-green-500/60 bg-green-500/10 text-green-400 hover:border-fire/60 hover:bg-fire/10 hover:text-fire`}
+      >
+        ✓ Posted
+      </button>
+    );
+  }
+  return (
+    <button
+      type="button"
+      disabled={publishing}
+      title="Click to share in the community feed"
+      onClick={onPublish}
+      className={`${btnCls} border-yellow-500/60 bg-yellow-500/10 text-yellow-400 hover:bg-yellow-500/20`}
+    >
+      Post
+    </button>
   );
 }

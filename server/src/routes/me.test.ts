@@ -34,6 +34,27 @@ describe("GET /api/me", () => {
   });
 });
 
+describe("GET /api/me — Auth0 name capture", () => {
+  it("stores the x-display-name header on create and refreshes it when it changes", async () => {
+    authState.sub = "test|named";
+    const created = await request(app)
+      .get("/api/me")
+      .set("x-display-name", encodeURIComponent("Kael Voss"));
+    expect(created.status).toBe(201);
+    expect(created.body.name).toBe("Kael Voss");
+
+    // A later call with a new name updates the stored value…
+    const renamed = await request(app)
+      .get("/api/me")
+      .set("x-display-name", encodeURIComponent("Kael Renamed"));
+    expect(renamed.body.name).toBe("Kael Renamed");
+
+    // …and a call WITHOUT the header keeps the last known name.
+    const noHeader = await request(app).get("/api/me");
+    expect(noHeader.body.name).toBe("Kael Renamed");
+  });
+});
+
 describe("PUT /api/me", () => {
   it("saves nickname and server (trimmed)", async () => {
     authState.sub = "test|editor";

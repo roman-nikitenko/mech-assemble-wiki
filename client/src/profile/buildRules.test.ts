@@ -11,6 +11,7 @@ const node = (over: Partial<SkillNodeRow> = {}): SkillNodeRow => ({
   appearanceLevel: 1,
   type: "Normal",
   sortOrder: 0,
+  repeatable: false,
   ...over,
 });
 
@@ -132,5 +133,26 @@ describe("familyOrder", () => {
     const root = node();
     const orphan = node({ parentId: "gone" });
     expect(familyOrder([orphan, root])).toEqual([root, orphan]);
+  });
+});
+
+describe("repeatable skills", () => {
+  it("a repeatable skill can be picked again while it is already in the build", () => {
+    const r = node({ repeatable: true });
+    // already picked once — a non-repeatable skill would be un-pickable now
+    expect(canPick(r, [r], [r])).toBe(true);
+    expect(lockReason(r, [r], [r])).toBeNull();
+  });
+
+  it("a non-repeatable skill still cannot be picked twice", () => {
+    const s = node({ repeatable: false });
+    expect(canPick(s, [s], [s])).toBe(false);
+  });
+
+  it("a repeatable skill is blocked once the 8 normal slots are full", () => {
+    const r = node({ repeatable: true });
+    const full = Array.from({ length: MAX_SLOTS }, () => node());
+    expect(canPick(r, full, [...full, r])).toBe(false);
+    expect(lockReason(r, full, [...full, r])).toBe(`Build is full (${MAX_SLOTS}/${MAX_SLOTS})`);
   });
 });
