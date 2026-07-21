@@ -52,6 +52,7 @@ export function SkillTreeEditor({ drafts, onChange }: SkillTreeEditorProps) {
         appearanceLevel: 1,
         type: "Normal",
         expanded: true,
+        repeatable: false,
       },
     ]);
   }
@@ -63,6 +64,8 @@ export function SkillTreeEditor({ drafts, onChange }: SkillTreeEditorProps) {
         const next = { ...d, ...patchValue };
         // Core skills have no name — clear it on switch (mirrors the API).
         if (patchValue.type === "Core") next.name = "";
+        // Repeatable is Normal-only — clear it when leaving Normal.
+        if (patchValue.type && patchValue.type !== "Normal") next.repeatable = false;
         return next;
       })
     );
@@ -266,6 +269,23 @@ function SkillRow({
               </select>
             </div>
           </div>
+          {/* Repeatable is only meaningful for Normal skills — Premium/Core
+              skills are structural and can't be slotted more than once. */}
+          {draft.type === "Normal" && (
+            <label className="flex items-center gap-2 text-sm font-semibold">
+              <input
+                type="checkbox"
+                aria-label="Repeatable"
+                checked={draft.repeatable}
+                onChange={(e) => onPatch({ repeatable: e.target.checked })}
+                className="h-4 w-4"
+              />
+              Repeatable{" "}
+              <span className="font-normal text-ink-dim">
+                (can be added to a build more than once)
+              </span>
+            </label>
+          )}
         </div>
       )}
     </div>

@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { AccessoryInput, AccessorySummary, GameType, MechDetail, MechInput, MechRank, MechSummary, Pilot, PilotInput, PostedBuild, TypeInput, WeaponInput, WeaponSummary } from "./types";
+import type { AccessoryInput, AccessorySummary, AdminUser, GameType, MechDetail, MechInput, MechRank, MechSummary, Pilot, PilotInput, PostedBuild, TypeInput, WeaponInput, WeaponSummary } from "./types";
 import { adminHeaders } from "../auth/adminSession";
 
 export const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
@@ -315,5 +315,43 @@ export function usePostedBuild(id: string) {
     queryKey: ["posted-builds", id],
     queryFn: () => fetchJson<PostedBuild>(`/api/builds/${id}`),
     retry: (failureCount, error) => !(error instanceof NotFoundError) && failureCount < 3,
+  });
+}
+
+// ---------- Admin: user management ----------
+// GET /api/admin/users returns PII and is guarded, so (unlike the public
+// catalogs) this GET must carry the admin token.
+async function adminFetchJson<T>(path: string): Promise<T> {
+  const res = await fetch(`${API_URL}${path}`, { headers: adminHeaders() });
+  if (!res.ok) {
+    const data = await res.json().catch(() => null);
+    throw new Error(data?.error ?? `API error ${res.status}`);
+  }
+  return res.json() as Promise<T>;
+}
+
+/** Every registered user, newest first — admin Users page. */
+export function useAdminUsers() {
+  return useQuery({
+    queryKey: ["admin-users"],
+    queryFn: () => adminFetchJson<AdminUser[]>("/api/admin/users"),
+  });
+}
+
+/** Delete a user (cascades their builds + hearts). */
+export function useDeleteUser() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`${API_URL}/api/admin/users/${id}`, {
+        method: "DELETE",
+        headers: adminHeaders(),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        throw new Error(data?.error ?? `API error ${res.status}`);
+      }
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["admin-users"] }),
   });
 }

@@ -101,6 +101,8 @@ export interface SkillNodeRow {
   appearanceLevel: number;
   type: SkillNodeType;
   sortOrder: number;
+  // Normal-only: this skill may be picked multiple times in a build.
+  repeatable: boolean;
 }
 
 export interface Weapon {
@@ -154,6 +156,7 @@ export interface WeaponInput {
     appearanceLevel: number;
     type: SkillNodeType;
     parentIndex: number | null;
+    repeatable: boolean;
   }[];
 }
 
@@ -237,6 +240,7 @@ export interface MechInput {
     appearanceLevel: number;
     type: SkillNodeType;
     parentIndex: number | null;
+    repeatable: boolean;
   }[];
 }
 
@@ -283,7 +287,11 @@ export interface AccessorySummary {
   mech: { id: string; name: string } | null;
 }
 
-/** A build posted to the community feed (GET /api/builds). */
+/** A build's publication state (mirrors the server BuildStatus enum). */
+export type BuildStatus = "Draft" | "Published" | "Unposted";
+
+/** A build row from the API. The public feed (GET /api/builds) and the
+    owner's list (GET /api/builds/mine) return the same shape. */
 export interface PostedBuild {
   id: string;
   name: string;
@@ -293,12 +301,24 @@ export interface PostedBuild {
   skillIds: string[];
   weaponIds: string[];
   weaponSkillIds: Record<string, string[]>;
+  status: BuildStatus;
   hearts: number;
   // Set by the client after a heart toggle — not included in GET responses.
   userHearted?: boolean;
   createdAt: string;
   updatedAt: string;
   author: { nickname: string | null; server: string | null };
+}
+
+/** A registered user as served by GET /api/admin/users (admin-only).
+    `name` is the Auth0 display name; `buildCount` counts owned builds. */
+export interface AdminUser {
+  id: string;
+  name: string | null;
+  nickname: string | null;
+  server: string | null;
+  createdAt: string;
+  buildCount: number;
 }
 
 /** Payload for POST /api/builds. */

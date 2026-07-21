@@ -29,6 +29,15 @@ enum SkillNodeType {
   Core
 }
 
+// A build's publication state, WordPress-style. Draft = private working copy
+// (created by the editor); Published = visible in the public feed; Unposted =
+// pulled from the feed but kept (its hearts + share link survive a republish).
+enum BuildStatus {
+  Draft
+  Published
+  Unposted
+}
+
 // ---------- The hub ----------
 
 model Mech {
@@ -139,6 +148,10 @@ model SkillNode {
   type            SkillNodeType @default(Normal)
   // Sibling position; written by the drag-and-drop editor.
   sortOrder Int @default(0) @map("sort_order")
+  // Normal-only: when true, this skill may be added to a build multiple
+  // times, each copy taking one of the 8 shared slots. Forced false for
+  // Premium/Core (they are never repeatable).
+  repeatable Boolean @default(false)
 
   weapon   Weapon?     @relation(fields: [weaponId], references: [id], onDelete: Cascade)
   mech     Mech?       @relation(fields: [mechId], references: [id], onDelete: Cascade)
@@ -415,6 +428,10 @@ model User {
   // Auth0's stable subject, e.g. "google-oauth2|1180…" — the only link
   // between our world and Auth0's.
   auth0Sub String  @unique @map("auth0_sub")
+  // The Auth0 display name (Google/Discord), captured from the SPA on the
+  // first authenticated call and refreshed when it changes. Shown in the
+  // admin Users list. Null until the user next signs in after this shipped.
+  name     String?
   // Public display name. Null until chosen in Settings; required (app
   // rule) before creating builds. Unique site-wide.
   nickname String? @unique
@@ -445,6 +462,9 @@ model Build {
   weaponIds      String[] @map("weapon_ids")
   // Per-weapon skill picks: {"<weaponId>": ["<skillId>", ...]}
   weaponSkillIds Json     @default("{}") @map("weapon_skill_ids")
+  // Publication state. New builds start as Draft (private); the public feed
+  // and share pages only surface Published rows.
+  status    BuildStatus @default(Draft)
   hearts    Int      @default(0)
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")

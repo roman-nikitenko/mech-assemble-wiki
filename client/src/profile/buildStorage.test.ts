@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { deleteBuild, getBuild, listBuilds, saveBuild, type BuildRecord } from "./buildStorage";
+import { clearLocalBuilds, listBuilds, type BuildRecord } from "./buildStorage";
 
 const rec = (over: Partial<BuildRecord> = {}): BuildRecord => ({
   id: "b1",
@@ -18,7 +18,7 @@ const rec = (over: Partial<BuildRecord> = {}): BuildRecord => ({
 
 beforeEach(() => localStorage.clear());
 
-describe("buildStorage", () => {
+describe("buildStorage (legacy import helper)", () => {
   it("lists [] when nothing is stored", () => {
     expect(listBuilds()).toEqual([]);
   });
@@ -28,29 +28,17 @@ describe("buildStorage", () => {
     expect(listBuilds()).toEqual([]);
   });
 
-  it("saves a build and reads it back", () => {
-    saveBuild(rec());
-    expect(listBuilds()).toHaveLength(1);
-    expect(getBuild("b1")?.name).toBe("Test build");
-    expect(getBuild("nope")).toBeUndefined();
+  it("reads stored builds back, namespaced per user", () => {
+    localStorage.setItem("mech-wiki:builds:u1", JSON.stringify([rec()]));
+    expect(listBuilds("u1")).toHaveLength(1);
+    expect(listBuilds("u1")[0].name).toBe("Test build");
+    expect(listBuilds()).toEqual([]); // anon key is separate
   });
 
-  it("replaces an existing id in place (no duplicates)", () => {
-    saveBuild(rec());
-    saveBuild(rec({ name: "Renamed" }));
-    expect(listBuilds()).toHaveLength(1);
-    expect(getBuild("b1")?.name).toBe("Renamed");
-  });
-
-  it("stamps updatedAt on save", () => {
-    saveBuild(rec({ updatedAt: "2020-01-01T00:00:00.000Z" }));
-    expect(getBuild("b1")!.updatedAt > "2020-01-01T00:00:00.000Z").toBe(true);
-  });
-
-  it("deletes by id", () => {
-    saveBuild(rec());
-    deleteBuild("b1");
-    expect(listBuilds()).toEqual([]);
+  it("clears a user's stored builds", () => {
+    localStorage.setItem("mech-wiki:builds:u1", JSON.stringify([rec()]));
+    clearLocalBuilds("u1");
+    expect(listBuilds("u1")).toEqual([]);
   });
 
   it("defaults late-arriving fields for builds saved before they existed", () => {

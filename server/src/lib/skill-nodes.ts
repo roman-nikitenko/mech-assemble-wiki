@@ -24,6 +24,7 @@ export async function createSkillNodes(
         appearanceLevel: entry.appearanceLevel,
         type: entry.type,
         sortOrder: order,
+        repeatable: entry.repeatable,
       },
     });
     createdIds.push(node.id);

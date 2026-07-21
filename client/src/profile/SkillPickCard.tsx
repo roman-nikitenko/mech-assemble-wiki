@@ -36,11 +36,14 @@ interface SkillPickCardProps {
   /** The chosen mech's card_skill_icon_url — every skill card of a mech
       wears the same art, exactly like the game's rank-up cards. */
   imageUrl?: string | null;
+  /** How many copies of this skill are in the build — shown as a ×N badge
+      for repeatable skills. Omit / 0 to hide. */
+  count?: number;
 }
 
 /** One game-style skill card in the build editor's palette. A real button:
     disabled (dimmed) when picked or locked. */
-export function SkillPickCard({ skill, state, lockReason, onClick, imageUrl }: SkillPickCardProps) {
+export function SkillPickCard({ skill, state, lockReason, onClick, imageUrl, count }: SkillPickCardProps) {
   const card = SKILL_CARD[skill.type];
   return (
     // min-h-80 = the 320px card height the design asks for.
@@ -62,6 +65,11 @@ export function SkillPickCard({ skill, state, lockReason, onClick, imageUrl }: S
       {state === "locked" && (
         <span aria-hidden="true" className="absolute inset-0 rounded-[10px] bg-bg/60" />
       )}
+      {count && count > 0 ? (
+        <span className="absolute right-1 top-1 z-10 rounded-full bg-accent px-2 py-0.5 text-xs font-black text-bg">
+          ×{count}
+        </span>
+      ) : null}
       <span
         className={`rounded-lg px-2 py-1 text-sm font-black tracking-tight ${card.header} ${
           skill.type === "Core" ? "italic" : ""

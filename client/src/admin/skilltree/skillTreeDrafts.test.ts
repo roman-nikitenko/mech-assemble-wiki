@@ -11,7 +11,7 @@ import {
 } from "./skillTreeDrafts";
 
 function draft(key: string, parentKey: string | null, name = key): SkillDraft {
-  return { key, parentKey, name, description: "", appearanceLevel: 1, type: "Normal", expanded: false };
+  return { key, parentKey, name, description: "", appearanceLevel: 1, type: "Normal", expanded: false, repeatable: false };
 }
 
 // DFS order: a, a1, a1x, b   (a1 child of a; a1x child of a1; b root)
@@ -62,10 +62,36 @@ describe("skillTreeDrafts helpers", () => {
     expect(serialized[3].parentIndex).toBeNull();
 
     const rebuilt = draftsFromNodes([
-      { id: "a", parentId: null, name: "a", description: null, appearanceLevel: 1, type: "Normal", sortOrder: 0 },
-      { id: "b", parentId: null, name: "b", description: null, appearanceLevel: 1, type: "Normal", sortOrder: 1 },
-      { id: "a1", parentId: "a", name: "a1", description: null, appearanceLevel: 1, type: "Normal", sortOrder: 0 },
+      { id: "a", parentId: null, name: "a", description: null, appearanceLevel: 1, type: "Normal", sortOrder: 0, repeatable: false },
+      { id: "b", parentId: null, name: "b", description: null, appearanceLevel: 1, type: "Normal", sortOrder: 1, repeatable: false },
+      { id: "a1", parentId: "a", name: "a1", description: null, appearanceLevel: 1, type: "Normal", sortOrder: 0, repeatable: false },
     ]);
     expect(rebuilt.map((d) => d.key)).toEqual(["a", "a1", "b"]); // depth-first
+  });
+});
+
+describe("repeatable serialization", () => {
+  it("serializeDrafts keeps repeatable for Normal skills", () => {
+    const drafts: SkillDraft[] = [
+      { key: "a", parentKey: null, name: "Stack", description: "", appearanceLevel: 1, type: "Normal", expanded: false, repeatable: true },
+    ];
+    expect(serializeDrafts(drafts)[0].repeatable).toBe(true);
+  });
+
+  it("serializeDrafts forces repeatable false for Premium and Core", () => {
+    const drafts: SkillDraft[] = [
+      { key: "p", parentKey: null, name: "Prem", description: "", appearanceLevel: 1, type: "Premium", expanded: false, repeatable: true },
+      { key: "c", parentKey: null, name: "", description: "core", appearanceLevel: 1, type: "Core", expanded: false, repeatable: true },
+    ];
+    const out = serializeDrafts(drafts);
+    expect(out[0].repeatable).toBe(false);
+    expect(out[1].repeatable).toBe(false);
+  });
+
+  it("draftsFromNodes restores repeatable from the API node", () => {
+    const drafts = draftsFromNodes([
+      { id: "n1", parentId: null, name: "Stack", description: null, appearanceLevel: 1, type: "Normal", sortOrder: 0, repeatable: true },
+    ]);
+    expect(drafts[0].repeatable).toBe(true);
   });
 });

@@ -32,13 +32,29 @@ describe("SkillTreeEditor", () => {
     render(
       <Harness
         initial={[
-          { key: "a", parentKey: null, name: "Alpha", description: "", appearanceLevel: 1, type: "Normal", expanded: false },
-          { key: "b", parentKey: null, name: "Beta", description: "", appearanceLevel: 1, type: "Normal", expanded: false },
+          { key: "a", parentKey: null, name: "Alpha", description: "", appearanceLevel: 1, type: "Normal", expanded: false, repeatable: false },
+          { key: "b", parentKey: null, name: "Beta", description: "", appearanceLevel: 1, type: "Normal", expanded: false, repeatable: false },
         ]}
       />
     );
     await userEvent.click(screen.getByRole("button", { name: "Indent Beta" }));
     // nested rows carry the sub-item marker, WP style
     expect(screen.getByText("sub item")).toBeInTheDocument();
+  });
+
+  it("shows a Repeatable checkbox for a Normal skill and toggles it", async () => {
+    render(<Harness />);
+    await userEvent.click(screen.getByRole("button", { name: "+ Add skill" }));
+    const checkbox = screen.getByLabelText("Repeatable") as HTMLInputElement;
+    expect(checkbox.checked).toBe(false);
+    await userEvent.click(checkbox);
+    expect((screen.getByLabelText("Repeatable") as HTMLInputElement).checked).toBe(true);
+  });
+
+  it("hides the Repeatable checkbox for non-Normal skills", async () => {
+    render(<Harness />);
+    await userEvent.click(screen.getByRole("button", { name: "+ Add skill" }));
+    await userEvent.selectOptions(screen.getByLabelText("Skill type"), "Premium");
+    expect(screen.queryByLabelText("Repeatable")).not.toBeInTheDocument();
   });
 });

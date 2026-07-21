@@ -11,6 +11,9 @@ export interface SkillDraft {
   appearanceLevel: number;
   type: SkillNodeType;
   expanded: boolean;
+  // Normal-only flag (mirrors SkillNode.repeatable). Forced false for
+  // Premium/Core in serializeDrafts, matching the server.
+  repeatable: boolean;
 }
 
 export function rowDepth(drafts: SkillDraft[], row: SkillDraft): number {
@@ -120,6 +123,7 @@ export function serializeDrafts(drafts: SkillDraft[]) {
     appearanceLevel: d.appearanceLevel,
     type: d.type,
     parentIndex: d.parentKey === null ? null : drafts.findIndex((p) => p.key === d.parentKey),
+    repeatable: d.type === "Normal" ? d.repeatable : false,
   }));
 }
 
@@ -144,6 +148,7 @@ export function draftsFromNodes(nodes: SkillNodeRow[]): SkillDraft[] {
         appearanceLevel: node.appearanceLevel,
         type: node.type,
         expanded: false,
+        repeatable: node.repeatable,
       });
       walk(node.id, node.id);
     }

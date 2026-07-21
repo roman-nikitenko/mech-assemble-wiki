@@ -12,6 +12,7 @@ const skill = (over: Partial<SkillNodeRow> = {}): SkillNodeRow => ({
   appearanceLevel: 3,
   type: "Normal",
   sortOrder: 0,
+  repeatable: false,
   ...over,
 });
 

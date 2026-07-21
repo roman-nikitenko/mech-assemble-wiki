@@ -130,8 +130,10 @@ export function BuildDetailPage() {
         <>
           <h2 className="mt-6 mb-2 text-sm font-semibold">{subjectName} skills</h2>
           <SkillGrid>
-            {subjectRegular.map((skill) => (
-              <PickedSlot key={skill.id} skill={skill} cardImageUrl={subjectArt} />
+            {/* Keyed by position, not id — a repeatable skill can appear
+                more than once in the same list. */}
+            {subjectRegular.map((skill, i) => (
+              <PickedSlot key={`subject-${i}`} skill={skill} cardImageUrl={subjectArt} />
             ))}
           </SkillGrid>
         </>
@@ -144,9 +146,10 @@ export function BuildDetailPage() {
           <div key={weapon.id}>
             <h2 className="mt-6 mb-2 text-sm font-semibold">{weapon.name} skills</h2>
             <SkillGrid>
-              {regular.map((skill) => (
+              {/* Positional keys — a repeatable skill may occupy two slots. */}
+              {regular.map((skill, i) => (
                 <PickedSlot
-                  key={skill.id}
+                  key={`${weapon.id}-${i}`}
                   skill={skill}
                   cardImageUrl={weapon.iconUrl ?? weapon.imageUrl}
                 />

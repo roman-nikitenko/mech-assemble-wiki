@@ -349,4 +349,30 @@ describe("weapon skill tree", () => {
     expect(res.status).toBe(204);
     expect(await prisma.skillNode.findMany({ where: { weaponId: created.body.id } })).toEqual([]);
   });
+
+  it("persists and returns repeatable for a Normal skill", async () => {
+    const res = await request(app).post("/api/weapons").set(ADMIN).send({
+      name: "[test:weapons] Repeatable Skill",
+      skills: [
+        { name: "Stackable Buff", description: null, appearanceLevel: 1, type: "Normal", parentIndex: null, repeatable: true },
+      ],
+    });
+    expect(res.status).toBe(201);
+    expect(res.body.skillNodes[0].repeatable).toBe(true);
+  });
+
+  it("forces repeatable false for Premium and Core skills even when sent true", async () => {
+    const res = await request(app).post("/api/weapons").set(ADMIN).send({
+      name: "[test:weapons] Non-Normal Repeatable",
+      skills: [
+        { name: "Premium Boost", description: null, appearanceLevel: 1, type: "Premium", parentIndex: null, repeatable: true },
+        { name: null, description: "core", appearanceLevel: 1, type: "Core", parentIndex: null, repeatable: true },
+      ],
+    });
+    expect(res.status).toBe(201);
+    const premium = res.body.skillNodes.find((n: { type: string }) => n.type === "Premium");
+    const core = res.body.skillNodes.find((n: { type: string }) => n.type === "Core");
+    expect(premium.repeatable).toBe(false);
+    expect(core.repeatable).toBe(false);
+  });
 });
