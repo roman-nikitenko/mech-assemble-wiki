@@ -1,0 +1,33 @@
+name: Deploy to VPS
+
+# Runs every time you push to main. It SSHes into the production VPS,
+# pulls the latest main, and runs scripts/deploy.sh (install, build, restart).
+on:
+  push:
+    branches: [main]
+
+# If you push twice in a row, let the first deploy finish before the second
+# starts — never run two deploys against the server at the same time.
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy over SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          # Pull the latest code FIRST (this also updates deploy.sh itself),
+          # then run the freshly-pulled deploy script. .env and uploads/ are
+          # gitignored, so the reset never touches them.
+          script: |
+            set -e
+            cd /var/www/mech-wiki
+            git fetch --all
+            git reset --hard origin/main
+            bash scripts/deploy.sh

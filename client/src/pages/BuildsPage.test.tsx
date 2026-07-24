@@ -1,7 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import React from "react";
 import { render, screen } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BuildsPage } from "./BuildsPage";
@@ -32,6 +31,7 @@ const BUILD: PostedBuild = {
   weaponIds: [],
   weaponSkillIds: {},
   hearts: 5,
+  status: "Published",
   createdAt: "2026-07-20T00:00:00.000Z",
   updatedAt: new Date().toISOString(),
   author: { nickname: "BanzaiFun", server: "EU-7" },

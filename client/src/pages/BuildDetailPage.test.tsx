@@ -77,6 +77,7 @@ const BUILD: PostedBuild = {
   weaponIds: ["w1"],
   weaponSkillIds: { w1: ["ws1"] },
   hearts: 0,
+  status: "Published",
   createdAt: "2026-07-20T00:00:00.000Z",
   updatedAt: "2026-07-20T00:00:00.000Z",
   author: { nickname: null, server: null },
