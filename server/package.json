@@ -5,6 +5,7 @@
   "description": "Backend for the Mech Assemble wiki: Prisma data layer + REST API.",
   "scripts": {
     "dev": "tsx watch src/index.ts",
+    "start": "tsx src/index.ts",
     "test": "vitest run",
     "migrate": "prisma migrate dev",
     "backup": "bash scripts/backup.sh",

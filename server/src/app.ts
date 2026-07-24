@@ -16,9 +16,12 @@ import { adminRouter } from "./routes/admin";
 
 export const app = express();
 
-// Open CORS: any origin may call us. Acceptable while the API is LOCAL-ONLY;
-// once auth exists and this deploys, restrict origins here.
-app.use(cors());
+// CORS: locally (no CLIENT_ORIGIN set) we allow any origin so the Vite dev
+// server on :5173 can call the API on :3000. In production set CLIENT_ORIGIN
+// to the site URL (e.g. https://mech-assemble-wiki.online) to lock it down.
+// Behind nginx the site and API share one origin, so this is belt-and-suspenders.
+const clientOrigin = process.env.CLIENT_ORIGIN;
+app.use(cors(clientOrigin ? { origin: clientOrigin } : {}));
 app.use(express.json());
 
 app.use("/api/mechs", mechsRouter);
