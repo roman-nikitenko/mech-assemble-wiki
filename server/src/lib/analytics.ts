@@ -1,3 +1,4 @@
+import { accessSync, constants } from "node:fs";
 import { BetaAnalyticsDataClient } from "@google-analytics/data";
 
 /** Visitor totals shown on the admin Dashboard. */
@@ -25,6 +26,23 @@ function gaClient(): BetaAnalyticsDataClient {
   return client;
 }
 
+// google-auth-library reads the service-account key from
+// GOOGLE_APPLICATION_CREDENTIALS. When that path is missing or unreadable, the
+// error is thrown from a lazy gRPC stub-creation promise that ESCAPES the
+// try/catch below and crashes the whole process (an EACCES crash-loop took the
+// prod API down once — the file was under /root, unreadable by the app user).
+// So we pre-flight the key ourselves and degrade to null instead.
+function credentialsReadable(): boolean {
+  const keyPath = process.env.GOOGLE_APPLICATION_CREDENTIALS;
+  if (!keyPath) return false;
+  try {
+    accessSync(keyPath, constants.R_OK);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 /** Run one totalUsers report from `startDate` to today and return the number. */
 async function runReport(startDate: string): Promise<number> {
   const [report] = await gaClient().runReport({
@@ -40,6 +58,9 @@ async function runReport(startDate: string): Promise<number> {
     (the dashboard then shows "—" instead of erroring). */
 export async function getVisitorStats(): Promise<VisitorStats | null> {
   if (!process.env.GA4_PROPERTY_ID) return null;
+  // Bail before constructing the client if the key file isn't readable — a bad
+  // path must show "—", never crash the API (see credentialsReadable).
+  if (!credentialsReadable()) return null;
   if (cache && Date.now() - cache.at < CACHE_TTL_MS) return cache.value;
   try {
     const [total, last30] = await Promise.all([
