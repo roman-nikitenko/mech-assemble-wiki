@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
-import { useAuth0 } from "@auth0/auth0-react";
+import { useAuth } from "../../auth/useAuth";
 import { imageSrc, useMech, useMechs, useTypes, useWeapons } from "../../api/client";
 import type { MechRank, PostedBuild, WeaponSummary } from "../../api/types";
 import { MAX_CORE_SLOTS, resolvePicks } from "../../profile/buildRules";
@@ -28,7 +28,7 @@ const WEAPON_SLOT_POS = [
     useState initializers (which seed every field from `existing`) working, the
     same way they did when the build was read synchronously from localStorage. */
 export function BuildEditorPage() {
-  const { isLoading, isAuthenticated } = useAuth0();
+  const { isLoading, isAuthenticated } = useAuth();
   const { buildId } = useParams<{ buildId: string }>();
   const myBuilds = useMyBuilds();
 
@@ -51,7 +51,7 @@ export function BuildEditorPage() {
 function BuildEditorContent({ existing }: { existing: PostedBuild | undefined }) {
   const { buildId } = useParams<{ buildId: string }>();
   const navigate = useNavigate();
-  const { isAuthenticated, isLoading } = useAuth0();
+  const { isAuthenticated, isLoading } = useAuth();
   const me = useMe();
   const createBuild = useCreateBuild();
   const updateBuild = useUpdateBuild();

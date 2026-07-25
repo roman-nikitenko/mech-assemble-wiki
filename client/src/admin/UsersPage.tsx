@@ -2,8 +2,8 @@ import { useAdminUsers, useDeleteUser } from "../api/client";
 import { formatDate } from "../lib/date";
 
 /** Admin Users list — real registered accounts from the DB. "Name" is the
-    Auth0 display name captured at login (dash until the user next signs in
-    after this shipped). Deleting a user cascades away their builds + hearts. */
+    provider display name (Google/Discord) captured at login (dash until the
+    user next signs in). Deleting a user cascades away their builds + hearts. */
 export function UsersPage() {
   const users = useAdminUsers();
   const deleteUser = useDeleteUser();

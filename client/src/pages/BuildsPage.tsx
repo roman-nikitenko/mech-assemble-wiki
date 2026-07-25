@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { useAuth0 } from "@auth0/auth0-react";
+import { useAuth } from "../auth/useAuth";
 import { imageSrc, useMechs, usePostedBuilds, useWeapons } from "../api/client";
 import { useMe } from "../auth/useMe";
 import { useDeletePostedBuild, useToggleHeart } from "../auth/useBuilds";
@@ -10,7 +10,7 @@ import { ShareButton } from "../profile/ShareButton";
 
 /** Public community build feed. Shows all builds posted by any user. */
 export function BuildsPage() {
-  const { isAuthenticated } = useAuth0();
+  const { isAuthenticated } = useAuth();
   const me = useMe();
   const posted = usePostedBuilds();
   const deleteBuild = useDeletePostedBuild();

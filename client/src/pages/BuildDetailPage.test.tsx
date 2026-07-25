@@ -1,24 +1,9 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import React from "react";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { MechDetail, MechSummary, PostedBuild, WeaponSummary } from "../api/types";
 import { BuildDetailPage } from "./BuildDetailPage";
-
-const auth0State = vi.hoisted(() => ({
-  isAuthenticated: false,
-  isLoading: false,
-  user: undefined as { sub?: string; nickname?: string } | undefined,
-  loginWithRedirect: vi.fn(),
-  logout: vi.fn(),
-  getAccessTokenSilently: vi.fn().mockResolvedValue("fake-token"),
-}));
-
-vi.mock("@auth0/auth0-react", () => ({
-  useAuth0: () => auth0State,
-  Auth0Provider: ({ children }: { children: React.ReactNode }) => children,
-}));
 
 const mechSummary: MechSummary = {
   id: "m1",
@@ -87,8 +72,7 @@ function renderPage(path: string) {
   vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
     const url = String(input);
     let body: unknown;
-    if (url.endsWith("/api/me")) body = { id: "u1", nickname: "Tester", server: "", isNew: false };
-    else if (url.match(/\/api\/builds\/b1$/)) body = BUILD;
+    if (url.match(/\/api\/builds\/b1$/)) body = BUILD;
     else if (url.match(/\/api\/builds\/nope$/)) {
       return new Response(JSON.stringify({ error: "Build not found" }), {
         status: 404,
@@ -117,9 +101,6 @@ function renderPage(path: string) {
   );
 }
 
-beforeEach(() => {
-  auth0State.isAuthenticated = false;
-});
 afterEach(() => vi.restoreAllMocks());
 
 describe("BuildDetailPage", () => {

@@ -1,58 +1,47 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useAuth0 } from "@auth0/auth0-react";
 import { API_URL } from "../api/client";
-import { getAccessToken } from "./authToken";
 
 export interface Me {
   id: string;
-  // The Auth0 display name (Google/Discord); shown in the admin Users list.
+  // Display name from the social provider (Google name / Discord global_name);
+  // shown in the admin Users list.
   name: string | null;
   nickname: string | null;
   server: string | null;
   isNew: boolean;
 }
 
-async function authedJson<T>(
-  path: string,
-  method: "GET" | "PUT",
-  body?: unknown,
-  displayName?: string
-): Promise<T> {
-  const token = await getAccessToken();
-  const res = await fetch(`${API_URL}${path}`, {
+/** Fetch that sends the session cookie. Returns null on 401 (guest) so the
+    query resolves to "not logged in" instead of throwing. */
+async function meFetch(method: "GET" | "PUT", body?: unknown): Promise<Me | null> {
+  const res = await fetch(`${API_URL}/api/me`, {
     method,
-    headers: {
-      Authorization: `Bearer ${token ?? ""}`,
-      ...(body !== undefined ? { "Content-Type": "application/json" } : {}),
-      // The access token only carries the sub, so we pass the Auth0 name
-      // ourselves (URI-encoded for non-ASCII) for the server to store.
-      ...(displayName ? { "x-display-name": encodeURIComponent(displayName) } : {}),
-    },
+    credentials: "include",
+    headers: body !== undefined ? { "Content-Type": "application/json" } : undefined,
     body: body !== undefined ? JSON.stringify(body) : undefined,
   });
+  if (res.status === 401) return null;
   if (!res.ok) {
     const data = await res.json().catch(() => null);
     throw new Error(data?.error ?? `API error ${res.status}`);
   }
-  return res.json() as Promise<T>;
+  return res.json() as Promise<Me>;
 }
 
-/** Our profile row (find-or-create happens server-side on first call). */
+/** Our profile row, or null when logged out. */
 export function useMe() {
-  const { isAuthenticated, user } = useAuth0();
   return useQuery({
     queryKey: ["me"],
-    enabled: isAuthenticated,
-    queryFn: () => authedJson<Me>("/api/me", "GET", undefined, user?.name),
+    queryFn: () => meFetch("GET"),
+    retry: false,
+    staleTime: 60_000,
   });
 }
 
 export function useUpdateMe() {
   const qc = useQueryClient();
-  const { user } = useAuth0();
   return useMutation({
-    mutationFn: (input: { nickname: string; server: string }) =>
-      authedJson<Me>("/api/me", "PUT", input, user?.name),
+    mutationFn: (input: { nickname: string; server: string }) => meFetch("PUT", input),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["me"] }),
   });
 }

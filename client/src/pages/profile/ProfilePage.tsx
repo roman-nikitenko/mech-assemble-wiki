@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { useAuth0 } from "@auth0/auth0-react";
+import { useAuth } from "../../auth/useAuth";
 import { clearLocalBuilds, listBuilds } from "../../profile/buildStorage";
 import { useMe, useUpdateMe } from "../../auth/useMe";
 import {
@@ -16,11 +16,11 @@ import { SavedToast } from "../../admin/SavedToast";
 import { formatDate } from "../../lib/date";
 
 /** The visitor's profile: a table of their builds plus a Settings tab
-    (nickname shown as the build author + game server). Requires Auth0
+    (nickname shown as the build author + game server). Requires
     login — logged-out visitors see a prompt instead. */
 export function ProfilePage() {
   const location = useLocation();
-  const { isAuthenticated, isLoading, loginWithRedirect, user } = useAuth0();
+  const { isAuthenticated, isLoading } = useAuth();
   const me = useMe();
   const updateMe = useUpdateMe();
   const myBuilds = useMyBuilds();
@@ -43,7 +43,7 @@ export function ProfilePage() {
   const migratedRef = useRef(false);
   useEffect(() => {
     if (!isAuthenticated || migratedRef.current) return;
-    const userId = user?.sub ?? null;
+    const userId = me.data?.id ?? null;
     const legacy = [...listBuilds(userId), ...listBuilds(null)];
     if (legacy.length === 0) return;
     migratedRef.current = true;
@@ -62,7 +62,7 @@ export function ProfilePage() {
       clearLocalBuilds(userId);
       clearLocalBuilds(null);
     })();
-  }, [isAuthenticated, user, createBuild]);
+  }, [isAuthenticated, me.data, createBuild]);
 
   // Seed the form ONCE per page visit. Without the ref, the refetch after a
   // successful save would re-fire this effect and silently overwrite
@@ -78,14 +78,13 @@ export function ProfilePage() {
     } catch {
       legacy = null;
     }
-    // Discord logins carry a game-ish handle worth prefilling; Google gives
-    // a real name, which we deliberately do NOT default into a public field.
-    const discordName = user?.sub?.includes("discord") ? (user?.nickname ?? "") : "";
+    // Don't default the provider's display name into the public nickname —
+    // Google hands us a real name, which we deliberately keep private.
     setForm({
-      nickname: me.data.nickname ?? legacy?.nickname ?? discordName,
+      nickname: me.data.nickname ?? legacy?.nickname ?? "",
       server: me.data.server ?? legacy?.server ?? "",
     });
-  }, [me.data, user]);
+  }, [me.data]);
 
   function remove(id: string) {
     if (!window.confirm("Delete this build?")) return;
@@ -101,13 +100,12 @@ export function ProfilePage() {
       <main className="mx-auto max-w-6xl px-4 py-16 text-center">
         <h2 className="text-xl font-bold">My Profile</h2>
         <p className="mt-2 text-ink-dim">Log in to manage your builds and settings.</p>
-        <button
-          type="button"
-          onClick={() => loginWithRedirect()}
-          className="mt-4 min-h-11 rounded-lg bg-accent px-6 font-semibold text-bg hover:brightness-110"
+        <Link
+          to="/login"
+          className="mt-4 inline-flex min-h-11 items-center rounded-lg bg-accent px-6 font-semibold text-bg hover:brightness-110"
         >
           Log in
-        </button>
+        </Link>
       </main>
     );
   }

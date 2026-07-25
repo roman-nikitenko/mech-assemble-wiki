@@ -6,4 +6,5 @@ TODO.md
 CLAUDE.md
 .claude/
 docs/
-server/uploads/server/backups/
+server/uploads/
+server/backups/

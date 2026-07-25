@@ -1,5 +1,4 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import React from "react";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
@@ -48,19 +47,8 @@ function lastSavedInput(): Record<string, unknown> {
   return JSON.parse((call![1] as RequestInit).body as string);
 }
 
-const auth0State = vi.hoisted(() => ({
-  isAuthenticated: true,
-  isLoading: false,
-  user: undefined as { sub?: string; nickname?: string } | undefined,
-  loginWithRedirect: vi.fn(),
-  logout: vi.fn(),
-  getAccessTokenSilently: vi.fn().mockResolvedValue("fake-token"),
-}));
-
-vi.mock("@auth0/auth0-react", () => ({
-  useAuth0: () => auth0State,
-  Auth0Provider: ({ children }: { children: React.ReactNode }) => children,
-}));
+// Auth derives from GET /api/me: logged in = 200 with a user, guest = 401.
+const authState = vi.hoisted(() => ({ loggedIn: true }));
 
 const summary: MechSummary = {
   id: "m1",
@@ -139,7 +127,15 @@ function renderEditor(path = "/profile/builds/new") {
     // /api/me check must come before /api/mechs to avoid false-prefix match
     // ("/api/mechs/m1" starts with "/api/me", so we use endsWith for /api/me)
     if (url.endsWith("/api/me")) {
-      body = { id: "u1", nickname: meNickname, server: "", isNew: false };
+      if (!authState.loggedIn) {
+        return Promise.resolve(
+          new Response(JSON.stringify({ error: "Login required" }), {
+            status: 401,
+            headers: { "Content-Type": "application/json" },
+          })
+        );
+      }
+      body = { id: "u1", name: null, nickname: meNickname, server: "", isNew: false };
     } else if (url.includes("/api/builds/mine")) {
       body = myBuilds;
     } else if (url.endsWith("/api/builds") && method === "POST") {
@@ -181,8 +177,7 @@ function renderEditor(path = "/profile/builds/new") {
 }
 
 beforeEach(() => {
-  auth0State.isAuthenticated = true;
-  auth0State.isLoading = false;
+  authState.loggedIn = true;
   meNickname = "Tester";
   myBuilds = [];
   localStorage.clear();
@@ -191,7 +186,7 @@ afterEach(() => vi.restoreAllMocks());
 
 describe("BuildEditorPage (new build)", () => {
   it("redirects to the profile when not logged in", async () => {
-    auth0State.isAuthenticated = false;
+    authState.loggedIn = false;
     renderEditor();
     expect(await screen.findByText("profile list")).toBeInTheDocument();
     expect(screen.queryByText("Choose a mech")).not.toBeInTheDocument();

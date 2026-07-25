@@ -1,5 +1,5 @@
 // The admin token lives in sessionStorage: gone when the tab closes,
-// never in git, separate world from the players' Auth0 session.
+// never in git, separate world from the players' cookie session.
 const KEY = "mech-wiki:admin-token";
 
 export function getAdminToken(): string | null {

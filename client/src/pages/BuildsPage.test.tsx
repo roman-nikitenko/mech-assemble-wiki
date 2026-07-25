@@ -1,5 +1,4 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import React from "react";
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -7,19 +6,8 @@ import { BuildsPage } from "./BuildsPage";
 import type { PostedBuild } from "../api/types";
 import { formatDate } from "../lib/date";
 
-const auth0State = vi.hoisted(() => ({
-  isAuthenticated: false,
-  isLoading: false,
-  user: undefined as { sub?: string; nickname?: string } | undefined,
-  loginWithRedirect: vi.fn(),
-  logout: vi.fn(),
-  getAccessTokenSilently: vi.fn().mockResolvedValue("fake-token"),
-}));
-
-vi.mock("@auth0/auth0-react", () => ({
-  useAuth0: () => auth0State,
-  Auth0Provider: ({ children }: { children: React.ReactNode }) => children,
-}));
+// Auth derives from GET /api/me: logged in = 200 with a user, guest = 401.
+const authState = vi.hoisted(() => ({ loggedIn: false }));
 
 const BUILD: PostedBuild = {
   id: "b1",
@@ -41,10 +29,15 @@ function renderPage() {
   vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
     const url = String(input);
     if (url.endsWith("/api/me")) {
-      return new Response(
-        JSON.stringify({ id: "u1", nickname: "BanzaiFun", server: "EU-7", isNew: false }),
-        { status: 200, headers: { "Content-Type": "application/json" } }
-      );
+      return authState.loggedIn
+        ? new Response(
+            JSON.stringify({ id: "u1", name: null, nickname: "BanzaiFun", server: "EU-7", isNew: false }),
+            { status: 200, headers: { "Content-Type": "application/json" } }
+          )
+        : new Response(JSON.stringify({ error: "Login required" }), {
+            status: 401,
+            headers: { "Content-Type": "application/json" },
+          });
     }
     if (url.endsWith("/api/builds")) {
       return new Response(JSON.stringify([BUILD]), {
@@ -70,8 +63,7 @@ function renderPage() {
 }
 
 beforeEach(() => {
-  auth0State.isAuthenticated = false;
-  auth0State.user = undefined;
+  authState.loggedIn = false;
 });
 afterEach(() => vi.restoreAllMocks());
 
@@ -104,7 +96,7 @@ describe("BuildsPage", () => {
   });
 
   it("lists builds with name link, author, date, note excerpt; heart enabled when logged in", async () => {
-    auth0State.isAuthenticated = true;
+    authState.loggedIn = true;
     renderPage();
     expect(await screen.findByRole("link", { name: "Zap rush" })).toHaveAttribute(
       "href",
@@ -121,14 +113,14 @@ describe("BuildsPage", () => {
   });
 
   it("heart button is disabled when not logged in", async () => {
-    auth0State.isAuthenticated = false;
+    authState.loggedIn = false;
     renderPage();
     const heart = await screen.findByRole("button", { name: /♥ 5/ });
     expect(heart).toBeDisabled();
   });
 
   it("shows Remove button only for own builds", async () => {
-    auth0State.isAuthenticated = true;
+    authState.loggedIn = true;
     renderPage();
     await screen.findByRole("link", { name: "Zap rush" });
     // BanzaiFun is the logged-in user (nickname matches author)

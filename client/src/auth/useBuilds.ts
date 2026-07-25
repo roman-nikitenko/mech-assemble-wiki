@@ -1,25 +1,22 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useAuth0 } from "@auth0/auth0-react";
 import { API_URL } from "../api/client";
 import type { BuildPostInput, PostedBuild } from "../api/types";
-import { getAccessToken } from "./authToken";
+import { useAuth } from "./useAuth";
 
 type HeartResult = { hearts: number; userHearted: boolean };
 
 /** Authenticated fetch that returns the parsed JSON body (or throws the
-    API's {error} message). Used by every builds request that needs a token. */
+    API's {error} message). Auth rides on the httpOnly session cookie, so we
+    just opt into sending it with credentials:"include" — no token header. */
 async function authedJson<T>(
   path: string,
   method: "GET" | "POST" | "PUT" | "DELETE",
   body?: unknown
 ): Promise<T> {
-  const token = await getAccessToken();
   const res = await fetch(`${API_URL}${path}`, {
     method,
-    headers: {
-      Authorization: `Bearer ${token ?? ""}`,
-      ...(body !== undefined ? { "Content-Type": "application/json" } : {}),
-    },
+    credentials: "include",
+    headers: body !== undefined ? { "Content-Type": "application/json" } : undefined,
     body: body !== undefined ? JSON.stringify(body) : undefined,
   });
   if (!res.ok) {
@@ -33,7 +30,7 @@ async function authedJson<T>(
 /** My builds — every status (Draft/Published/Unposted). Powers the Profile
     list and the build editor. Only fetches once logged in. */
 export function useMyBuilds() {
-  const { isAuthenticated } = useAuth0();
+  const { isAuthenticated } = useAuth();
   return useQuery({
     queryKey: ["my-builds"],
     enabled: isAuthenticated,

@@ -311,7 +311,7 @@ export interface PostedBuild {
 }
 
 /** A registered user as served by GET /api/admin/users (admin-only).
-    `name` is the Auth0 display name; `buildCount` counts owned builds. */
+    `name` is the provider display name; `buildCount` counts owned builds. */
 export interface AdminUser {
   id: string;
   name: string | null;
