@@ -1,5 +1,4 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import React from "react";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
@@ -7,19 +6,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ProfilePage } from "./ProfilePage";
 import type { BuildStatus, PostedBuild } from "../../api/types";
 
-const auth0State = vi.hoisted(() => ({
-  isAuthenticated: true,
-  isLoading: false,
-  user: undefined as { sub?: string; nickname?: string } | undefined,
-  loginWithRedirect: vi.fn(),
-  logout: vi.fn(),
-  getAccessTokenSilently: vi.fn().mockResolvedValue("fake-token"),
-}));
-
-vi.mock("@auth0/auth0-react", () => ({
-  useAuth0: () => auth0State,
-  Auth0Provider: ({ children }: { children: React.ReactNode }) => children,
-}));
+// Auth derives from GET /api/me: logged in = 200 with a user, guest = 401.
+const authState = vi.hoisted(() => ({ loggedIn: true }));
 
 // The builds GET /mine returns this — tests mutate it to set up the list.
 let myBuilds: PostedBuild[] = [];
@@ -55,9 +43,7 @@ function renderPage(path = "/profile", state?: Record<string, unknown>) {
 }
 
 beforeEach(() => {
-  auth0State.isAuthenticated = true;
-  auth0State.isLoading = false;
-  auth0State.user = undefined;
+  authState.loggedIn = true;
   myBuilds = [];
   localStorage.clear();
   vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
@@ -79,9 +65,11 @@ beforeEach(() => {
       const body = JSON.parse((init as RequestInit).body as string) as Record<string, unknown>;
       return json({ id: "u1", isNew: false, ...body });
     }
-    // GET /api/me
+    // GET /api/me — 200 with a user when logged in, 401 when guest.
     if (url.includes("/api/me")) {
-      return json({ id: "u1", nickname: "Tester", server: "EU-1", isNew: false });
+      return authState.loggedIn
+        ? json({ id: "u1", name: null, nickname: "Tester", server: "EU-1", isNew: false })
+        : json({ error: "Login required" }, 401);
     }
     // Status changes flip the stored build's status so the refetch reflects it.
     const publish = url.match(/\/api\/builds\/([^/]+)\/publish$/);
@@ -192,9 +180,9 @@ describe("ProfilePage", () => {
   });
 
   it("imports legacy localStorage builds as Drafts, then clears them", async () => {
-    auth0State.user = { sub: "auth0|u1" };
+    // Legacy builds were namespaced by the logged-in user's id (now me.data.id).
     localStorage.setItem(
-      "mech-wiki:builds:auth0|u1",
+      "mech-wiki:builds:u1",
       JSON.stringify([
         {
           id: "old1",
@@ -222,14 +210,15 @@ describe("ProfilePage", () => {
     });
     // The local copy is cleared so the import never runs twice.
     await waitFor(() =>
-      expect(localStorage.getItem("mech-wiki:builds:auth0|u1")).toBeNull()
+      expect(localStorage.getItem("mech-wiki:builds:u1")).toBeNull()
     );
   });
 
-  it("shows the Log in prompt when logged out", () => {
-    auth0State.isAuthenticated = false;
+  it("shows the Log in prompt when logged out", async () => {
+    authState.loggedIn = false;
     renderPage();
-    expect(screen.getByRole("button", { name: "Log in" })).toBeInTheDocument();
+    // The gate waits for /api/me to resolve (401) before showing the prompt.
+    expect(await screen.findByRole("link", { name: "Log in" })).toHaveAttribute("href", "/login");
     expect(screen.queryByRole("link", { name: "+ New build" })).not.toBeInTheDocument();
   });
 });

@@ -1,23 +1,11 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
-import React from "react";
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { PublicLayout } from "./PublicLayout";
 
-const auth0State = vi.hoisted(() => ({
-  isAuthenticated: false,
-  isLoading: false,
-  user: undefined as { sub?: string; nickname?: string } | undefined,
-  loginWithRedirect: vi.fn(),
-  logout: vi.fn(),
-  getAccessTokenSilently: vi.fn().mockResolvedValue("fake-token"),
-}));
-
-vi.mock("@auth0/auth0-react", () => ({
-  useAuth0: () => auth0State,
-  Auth0Provider: ({ children }: { children: React.ReactNode }) => children,
-}));
+// Auth now derives from GET /api/me: logged in = 200 with a user, guest = 401.
+const authState = vi.hoisted(() => ({ loggedIn: false }));
 
 function renderAt(path: string) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -37,7 +25,7 @@ function renderAt(path: string) {
 }
 
 beforeEach(() => {
-  auth0State.isAuthenticated = false;
+  authState.loggedIn = false;
   localStorage.clear();
   vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
     const url =
@@ -46,12 +34,24 @@ beforeEach(() => {
         : input instanceof URL
           ? input.toString()
           : (input as Request).url;
-    const body = JSON.stringify(
-      url.includes("/api/me")
-        ? { id: "u1", nickname: "BanzaiFun", server: "EU-7", isNew: false }
-        : [],
-    );
-    return new Response(body, {
+    if (url.includes("/api/me")) {
+      return authState.loggedIn
+        ? new Response(
+            JSON.stringify({ id: "u1", name: null, nickname: "BanzaiFun", server: "EU-7", isNew: false }),
+            { status: 200, headers: { "Content-Type": "application/json" } },
+          )
+        : new Response(JSON.stringify({ error: "Login required" }), {
+            status: 401,
+            headers: { "Content-Type": "application/json" },
+          });
+    }
+    if (url.includes("/api/auth/logout")) {
+      return new Response(JSON.stringify({ ok: true }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+    return new Response(JSON.stringify([]), {
       status: 200,
       headers: { "Content-Type": "application/json" },
     });
@@ -78,13 +78,13 @@ describe("PublicLayout", () => {
     expect(screen.getByRole("link", { name: "Builds" })).toHaveAttribute("aria-current", "page");
   });
 
-  it("shows Log in when logged out", () => {
+  it("shows a Log in link to /login when logged out", () => {
     renderAt("/");
-    expect(screen.getByRole("button", { name: "Log in" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Log in" })).toHaveAttribute("href", "/login");
   });
 
   it("shows the nickname and Log out when logged in", async () => {
-    auth0State.isAuthenticated = true;
+    authState.loggedIn = true;
     renderAt("/");
     expect(await screen.findByRole("link", { name: "BanzaiFun" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Log out" })).toBeInTheDocument();

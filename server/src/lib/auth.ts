@@ -1,27 +1,25 @@
 import crypto from "node:crypto";
 import jwt from "jsonwebtoken";
-import { auth } from "express-oauth2-jwt-bearer";
 import type { Request, RequestHandler } from "express";
+import { SESSION_COOKIE, verifySession } from "./session";
 
-// ---------- Auth0 (players) ----------
-// Verifies the SPA's Bearer JWT against Auth0's public keys (cached JWKS).
-// Built lazily so importing this module never crashes when env is absent
-// (tests mock this module entirely and never reach the real check).
-let jwtCheck: RequestHandler | null = null;
+// ---------- Players (our own cookie session) ----------
+/** Guards routes that need a logged-in player. Reads the session cookie,
+    verifies it, and stashes the user id on the request for currentUserId(). */
 export const requireUser: RequestHandler = (req, res, next) => {
-  if (!jwtCheck) {
-    jwtCheck = auth({
-      issuerBaseURL: `https://${process.env.AUTH0_DOMAIN}`,
-      audience: process.env.AUTH0_AUDIENCE,
-    });
+  const token = (req.cookies as Record<string, string> | undefined)?.[SESSION_COOKIE];
+  const userId = token ? verifySession(token) : null;
+  if (!userId) {
+    res.status(401).json({ error: "Login required" });
+    return;
   }
-  jwtCheck(req, res, next);
+  (req as Request & { userId?: string }).userId = userId;
+  next();
 };
 
-/** The validated Auth0 subject ("google-oauth2|…") from a checked request. */
-export function authSub(req: Request): string {
-  const withAuth = req as Request & { auth?: { payload?: { sub?: string } } };
-  return withAuth.auth?.payload?.sub ?? "";
+/** The verified user id from a requireUser-guarded request. */
+export function currentUserId(req: Request): string {
+  return (req as Request & { userId?: string }).userId ?? "";
 }
 
 // ---------- Admin (separate, NOT Auth0 — user's explicit choice) ----------

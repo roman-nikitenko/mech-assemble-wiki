@@ -24,6 +24,7 @@ import { AdminTypesPage } from "./admin/types/AdminTypesPage";
 import { TypeFormPage } from "./admin/types/TypeFormPage";
 import { ProfilePage } from "./pages/profile/ProfilePage";
 import { BuildEditorPage } from "./pages/profile/BuildEditorPage";
+import { LoginPage } from "./pages/LoginPage";
 
 export default function App() {
   return (
@@ -41,6 +42,9 @@ export default function App() {
         <Route path="/profile/builds/new" element={<BuildEditorPage />} />
         <Route path="/profile/builds/:buildId/edit" element={<BuildEditorPage />} />
       </Route>
+
+      {/* Standalone (no tabbed shell), like the admin login page. */}
+      <Route path="/login" element={<LoginPage />} />
 
       <Route path="/admin/login" element={<AdminLoginPage />} />
 

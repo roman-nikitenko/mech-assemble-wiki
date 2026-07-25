@@ -17,7 +17,7 @@ export interface BuildRecord {
   updatedAt: string; // ISO
 }
 
-// Builds were namespaced by Auth0 user id so accounts didn't share data.
+// Builds were namespaced by user id so accounts didn't share data.
 // null → the anonymous key (logged-out / pre-isolation builds).
 const storageKey = (userId: string | null): string =>
   userId ? `mech-wiki:builds:${userId}` : "mech-wiki:builds";

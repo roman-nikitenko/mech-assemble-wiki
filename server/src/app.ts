@@ -3,6 +3,7 @@
 // with no port or running server involved.
 import express from "express";
 import cors from "cors";
+import cookieParser from "cookie-parser";
 import { mechsRouter } from "./routes/mechs";
 import { traitsRouter } from "./routes/traits";
 import { uploadsDir, uploadsRouter } from "./routes/uploads";
@@ -13,6 +14,7 @@ import { accessoriesRouter } from "./routes/accessories";
 import { meRouter } from "./routes/me";
 import { buildsRouter } from "./routes/builds";
 import { adminRouter } from "./routes/admin";
+import { authRouter } from "./routes/auth";
 
 export const app = express();
 
@@ -23,7 +25,9 @@ export const app = express();
 const clientOrigin = process.env.CLIENT_ORIGIN;
 app.use(cors(clientOrigin ? { origin: clientOrigin } : {}));
 app.use(express.json());
+app.use(cookieParser());
 
+app.use("/api/auth", authRouter);
 app.use("/api/mechs", mechsRouter);
 app.use("/api/traits", traitsRouter);
 app.use("/api/pilots", pilotsRouter);

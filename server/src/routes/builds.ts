@@ -2,7 +2,7 @@ import { Router } from "express";
 import type { Request } from "express";
 import type { BuildStatus } from "@prisma/client";
 import { prisma } from "../lib/prisma";
-import { authSub, requireUser } from "../lib/auth";
+import { currentUserId, requireUser } from "../lib/auth";
 
 export const buildsRouter = Router();
 
@@ -40,11 +40,10 @@ function formatBuild(b: {
 
 const withAuthor = { user: { select: { nickname: true, server: true } } } as const;
 
-/** Find-or-create the User row for the request's Auth0 subject. Every
-    authenticated write goes through here, so a first-time poster gets a row. */
+/** The logged-in user's row. requireUser guarantees a valid session id, and
+    the row exists (created at OAuth callback), so a plain lookup suffices. */
 function currentUser(req: Request) {
-  const sub = authSub(req);
-  return prisma.user.upsert({ where: { auth0Sub: sub }, create: { auth0Sub: sub }, update: {} });
+  return prisma.user.findUniqueOrThrow({ where: { id: currentUserId(req) } });
 }
 
 /** Validate + normalize the editable build fields shared by create and edit.

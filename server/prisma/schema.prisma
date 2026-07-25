@@ -424,23 +424,25 @@ model HelperRank {
 // who someone is); this row is our membership card (what we display and
 // what future builds/hearts join against). No passwords ever exist here.
 model User {
-  id       String  @id @default(uuid()) @db.Uuid
-  // Auth0's stable subject, e.g. "google-oauth2|1180…" — the only link
-  // between our world and Auth0's.
-  auth0Sub String  @unique @map("auth0_sub")
-  // The Auth0 display name (Google/Discord), captured from the SPA on the
-  // first authenticated call and refreshed when it changes. Shown in the
-  // admin Users list. Null until the user next signs in after this shipped.
-  name     String?
+  id                String  @id @default(uuid()) @db.Uuid
+  // Which social provider this identity came from ("google" | "discord")
+  // and that provider's stable account id. Together they uniquely identify
+  // an account — we never merge across providers (design decision).
+  provider          String  @map("provider")
+  providerAccountId String  @map("provider_account_id")
+  // Display name from the provider (Google name / Discord global_name),
+  // captured at login. Shown in the admin Users list.
+  name              String?
   // Public display name. Null until chosen in Settings; required (app
   // rule) before creating builds. Unique site-wide.
-  nickname String? @unique
-  server   String? // game server, free text
-  createdAt DateTime @default(now()) @map("created_at")
+  nickname          String? @unique
+  server            String? // game server, free text
+  createdAt         DateTime @default(now()) @map("created_at")
 
-  builds      Build[]
+  builds        Build[]
   heartedBuilds BuildHeart[]
 
+  @@unique([provider, providerAccountId])
   @@map("users")
 }
 
