@@ -17,8 +17,15 @@ export function initAnalytics(): void {
     gtag: (...args: unknown[]) => void;
   };
   w.dataLayer = w.dataLayer || [];
-  w.gtag = (...args: unknown[]) => {
-    w.dataLayer.push(args);
+  // gtag.js only processes genuine `arguments` objects on the dataLayer. A
+  // plain array — which an arrow function's `push(args)` / spread produces —
+  // is silently ignored, so `config` never registers and NO /g/collect beacon
+  // is ever sent (GA then shows "no data" even though the script loads fine).
+  // Use a classic function and push the live `arguments` object, exactly like
+  // Google's canonical snippet: function gtag(){dataLayer.push(arguments);}
+  w.gtag = function gtag() {
+    // eslint-disable-next-line prefer-rest-params
+    w.dataLayer.push(arguments);
   };
   w.gtag("js", new Date());
   w.gtag("config", id);
