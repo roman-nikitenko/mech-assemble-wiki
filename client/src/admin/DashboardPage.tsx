@@ -1,29 +1,63 @@
-import { MockBadge } from "./MockBadge";
+import { useDashboardStats } from "../api/client";
 
-// Placeholder metrics — the features they measure don't exist yet.
-// Each card notes which future phase will make it real.
-const STATS = [
-  { label: "Registered users", value: "1,248", note: "real value arrives with the accounts phase" },
-  { label: "Posts created", value: "3,571", note: "real value arrives with the posts feature" },
-  { label: "Site visitors (30d)", value: "18,904", note: "real value arrives with analytics" },
-];
-
+/** Admin Dashboard — live metrics. Registered users and published posts come
+    from our DB; site visitors come from Google Analytics (shows "—" until GA
+    is configured on the server). */
 export function DashboardPage() {
+  const stats = useDashboardStats();
+
   return (
     <div>
-      <div className="flex items-center gap-3">
-        <h1 className="text-2xl font-black tracking-tight">Dashboard</h1>
-        <MockBadge hint="These numbers are placeholders — the features they measure don't exist yet." />
-      </div>
-      <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {STATS.map((s) => (
-          <div key={s.label} className="rounded-xl border border-edge bg-surface p-5">
-            <p className="text-sm text-ink-dim">{s.label}</p>
-            <p className="mt-1 text-3xl font-black text-accent">{s.value}</p>
-            <p className="mt-2 text-xs text-ink-dim">{s.note}</p>
-          </div>
-        ))}
-      </div>
+      <h1 className="text-2xl font-black tracking-tight">Dashboard</h1>
+
+      {stats.isPending ? (
+        <p className="mt-6 text-ink-dim">Loading…</p>
+      ) : stats.isError ? (
+        <p className="mt-6 text-fire">{(stats.error as Error).message}</p>
+      ) : (
+        <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <StatCard label="Registered users" metric={stats.data.users} />
+          <StatCard label="Posts created" metric={stats.data.posts} />
+          <StatCard
+            label="Site visitors"
+            metric={stats.data.visitors}
+            unavailableHint="Connect Google Analytics to see this."
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** One metric card. A null metric (e.g. visitors before GA is wired) renders a
+    dash and a hint instead of numbers. */
+function StatCard({
+  label,
+  metric,
+  unavailableHint,
+}: {
+  label: string;
+  metric: { total: number; last30: number } | null;
+  unavailableHint?: string;
+}) {
+  return (
+    <div className="rounded-xl border border-edge bg-surface p-5">
+      <p className="text-sm text-ink-dim">{label}</p>
+      {metric ? (
+        <>
+          <p className="mt-1 text-3xl font-black text-accent">
+            {metric.total.toLocaleString()}
+          </p>
+          <p className="mt-2 text-xs text-ink-dim">
+            +{metric.last30.toLocaleString()} in last 30 days
+          </p>
+        </>
+      ) : (
+        <>
+          <p className="mt-1 text-3xl font-black text-ink-dim">—</p>
+          <p className="mt-2 text-xs text-ink-dim">{unavailableHint}</p>
+        </>
+      )}
     </div>
   );
 }

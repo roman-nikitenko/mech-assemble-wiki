@@ -14,6 +14,7 @@
     "admin:check": "tsx scripts/admin-check.ts"
   },
   "dependencies": {
+    "@google-analytics/data": "^6.1.0",
     "@prisma/client": "^6.0.0",
     "arctic": "^3.7.0",
     "cookie-parser": "^1.4.7",

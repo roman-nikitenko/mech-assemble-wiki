@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { AccessoryInput, AccessorySummary, AdminUser, GameType, MechDetail, MechInput, MechRank, MechSummary, Pilot, PilotInput, PostedBuild, TypeInput, WeaponInput, WeaponSummary } from "./types";
+import type { AccessoryInput, AccessorySummary, AdminUser, DashboardStats, GameType, MechDetail, MechInput, MechRank, MechSummary, Pilot, PilotInput, PostedBuild, TypeInput, WeaponInput, WeaponSummary } from "./types";
 import { adminHeaders } from "../auth/adminSession";
 
 export const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
@@ -335,6 +335,14 @@ export function useAdminUsers() {
   return useQuery({
     queryKey: ["admin-users"],
     queryFn: () => adminFetchJson<AdminUser[]>("/api/admin/users"),
+  });
+}
+
+/** Admin Dashboard metrics — users + posts from our DB, visitors from GA4. */
+export function useDashboardStats() {
+  return useQuery({
+    queryKey: ["admin-stats"],
+    queryFn: () => adminFetchJson<DashboardStats>("/api/admin/stats"),
   });
 }
 

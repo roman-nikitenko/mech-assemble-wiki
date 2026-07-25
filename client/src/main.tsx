@@ -4,8 +4,10 @@ import { BrowserRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import App from "./App";
 import "./index.css";
+import { initAnalytics } from "./lib/analytics";
 
 const queryClient = new QueryClient();
+initAnalytics();
 
 // Auth now rides on an httpOnly session cookie set by our own /api/auth flow,
 // so there's no Auth0Provider or token bridge — the app just renders.

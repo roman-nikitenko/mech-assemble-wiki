@@ -342,3 +342,17 @@ export interface AccessoryInput {
   imageUrl?: string | null;
   iconUrl?: string | null;
 }
+
+/** One metric card's numbers: running total + activity in the last 30 days. */
+export interface StatMetric {
+  total: number;
+  last30: number;
+}
+
+/** Payload of GET /api/admin/stats (admin Dashboard). `visitors` is null when
+    Google Analytics isn't configured on the server. */
+export interface DashboardStats {
+  users: StatMetric;
+  posts: StatMetric;
+  visitors: StatMetric | null;
+}
