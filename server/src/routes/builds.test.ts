@@ -1,14 +1,23 @@
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 import request from "supertest";
 
-// Auth is mocked: authState.sub controls which user the request runs as.
+// Auth is mocked: authState.sub is a logical account id. requireUser
+// find-or-creates the matching user row (simulating the OAuth callback) and
+// stamps its real id on the request, so the routes' currentUserId sees it.
+// This keeps every "authState.sub = ..." line below working unchanged.
 const authState = vi.hoisted(() => ({ sub: "test|builds-a" }));
 vi.mock("../lib/auth", () => ({
-  requireUser: (req: any, _res: any, next: any) => {
-    req.auth = { payload: { sub: authState.sub } };
+  requireUser: async (req: any, _res: any, next: any) => {
+    const { prisma } = await import("../lib/prisma");
+    const user = await prisma.user.upsert({
+      where: { provider_providerAccountId: { provider: "google", providerAccountId: authState.sub } },
+      create: { provider: "google", providerAccountId: authState.sub },
+      update: {},
+    });
+    req.userId = user.id;
     next();
   },
-  authSub: (req: any) => req.auth?.payload?.sub ?? "",
+  currentUserId: (req: any) => req.userId ?? "",
   requireAdmin: (_req: any, _res: any, next: any) => next(),
 }));
 
@@ -39,14 +48,14 @@ const testBuilds = (body: any[]) => body.filter((b) => b.name?.startsWith("[test
 
 afterAll(async () => {
   // Cascade delete removes builds when users are deleted.
-  await prisma.user.deleteMany({ where: { auth0Sub: { startsWith: "test|builds" } } });
+  await prisma.user.deleteMany({ where: { providerAccountId: { startsWith: "test|builds" } } });
   await prisma.$disconnect();
 });
 
 beforeEach(async () => {
   // Clean builds between tests without touching the users row.
   const users = await prisma.user.findMany({
-    where: { auth0Sub: { startsWith: "test|builds" } },
+    where: { providerAccountId: { startsWith: "test|builds" } },
   });
   const ids = users.map((u) => u.id);
   await prisma.build.deleteMany({ where: { userId: { in: ids } } });

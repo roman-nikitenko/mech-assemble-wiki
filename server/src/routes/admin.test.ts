@@ -14,7 +14,7 @@ beforeAll(() => {
 afterAll(async () => {
   await prisma.type.deleteMany({ where: { name: { startsWith: "[test:admin] " } } });
   // Cascades take the builds/hearts of these users with them.
-  await prisma.user.deleteMany({ where: { auth0Sub: { startsWith: "test|adminusers-" } } });
+  await prisma.user.deleteMany({ where: { providerAccountId: { startsWith: "test|adminusers-" } } });
   await prisma.$disconnect();
 });
 
@@ -58,7 +58,7 @@ describe("admin write guard", () => {
 describe("admin user management", () => {
   it("lists users (with build counts) only for an authenticated admin", async () => {
     const user = await prisma.user.create({
-      data: { auth0Sub: "test|adminusers-list", name: "Listed User", nickname: "[test:admin] Listed" },
+      data: { provider: "google", providerAccountId: "test|adminusers-list", name: "Listed User", nickname: "[test:admin] Listed" },
     });
     await prisma.build.create({
       data: { userId: user.id, name: "[test:admin] a build", skillIds: [], weaponIds: [] },
@@ -79,7 +79,7 @@ describe("admin user management", () => {
 
   it("deletes a user (cascading their builds) and 404s an unknown id", async () => {
     const user = await prisma.user.create({
-      data: { auth0Sub: "test|adminusers-del", nickname: "[test:admin] Doomed" },
+      data: { provider: "google", providerAccountId: "test|adminusers-del", nickname: "[test:admin] Doomed" },
     });
     const build = await prisma.build.create({
       data: { userId: user.id, name: "[test:admin] doomed build", skillIds: [], weaponIds: [] },
