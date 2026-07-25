@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { prisma } from "../lib/prisma";
 import { requireAdmin, signAdminToken, verifyPassword } from "../lib/auth";
+import { getVisitorStats } from "../lib/analytics";
 
 export const adminRouter = Router();
 
@@ -47,4 +48,29 @@ adminRouter.delete("/users/:id", requireAdmin, async (req, res) => {
   if (!existing) return res.status(404).json({ error: "User not found" });
   await prisma.user.delete({ where: { id } });
   res.status(204).end();
+});
+
+// ---------- Dashboard metrics ----------
+
+// 30 days in ms — the window for the "last 30 days" count filters.
+const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+
+/** Dashboard numbers: user + published-post counts from our DB, visitor totals
+    from GA4 (null when analytics isn't configured, so the UI shows "—"). */
+adminRouter.get("/stats", requireAdmin, async (_req, res) => {
+  const since = new Date(Date.now() - THIRTY_DAYS_MS);
+
+  const [users, users30, posts, posts30, visitors] = await Promise.all([
+    prisma.user.count(),
+    prisma.user.count({ where: { createdAt: { gte: since } } }),
+    prisma.build.count({ where: { status: "Published" } }),
+    prisma.build.count({ where: { status: "Published", createdAt: { gte: since } } }),
+    getVisitorStats(),
+  ]);
+
+  res.json({
+    users: { total: users, last30: users30 },
+    posts: { total: posts, last30: posts30 },
+    visitors: visitors ? { total: visitors.total, last30: visitors.last30 } : null,
+  });
 });

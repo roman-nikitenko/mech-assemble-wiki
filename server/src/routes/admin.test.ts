@@ -98,3 +98,55 @@ describe("admin user management", () => {
     expect(missing.status).toBe(404);
   });
 });
+
+describe("GET /api/admin/stats", () => {
+  it("401s without an admin token", async () => {
+    const res = await request(app).get("/api/admin/stats");
+    expect(res.status).toBe(401);
+  });
+
+  it("counts users + published posts and returns visitors:null without GA", async () => {
+    delete process.env.GA4_PROPERTY_ID; // force the graceful (null) visitor path
+
+    const before = await request(app)
+      .get("/api/admin/stats")
+      .set("x-admin-token", testAdminToken());
+    expect(before.status).toBe(200);
+    const usersBefore = before.body.users.total as number;
+    const postsBefore = before.body.posts.total as number;
+
+    // One user + one Published build (counts) + one Draft build (does not).
+    const user = await prisma.user.create({
+      data: {
+        provider: "google",
+        providerAccountId: "test|adminusers-stats",
+        nickname: "[test:admin] Stats",
+      },
+    });
+    await prisma.build.create({
+      data: {
+        userId: user.id,
+        name: "[test:admin] published",
+        status: "Published",
+        skillIds: [],
+        weaponIds: [],
+      },
+    });
+    await prisma.build.create({
+      data: {
+        userId: user.id,
+        name: "[test:admin] draft",
+        skillIds: [],
+        weaponIds: [],
+      },
+    });
+
+    const after = await request(app)
+      .get("/api/admin/stats")
+      .set("x-admin-token", testAdminToken());
+    expect(after.body.users.total).toBe(usersBefore + 1);
+    expect(after.body.posts.total).toBe(postsBefore + 1); // only the Published one
+    expect(after.body.users.last30).toBeGreaterThanOrEqual(1); // just-created user
+    expect(after.body.visitors).toBeNull();
+  });
+});
