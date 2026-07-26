@@ -31,18 +31,20 @@ afterEach(() => {
 });
 
 describe("DashboardPage", () => {
-  it("shows real totals with the last-30-days sub-numbers", async () => {
+  it("shows real totals with the sub-numbers for each card", async () => {
     stats = {
       users: { total: 42, last30: 7 },
       posts: { total: 15, last30: 3 },
-      visitors: { total: 1904, last30: 640 },
+      visitors: { active30min: 2, today: 88, total: 1904 },
     };
     renderPage();
 
     expect(await screen.findByText("42")).toBeInTheDocument();
     expect(screen.getByText("+7 in last 30 days")).toBeInTheDocument();
     expect(screen.getByText("1,904")).toBeInTheDocument(); // toLocaleString formatting
-    expect(screen.getByText("+640 in last 30 days")).toBeInTheDocument();
+    // Visitors: overall big, with the last-30-min + today windows underneath.
+    expect(screen.getByText(/2 online now/)).toBeInTheDocument();
+    expect(screen.getByText(/\+88 today/)).toBeInTheDocument();
   });
 
   it("shows a dash for visitors when GA is not configured", async () => {

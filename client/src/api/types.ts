@@ -349,10 +349,17 @@ export interface StatMetric {
   last30: number;
 }
 
+/** Visitors from GA4, across three windows (overall / today / last 30 min). */
+export interface VisitorMetric {
+  active30min: number;
+  today: number;
+  total: number;
+}
+
 /** Payload of GET /api/admin/stats (admin Dashboard). `visitors` is null when
     Google Analytics isn't configured on the server. */
 export interface DashboardStats {
   users: StatMetric;
   posts: StatMetric;
-  visitors: StatMetric | null;
+  visitors: VisitorMetric | null;
 }
