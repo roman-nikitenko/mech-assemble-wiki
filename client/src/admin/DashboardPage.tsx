@@ -1,4 +1,5 @@
 import { useDashboardStats } from "../api/client";
+import type { VisitorMetric } from "../api/types";
 
 /** Admin Dashboard — live metrics. Registered users and published posts come
     from our DB; site visitors come from Google Analytics (shows "—" until GA
@@ -18,11 +19,7 @@ export function DashboardPage() {
         <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           <StatCard label="Registered users" metric={stats.data.users} />
           <StatCard label="Posts created" metric={stats.data.posts} />
-          <StatCard
-            label="Site visitors"
-            metric={stats.data.visitors}
-            unavailableHint="Connect Google Analytics to see this."
-          />
+          <VisitorCard metric={stats.data.visitors} />
         </div>
       )}
     </div>
@@ -56,6 +53,35 @@ function StatCard({
         <>
           <p className="mt-1 text-3xl font-black text-ink-dim">—</p>
           <p className="mt-2 text-xs text-ink-dim">{unavailableHint}</p>
+        </>
+      )}
+    </div>
+  );
+}
+
+/** Site-visitors card. Shows the overall total big, with "online now" (last 30
+    min, from GA Realtime) and "today" underneath. Null (GA not configured on the
+    server) renders a dash and a hint, like StatCard. */
+function VisitorCard({ metric }: { metric: VisitorMetric | null }) {
+  return (
+    <div className="rounded-xl border border-edge bg-surface p-5">
+      <p className="text-sm text-ink-dim">Site visitors</p>
+      {metric ? (
+        <>
+          <p className="mt-1 text-3xl font-black text-accent">
+            {metric.total.toLocaleString()}
+          </p>
+          <p className="mt-2 text-xs text-ink-dim">
+            {metric.active30min.toLocaleString()} online now ·{" "}
+            +{metric.today.toLocaleString()} today
+          </p>
+        </>
+      ) : (
+        <>
+          <p className="mt-1 text-3xl font-black text-ink-dim">—</p>
+          <p className="mt-2 text-xs text-ink-dim">
+            Connect Google Analytics to see this.
+          </p>
         </>
       )}
     </div>

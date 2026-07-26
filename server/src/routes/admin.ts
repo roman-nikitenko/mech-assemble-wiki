@@ -71,6 +71,8 @@ adminRouter.get("/stats", requireAdmin, async (_req, res) => {
   res.json({
     users: { total: users, last30: users30 },
     posts: { total: posts, last30: posts30 },
-    visitors: visitors ? { total: visitors.total, last30: visitors.last30 } : null,
+    visitors: visitors
+      ? { active30min: visitors.active30min, today: visitors.today, total: visitors.total }
+      : null,
   });
 });

@@ -1,10 +1,11 @@
 import { accessSync, constants } from "node:fs";
 import { BetaAnalyticsDataClient } from "@google-analytics/data";
 
-/** Visitor totals shown on the admin Dashboard. */
+/** Visitor numbers shown on the admin Dashboard, across three windows. */
 export interface VisitorStats {
+  active30min: number; // GA4 Realtime activeUsers — visitors in the last 30 min
+  today: number; // GA4 totalUsers since midnight (property time zone)
   total: number; // GA4 totalUsers since the tag went live
-  last30: number; // GA4 totalUsers over the trailing 30 days
 }
 
 // GA4 cannot report traffic from before the tracking tag existed, so the
@@ -43,12 +44,23 @@ function credentialsReadable(): boolean {
   }
 }
 
-/** Run one totalUsers report from `startDate` to today and return the number. */
-async function runReport(startDate: string): Promise<number> {
+/** Run one totalUsers report over [startDate, endDate] and return the number. */
+async function runReport(startDate: string, endDate = "today"): Promise<number> {
   const [report] = await gaClient().runReport({
     property: `properties/${process.env.GA4_PROPERTY_ID}`,
-    dateRanges: [{ startDate, endDate: "today" }],
+    dateRanges: [{ startDate, endDate }],
     metrics: [{ name: "totalUsers" }],
+  });
+  const raw = report.rows?.[0]?.metricValues?.[0]?.value ?? "0";
+  return Number(raw) || 0;
+}
+
+/** Active users in the last 30 minutes, via the separate Realtime API (standard
+    reports can't express a "last N minutes" window). */
+async function runRealtime(): Promise<number> {
+  const [report] = await gaClient().runRealtimeReport({
+    property: `properties/${process.env.GA4_PROPERTY_ID}`,
+    metrics: [{ name: "activeUsers" }],
   });
   const raw = report.rows?.[0]?.metricValues?.[0]?.value ?? "0";
   return Number(raw) || 0;
@@ -63,11 +75,12 @@ export async function getVisitorStats(): Promise<VisitorStats | null> {
   if (!credentialsReadable()) return null;
   if (cache && Date.now() - cache.at < CACHE_TTL_MS) return cache.value;
   try {
-    const [total, last30] = await Promise.all([
+    const [active30min, today, total] = await Promise.all([
+      runRealtime(),
+      runReport("today", "today"),
       runReport(LAUNCH_DATE),
-      runReport("30daysAgo"),
     ]);
-    const value: VisitorStats = { total, last30 };
+    const value: VisitorStats = { active30min, today, total };
     cache = { at: Date.now(), value };
     return value;
   } catch {
