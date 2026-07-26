@@ -43,6 +43,18 @@ async function validateWeaponLinks(input: {
   return null;
 }
 
+// The public detail page needs the full kit: everything the list has, plus
+// helpers (with their ranks) — mirrors the weapon include nested in the mech
+// detail endpoint. The legacy `upgrades` tree is deliberately omitted (dormant).
+const WEAPON_DETAIL_INCLUDE = {
+  type: { select: { id: true, name: true, iconUrl: true } },
+  mech: { select: { id: true, name: true } },
+  pilot: { select: { id: true, name: true } },
+  weaponSkins: true,
+  skillNodes: { orderBy: { sortOrder: "asc" as const } },
+  helpers: { include: { ranks: { orderBy: { rank: "asc" as const } } } },
+} satisfies Prisma.WeaponInclude;
+
 // GET /api/weapons
 weaponsRouter.get("/", async (_req, res) => {
   const weapons = await prisma.weapon.findMany({
@@ -50,6 +62,18 @@ weaponsRouter.get("/", async (_req, res) => {
     include: WEAPON_INCLUDE,
   });
   res.json(weapons);
+});
+
+// GET /api/weapons/:id — public single-weapon read for the detail page.
+weaponsRouter.get("/:id", async (req, res) => {
+  const { id } = req.params;
+  if (!UUID_RE.test(id)) return res.status(404).json({ error: "Weapon not found" });
+  const weapon = await prisma.weapon.findUnique({
+    where: { id },
+    include: WEAPON_DETAIL_INCLUDE,
+  });
+  if (!weapon) return res.status(404).json({ error: "Weapon not found" });
+  res.json(weapon);
 });
 
 // POST /api/weapons — weapon + inline skins + optional links, atomically.

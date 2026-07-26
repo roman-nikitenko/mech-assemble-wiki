@@ -376,3 +376,58 @@ describe("weapon skill tree", () => {
     expect(core.repeatable).toBe(false);
   });
 });
+
+describe("GET /api/weapons/:id", () => {
+  it("returns one weapon with its full kit (skills, skins, helpers, owner mech)", async () => {
+    const type = await prisma.type.create({ data: { name: "[test:weapons] Plasma" } });
+    const mech = await prisma.mech.create({ data: { name: "[test:weapons] Kit Owner", rank: "S" } });
+    const weapon = await prisma.weapon.create({
+      data: {
+        name: "[test:weapons] Kit Cannon",
+        description: "Full kit.",
+        tier: "S",
+        typeId: type.id,
+        mechId: mech.id,
+        weaponSkins: { create: [{ name: "[test:weapons] Kit Skin", bonuses: ["ATK +1%"] }] },
+        skillNodes: {
+          create: [
+            { name: "[test:weapons] Root", description: "root", appearanceLevel: 1, type: "Normal", sortOrder: 0 },
+          ],
+        },
+        helpers: {
+          create: [
+            {
+              name: "[test:weapons] Buddy",
+              passiveEffect: "helps",
+              ranks: { create: [{ rank: 1, effect: "+1" }] },
+            },
+          ],
+        },
+      },
+    });
+
+    const res = await request(app).get(`/api/weapons/${weapon.id}`);
+    expect(res.status).toBe(200);
+    expect(res.body.id).toBe(weapon.id);
+    expect(res.body.type.name).toBe("[test:weapons] Plasma");
+    expect(res.body.mech).toEqual({ id: mech.id, name: "[test:weapons] Kit Owner" });
+    expect(res.body.weaponSkins).toHaveLength(1);
+    expect(res.body.skillNodes).toHaveLength(1);
+    expect(res.body.helpers).toHaveLength(1);
+    expect(res.body.helpers[0].ranks).toHaveLength(1);
+    // the dormant legacy upgrades tree is NOT included
+    expect(res.body.upgrades).toBeUndefined();
+  });
+
+  it("404s on a well-formed but unknown id", async () => {
+    const res = await request(app).get("/api/weapons/11111111-1111-4111-8111-111111111111");
+    expect(res.status).toBe(404);
+    expect(res.body.error).toBe("Weapon not found");
+  });
+
+  it("404s on a malformed id", async () => {
+    const res = await request(app).get("/api/weapons/not-a-uuid");
+    expect(res.status).toBe(404);
+    expect(res.body.error).toBe("Weapon not found");
+  });
+});

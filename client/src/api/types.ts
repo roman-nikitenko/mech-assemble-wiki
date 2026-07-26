@@ -122,6 +122,25 @@ export interface Weapon {
   skillNodes: SkillNodeRow[];
 }
 
+/** Shape of GET /api/weapons/:id — the full public detail. Same as `Weapon`
+    minus the dormant `upgrades` tree, plus the owner mech (may be null). */
+export interface WeaponDetail {
+  id: string;
+  name: string;
+  description: string | null;
+  baseStats: Stats | null;
+  tier: MechRank;
+  rankUpPreview: string[];
+  imageUrl: string | null;
+  iconUrl: string | null;
+  type: GameType | null;
+  mech: { id: string; name: string } | null;
+  pilot: { id: string; name: string } | null;
+  weaponSkins: WeaponSkinRow[];
+  helpers: Helper[];
+  skillNodes: SkillNodeRow[];
+}
+
 /** Shape of GET /api/weapons rows (admin list, edit prefill, pilot form). */
 export interface WeaponSummary {
   id: string;
