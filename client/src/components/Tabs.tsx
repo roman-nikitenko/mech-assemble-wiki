@@ -15,7 +15,7 @@ export function Tabs({ tabs, active, onChange }: TabsProps) {
           role="tab"
           aria-selected={tab === active}
           onClick={() => onChange(tab)}
-          className={`min-h-11 whitespace-nowrap px-4 text-sm font-semibold transition-colors ${
+          className={`min-h-11 whitespace-nowrap px-4 text-sm cursor-pointer font-semibold transition-colors ${
             tab === active
               ? "border-b-2 border-accent text-accent"
               : "text-ink-dim hover:text-ink"

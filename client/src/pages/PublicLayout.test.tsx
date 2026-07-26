@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { PublicLayout } from "./PublicLayout";
@@ -67,15 +67,17 @@ describe("PublicLayout", () => {
     for (const label of ["Mechs", "Builds", "Weapons", "Accessories", "Pilots"]) {
       expect(nav).toHaveTextContent(label);
     }
-    expect(screen.getByRole("link", { name: "Mechs" })).toHaveAttribute("aria-current", "page");
-    expect(screen.getByRole("link", { name: "Builds" })).not.toHaveAttribute("aria-current");
+    // Scope to the section-tabs nav — the footer repeats these links too.
+    expect(within(nav).getByRole("link", { name: "Mechs" })).toHaveAttribute("aria-current", "page");
+    expect(within(nav).getByRole("link", { name: "Builds" })).not.toHaveAttribute("aria-current");
     expect(screen.getByText("mechs grid here")).toBeInTheDocument();
   });
 
   it("marks the Builds tab active on /builds", () => {
     renderAt("/builds");
     expect(screen.getByText("builds here")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Builds" })).toHaveAttribute("aria-current", "page");
+    const nav = screen.getByRole("navigation", { name: "Site sections" });
+    expect(within(nav).getByRole("link", { name: "Builds" })).toHaveAttribute("aria-current", "page");
   });
 
   it("shows a Log in link to /login when logged out", () => {

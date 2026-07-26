@@ -9,6 +9,7 @@ import { NotesField } from "../../profile/NotesField";
 import { useMe } from "../../auth/useMe";
 import { useCreateBuild, useMyBuilds, useUpdateBuild } from "../../auth/useBuilds";
 import { RankBadge } from "../../components/RankBadge";
+import { FilterBar } from "../../components/FilterBar";
 import { LoadingSkeleton } from "../../components/LoadingSkeleton";
 
 export const MAX_WEAPONS = 4;
@@ -72,6 +73,16 @@ function BuildEditorContent({ existing }: { existing: PostedBuild | undefined })
   const [weaponTypeId, setWeaponTypeId] = useState("");
   const [weaponTier, setWeaponTier] = useState<MechRank | "">("");
 
+  // Step-1 subject picker filters — the same FilterBar the browse page uses,
+  // shared across both the mech grid and the single-weapon grid (mechs and
+  // weapons share type + Standard/S, so one bar narrows both).
+  const [pickTypeIds, setPickTypeIds] = useState<string[]>([]);
+  const [pickRanks, setPickRanks] = useState<MechRank[]>([]);
+  const [pickSearch, setPickSearch] = useState("");
+  // Add/remove a value from its group's selection (empty group = no filter).
+  const togglePick = <T,>(value: T, list: T[], set: (v: T[]) => void) =>
+    set(list.includes(value) ? list.filter((v) => v !== value) : [...list, value]);
+
   const mechs = useMechs({});
   const detail = useMech(mechId ?? "");
   const weapons = useWeapons();
@@ -100,20 +111,59 @@ function BuildEditorContent({ existing }: { existing: PostedBuild | undefined })
 
   // ----- step 1: pick the build's subject (mech or single weapon) -----
   if (mechId === null && buildWeaponId === null) {
+    // Same client-side filtering as the browse page: OR within each group,
+    // AND across groups, empty group = no filter. One search box matches a
+    // mech's name/epithet or a weapon's name.
+    const pq = pickSearch.trim().toLowerCase();
+    const pickMechs = (mechs.data ?? []).filter((m) => {
+      const typeOk = pickTypeIds.length === 0 || (m.type != null && pickTypeIds.includes(m.type.id));
+      const rankOk = pickRanks.length === 0 || pickRanks.includes(m.rank);
+      const searchOk =
+        !pq || m.name.toLowerCase().includes(pq) || (m.epithet ?? "").toLowerCase().includes(pq);
+      return typeOk && rankOk && searchOk;
+    });
+    const pickWeapons = allWeapons.filter((w) => {
+      const typeOk = pickTypeIds.length === 0 || (w.type != null && pickTypeIds.includes(w.type.id));
+      const tierOk = pickRanks.length === 0 || pickRanks.includes(w.tier);
+      const searchOk = !pq || w.name.toLowerCase().includes(pq);
+      return typeOk && tierOk && searchOk;
+    });
+
     return (
       <main className="mx-auto max-w-6xl px-4 py-6">
         <Link to="/profile" className="text-sm text-ink-dim hover:text-accent">← My Profile</Link>
-        <h2 className="mt-2 text-xl font-bold">Choose a mech</h2>
+
+        <div className="mt-4">
+          <FilterBar
+            types={types.data ?? []}
+            selectedTypeIds={pickTypeIds}
+            selectedRanks={pickRanks}
+            search={pickSearch}
+            onToggleType={(id) => togglePick(id, pickTypeIds, setPickTypeIds)}
+            onToggleRank={(r) => togglePick(r, pickRanks, setPickRanks)}
+            onSearchChange={setPickSearch}
+            onClear={() => {
+              setPickTypeIds([]);
+              setPickRanks([]);
+            }}
+            rankGroupLabel="rank / tier"
+            searchPlaceholder="Search mechs & weapons..."
+          />
+        </div>
+
+        <h2 className="mt-6 text-xl font-bold">Choose a mech</h2>
         {mechs.isPending ? (
           <LoadingSkeleton variant="cards" />
+        ) : pickMechs.length === 0 ? (
+          <p className="mt-4 text-sm text-ink-dim">No mechs match.</p>
         ) : (
           <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {(mechs.data ?? []).map((m) => (
+            {pickMechs.map((m) => (
               <button
                 key={m.id}
                 type="button"
                 onClick={() => setMechId(m.id)}
-                className="rounded-xl border border-edge bg-surface p-4 text-left hover:border-accent/60"
+                className="rounded-xl border cursor-pointer border-edge bg-surface p-4 text-left hover:border-accent/60"
               >
                 {m.imageUrl && (
                   <img
@@ -135,14 +185,16 @@ function BuildEditorContent({ existing }: { existing: PostedBuild | undefined })
         <h2 className="mt-8 text-xl font-bold">…or a build for a single weapon</h2>
         {weapons.isPending ? (
           <LoadingSkeleton variant="cards" />
+        ) : pickWeapons.length === 0 ? (
+          <p className="mt-4 text-sm text-ink-dim">No weapons match.</p>
         ) : (
           <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {allWeapons.map((w) => (
+            {pickWeapons.map((w) => (
               <button
                 key={w.id}
                 type="button"
                 onClick={() => setBuildWeaponId(w.id)}
-                className="rounded-xl border border-edge bg-surface p-4 text-left hover:border-accent/60"
+                className="rounded-xl border cursor-pointer border-edge bg-surface p-4 text-left hover:border-accent/60"
               >
                 {(w.iconUrl ?? w.imageUrl) && (
                   <img

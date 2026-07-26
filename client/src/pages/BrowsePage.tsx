@@ -7,37 +7,47 @@ import { LoadingSkeleton } from "../components/LoadingSkeleton";
 import { ErrorPanel } from "../components/ErrorPanel";
 
 export function BrowsePage() {
-  const [typeId, setTypeId] = useState("");
-  const [rank, setRank] = useState<MechRank | "">("");
+  const [typeIds, setTypeIds] = useState<string[]>([]);
+  const [ranks, setRanks] = useState<MechRank[]>([]);
   const [search, setSearch] = useState("");
 
-  // typeId/rank go to the API (it validates and filters);
-  // search stays client-side — the list is already loaded and tiny.
-  const { data, isPending, isError, refetch } = useMechs({
-    typeId: typeId || undefined,
-    rank: rank || undefined,
-  });
+  // All filtering is now client-side (multi-select type/rank + search): the mech
+  // list is tiny, so we fetch it once and filter in the browser. This keeps the
+  // "any of these types AND any of these ranks" logic simple and instant.
+  const { data, isPending, isError, refetch } = useMechs({});
   const types = useTypes();
 
+  // Toggle helpers: click a chip to add/remove it from its group's selection.
+  const toggle = <T,>(value: T, list: T[], set: (v: T[]) => void) =>
+    set(list.includes(value) ? list.filter((v) => v !== value) : [...list, value]);
+
   const query = search.trim().toLowerCase();
-  const visible = (data ?? []).filter(
-    (m) =>
+  const visible = (data ?? []).filter((m) => {
+    // OR within each group, AND across groups; empty group = no filter.
+    const typeOk = typeIds.length === 0 || (m.type != null && typeIds.includes(m.type.id));
+    const rankOk = ranks.length === 0 || ranks.includes(m.rank);
+    const searchOk =
       !query ||
       m.name.toLowerCase().includes(query) ||
-      (m.epithet ?? "").toLowerCase().includes(query)
-  );
+      (m.epithet ?? "").toLowerCase().includes(query);
+    return typeOk && rankOk && searchOk;
+  });
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-6">
       {/* Title + Admin link live in PublicLayout now. */}
       <FilterBar
         types={types.data ?? []}
-        typeId={typeId}
-        rank={rank}
+        selectedTypeIds={typeIds}
+        selectedRanks={ranks}
         search={search}
-        onTypeIdChange={setTypeId}
-        onRankChange={setRank}
+        onToggleType={(id) => toggle(id, typeIds, setTypeIds)}
+        onToggleRank={(r) => toggle(r, ranks, setRanks)}
         onSearchChange={setSearch}
+        onClear={() => {
+          setTypeIds([]);
+          setRanks([]);
+        }}
       />
       {isPending ? (
         <LoadingSkeleton variant="cards" />

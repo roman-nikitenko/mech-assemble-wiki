@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { AccessoryInput, AccessorySummary, AdminUser, DashboardStats, GameType, MechDetail, MechInput, MechRank, MechSummary, Pilot, PilotInput, PostedBuild, TypeInput, WeaponInput, WeaponSummary } from "./types";
+import type { AccessoryInput, AccessorySummary, AdminUser, DashboardStats, GameType, MechDetail, MechInput, MechRank, MechSummary, Pilot, PilotInput, PostedBuild, TypeInput, WeaponDetail, WeaponInput, WeaponSummary } from "./types";
 import { adminHeaders } from "../auth/adminSession";
 
 export const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
@@ -207,6 +207,15 @@ export function useDeleteType() {
 
 export function useWeapons() {
   return useQuery({ queryKey: ["weapons"], queryFn: () => fetchJson<WeaponSummary[]>("/api/weapons") });
+}
+
+export function useWeapon(id: string) {
+  return useQuery({
+    queryKey: ["weapon", id],
+    queryFn: () => fetchJson<WeaponDetail>(`/api/weapons/${id}`),
+    retry: (failureCount, error) =>
+      !(error instanceof NotFoundError) && failureCount < 3,
+  });
 }
 
 export function useCreateWeapon() {

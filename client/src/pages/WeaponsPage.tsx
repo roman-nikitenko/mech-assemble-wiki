@@ -1,28 +1,72 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
-import { imageSrc, useWeapons } from "../api/client";
+import { imageSrc, useTypes, useWeapons } from "../api/client";
+import type { MechRank } from "../api/types";
+import { FilterBar } from "../components/FilterBar";
 import { RankBadge } from "../components/RankBadge";
 import { TypeBadge } from "../components/TypeBadge";
 import { LoadingSkeleton } from "../components/LoadingSkeleton";
 import { ErrorPanel } from "../components/ErrorPanel";
 
-/** Public weapon list. There is no weapon detail page yet — a weapon's full
-    kit (skills, skins, helpers) lives on its owner mech's Weapon tab, so the
-    owner link is the way in. */
+/** Public weapon list. Each card links to the weapon's detail page
+    (/weapons/:id), which shows its full kit. */
 export function WeaponsPage() {
   const { data, isPending, isError, refetch } = useWeapons();
+  const types = useTypes();
+
+  // Same multi-select filtering as the mechs page — weapons carry a type and a
+  // tier (Standard/S). All client-side: the weapon list is small.
+  const [typeIds, setTypeIds] = useState<string[]>([]);
+  const [tiers, setTiers] = useState<MechRank[]>([]);
+  const [search, setSearch] = useState("");
+
+  const toggle = <T,>(value: T, list: T[], set: (v: T[]) => void) =>
+    set(list.includes(value) ? list.filter((v) => v !== value) : [...list, value]);
+
+  const query = search.trim().toLowerCase();
+  const visible = (data ?? []).filter((w) => {
+    const typeOk = typeIds.length === 0 || (w.type != null && typeIds.includes(w.type.id));
+    const tierOk = tiers.length === 0 || tiers.includes(w.tier);
+    const searchOk =
+      !query ||
+      w.name.toLowerCase().includes(query) ||
+      (w.description ?? "").toLowerCase().includes(query);
+    return typeOk && tierOk && searchOk;
+  });
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-6">
+      <FilterBar
+        types={types.data ?? []}
+        selectedTypeIds={typeIds}
+        selectedRanks={tiers}
+        search={search}
+        onToggleType={(id) => toggle(id, typeIds, setTypeIds)}
+        onToggleRank={(t) => toggle(t, tiers, setTiers)}
+        onSearchChange={setSearch}
+        onClear={() => {
+          setTypeIds([]);
+          setTiers([]);
+        }}
+        rankGroupLabel="tier"
+        searchPlaceholder="Search weapons..."
+      />
       {isPending ? (
         <LoadingSkeleton variant="cards" />
       ) : isError ? (
         <ErrorPanel onRetry={() => refetch()} />
       ) : (data ?? []).length === 0 ? (
         <p className="mt-8 text-center text-ink-dim">No weapons recorded yet.</p>
+      ) : visible.length === 0 ? (
+        <p className="mt-8 text-center text-ink-dim">No weapons match.</p>
       ) : (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {(data ?? []).map((w) => (
-            <div key={w.id} className="rounded-xl border border-edge bg-surface p-4">
+        <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {visible.map((w) => (
+            <Link
+              key={w.id}
+              to={`/weapons/${w.id}`}
+              className="block rounded-xl border border-edge bg-surface p-4 transition-colors hover:border-accent"
+            >
               {w.imageUrl && (
                 <img
                   src={imageSrc(w.imageUrl)}
@@ -38,15 +82,10 @@ export function WeaponsPage() {
               <div className="mt-2 flex flex-wrap items-center gap-2">
                 {w.type && <TypeBadge type={w.type} />}
                 {w.mech && (
-                  <Link
-                    to={`/mechs/${w.mech.id}`}
-                    className="text-xs text-accent hover:underline"
-                  >
-                    {w.mech.name}&rsquo;s weapon →
-                  </Link>
+                  <span className="text-xs text-ink-dim">{w.mech.name}&rsquo;s weapon</span>
                 )}
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       )}

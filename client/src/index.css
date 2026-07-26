@@ -1,9 +1,25 @@
 @import "tailwindcss";
 
+/* Local display font (Nasalization, Regular only). Vite fingerprints and
+   bundles the .otf because it's referenced by a relative url() from src/.
+   font-display: swap shows fallback text immediately, then swaps the font
+   in once loaded, so headings never block first render. */
+@font-face {
+  font-family: "Nasalization";
+  src: url("./assets/fonts/nasalization/Nasalization-Regular.otf") format("opentype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
 /* Design tokens. Tailwind v4 reads @theme and generates utilities from it:
    --color-surface becomes bg-surface / text-surface / border-surface, etc.
    Change a value here and the whole app follows — no config file needed. */
 @theme {
+  /* --font-<name> auto-generates a `font-<name>` utility in Tailwind v4, so
+     `class="font-nasalization"` applies this stack on any element. */
+  --font-nasalization: "Nasalization", ui-sans-serif, sans-serif;
+
   /* dark, blue-tinted neutrals */
   --color-bg: #0b0f1a;
   --color-surface: #131a2b;

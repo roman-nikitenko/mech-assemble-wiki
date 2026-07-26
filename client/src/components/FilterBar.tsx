@@ -1,64 +1,108 @@
 import type { GameType, MechRank } from "../api/types";
+import { STierIcon } from "./STierIcon";
 
 const RANKS: MechRank[] = ["Standard", "S"];
 
 interface FilterBarProps {
   types: GameType[]; // the catalog, loaded by the page
-  typeId: string; // "" = no filter
-  rank: MechRank | "";
+  selectedTypeIds: string[]; // empty = no type filter (show all types)
+  selectedRanks: MechRank[]; // empty = no rank/tier filter (show all)
   search: string;
-  onTypeIdChange: (t: string) => void;
-  onRankChange: (r: MechRank | "") => void;
+  onToggleType: (id: string) => void;
+  onToggleRank: (r: MechRank) => void;
   onSearchChange: (s: string) => void;
+  onClear: () => void;
+  // The Standard/S group is a mech "rank" but a weapon "tier" — same values,
+  // different word. Only affects the group's accessible label and placeholder.
+  rankGroupLabel?: string; // default "rank"
+  searchPlaceholder?: string; // default "Search mechs..."
 }
 
-/** Controlled component: state lives in BrowsePage, this just renders it.
-    "" means "no filter" for the selects. Type options come from the API now —
-    the old hard-coded list died with the MechType enum. */
+// Shared look for a toggle chip. `active` gives it the accent fill + ring so a
+// pressed filter is obvious at a glance; inactive chips stay muted.
+function chipCls(active: boolean): string {
+  const base =
+    "inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-lg border px-3 text-sm font-semibold transition-colors";
+  return active
+    ? `${base} border-accent bg-accent/15 text-accent`
+    : `${base} border-edge bg-surface text-ink-dim hover:text-ink`;
+}
+
+/** Controlled component: filter state lives in BrowsePage, this just renders it.
+    Types and ranks are multi-select toggle buttons (OR within a group). An empty
+    selection in a group means "no filter" for that group. */
 export function FilterBar({
   types,
-  typeId,
-  rank,
+  selectedTypeIds,
+  selectedRanks,
   search,
-  onTypeIdChange,
-  onRankChange,
+  onToggleType,
+  onToggleRank,
   onSearchChange,
+  onClear,
+  rankGroupLabel = "rank",
+  searchPlaceholder = "Search mechs...",
 }: FilterBarProps) {
-  const fieldCls = "min-h-11 rounded-lg border border-edge bg-surface px-3 text-sm";
+  const hasFilters = selectedTypeIds.length > 0 || selectedRanks.length > 0;
+
   return (
-    <div className="flex flex-col gap-2 sm:flex-row">
+    <div className="flex flex-col gap-3">
       <input
         type="search"
         value={search}
         onChange={(e) => onSearchChange(e.target.value)}
-        placeholder="Search mechs..."
-        className={`${fieldCls} flex-1`}
+        placeholder={searchPlaceholder}
+        className="min-h-11 rounded-lg border border-edge bg-surface px-3 text-sm"
       />
-      <div className="flex gap-2">
-        <select
-          value={typeId}
-          onChange={(e) => onTypeIdChange(e.target.value)}
-          className={fieldCls}
-          aria-label="Filter by type"
-        >
-          <option value="">All types</option>
-          {types.map((t) => (
-            <option key={t.id} value={t.id}>
+
+      <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Filter by type">
+        {types.map((t) => {
+          const active = selectedTypeIds.includes(t.id);
+          return (
+            <button
+              key={t.id}
+              type="button"
+              aria-pressed={active}
+              onClick={() => onToggleType(t.id)}
+              className={chipCls(active)}
+            >
+              {t.iconUrl && <img src={t.iconUrl} alt="" className="h-5 w-5" />}
               {t.name}
-            </option>
-          ))}
-        </select>
-        <select
-          value={rank}
-          onChange={(e) => onRankChange(e.target.value as MechRank | "")}
-          className={fieldCls}
-          aria-label="Filter by rank"
-        >
-          <option value="">All ranks</option>
-          {RANKS.map((r) => (
-            <option key={r}>{r}</option>
-          ))}
-        </select>
+            </button>
+          );
+        })}
+      </div>
+
+      <div
+        className="flex flex-wrap items-center gap-2"
+        role="group"
+        aria-label={`Filter by ${rankGroupLabel}`}
+      >
+        {RANKS.map((r) => {
+          const active = selectedRanks.includes(r);
+          return (
+            <button
+              key={r}
+              type="button"
+              aria-pressed={active}
+              onClick={() => onToggleRank(r)}
+              className={chipCls(active)}
+            >
+              {r === "S" ? <STierIcon size={20} className="inline align-middle" /> : r}
+         
+            </button>
+          );
+        })}
+
+        {hasFilters && (
+          <button
+            type="button"
+            onClick={onClear}
+            className="min-h-11 cursor-pointer px-2 text-sm text-ink-dim underline hover:text-ink"
+          >
+            Clear
+          </button>
+        )}
       </div>
     </div>
   );

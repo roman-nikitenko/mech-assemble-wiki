@@ -91,7 +91,7 @@ export function ProfilePage() {
     deletePostedBuild.mutate(id);
   }
 
-  const btnCls = "min-h-9 rounded-lg border px-3 text-sm";
+  const btnCls = "min-h-9 rounded-lg border px-3 text-sm cursor-pointer";
   const fieldCls = "min-h-11 w-full rounded-lg border border-edge bg-surface px-3 text-sm";
 
   // Logged-out gate — placed after all hooks so hook order is always stable.
