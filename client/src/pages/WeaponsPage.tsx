@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { imageSrc, useTypes, useWeapons } from "../api/client";
+import { imageSrc, srcSet, CARD_SIZES, useTypes, useWeapons } from "../api/client";
 import type { MechRank } from "../api/types";
 import { FilterBar } from "../components/FilterBar";
 import { RankBadge } from "../components/RankBadge";
@@ -70,7 +70,10 @@ export function WeaponsPage() {
               {w.imageUrl && (
                 <img
                   src={imageSrc(w.imageUrl)}
+                  srcSet={srcSet(w.imageUrl)}
+                  sizes={CARD_SIZES}
                   alt={w.name}
+                  loading="lazy"
                   className="mb-2 h-32 w-full rounded-lg border border-edge object-cover"
                 />
               )}

@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { useAuth } from "../auth/useAuth";
-import { imageSrc, useMechs, usePostedBuilds, useWeapons } from "../api/client";
+import { imageSrc, srcSet, useMechs, usePostedBuilds, useWeapons } from "../api/client";
 import { useMe } from "../auth/useMe";
 import { useDeletePostedBuild, useToggleHeart } from "../auth/useBuilds";
 import { AuthorTag } from "../profile/AuthorTag";
@@ -52,7 +52,10 @@ export function BuildsPage() {
                   <Link to={`/builds/${b.id}`} className="shrink-0">
                     <img
                       src={imageSrc(image)}
+                      srcSet={srcSet(image)}
+                      sizes="96px"
                       alt=""
+                      loading="lazy"
                       className="h-32 w-24 rounded-lg border border-edge object-cover"
                     />
                   </Link>

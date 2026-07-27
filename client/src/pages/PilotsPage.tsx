@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { imageSrc, usePilots } from "../api/client";
+import { imageSrc, srcSet, usePilots } from "../api/client";
 import { LoadingSkeleton } from "../components/LoadingSkeleton";
 import { ErrorPanel } from "../components/ErrorPanel";
 
@@ -24,7 +24,10 @@ export function PilotsPage() {
                 {p.iconUrl && (
                   <img
                     src={imageSrc(p.iconUrl)}
+                    srcSet={srcSet(p.iconUrl)}
+                    sizes="56px"
                     alt={p.name}
+                    loading="lazy"
                     className="h-14 w-14 rounded-full border border-edge object-cover"
                   />
                 )}

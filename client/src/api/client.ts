@@ -51,6 +51,25 @@ export function imageSrc(path: string) {
   return `${API_URL}${path}`;
 }
 
+// Responsive variant widths the server generates per image (see
+// server/src/routes/uploads.ts — these MUST match). The browser picks the
+// smallest file that fills the slot, guided by each <img>'s `sizes`.
+const VARIANT_WIDTHS = [200, 400, 800, 1200];
+
+/** Build a `srcSet` string for an uploaded image. Swaps the stored file's
+    extension for each `-<width>.webp` variant, so it works whether the base
+    is .png/.jpg/.webp. Pair with a `sizes` attribute so the browser can pick
+    the right width. Falls back to the plain `src` if variants are missing. */
+export function srcSet(path: string): string {
+  const stem = path.replace(/\.[^./]+$/, "");
+  return VARIANT_WIDTHS.map((w) => `${imageSrc(`${stem}-${w}.webp`)} ${w}w`).join(", ");
+}
+
+// Default `sizes` for the standard 1/2/3/4-column card grids (mechs, weapons,
+// accessories). Roughly: one card's rendered width at each breakpoint.
+export const CARD_SIZES =
+  "(min-width: 1280px) 270px, (min-width: 1024px) 340px, (min-width: 640px) 48vw, 92vw";
+
 // Shared helper for JSON write requests. The API sends {error: "..."} for
 // 400/404/409 — we surface that message so forms can show it to the admin.
 async function sendJson<T>(path: string, method: "POST" | "PUT", body: unknown): Promise<T> {

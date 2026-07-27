@@ -7,5 +7,6 @@ CLAUDE.md
 .claude/
 docs/
 server/uploads/
+server/uploads-backup-*/
 server/backups/
 server/secrets/
