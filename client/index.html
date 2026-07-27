@@ -4,6 +4,17 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Preload the display font so its download starts during HTML parse
+         instead of after the CSS loads and lays out text. `crossorigin` is
+         required on font preloads even same-origin, or the browser fetches it
+         twice. Path/type must match the @font-face in src/index.css. -->
+    <link
+      rel="preload"
+      as="font"
+      type="font/woff2"
+      href="/fonts/Nasalization-Regular.woff2"
+      crossorigin
+    />
     <title>Mech Assemble Wiki</title>
   </head>
   <body>

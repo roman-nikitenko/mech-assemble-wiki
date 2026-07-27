@@ -7,7 +7,18 @@ import "./index.css";
 import { initAnalytics } from "./lib/analytics";
 
 const queryClient = new QueryClient();
-initAnalytics();
+
+// Load Google Analytics off the critical path. gtag.js is ~163 KiB and, if
+// loaded during boot, competes for bandwidth with the LCP image right when the
+// page is rendering. Deferring it to after `load` costs us nothing measurable:
+// the page_view beacon still fires (a second or two later), so the admin
+// Dashboard sees every visit — we only skip tracking users who leave in the
+// first moment before the deferred script runs.
+if (document.readyState === "complete") {
+  initAnalytics();
+} else {
+  window.addEventListener("load", () => initAnalytics(), { once: true });
+}
 
 // Auth now rides on an httpOnly session cookie set by our own /api/auth flow,
 // so there's no Auth0Provider or token bridge — the app just renders.

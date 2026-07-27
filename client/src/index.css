@@ -1,12 +1,15 @@
 @import "tailwindcss";
 
-/* Local display font (Nasalization, Regular only). Vite fingerprints and
-   bundles the .otf because it's referenced by a relative url() from src/.
-   font-display: swap shows fallback text immediately, then swaps the font
-   in once loaded, so headings never block first render. */
+/* Local display font (Nasalization, Regular only). Served as woff2 from
+   public/fonts/ at a stable, unhashed URL so index.html can <link rel=preload>
+   it — that starts the download during initial HTML parse instead of waiting
+   for this CSS to load and lay out text (which delayed it to ~1.3s). woff2 is
+   ~45% smaller than the original .otf. font-display: swap shows fallback text
+   immediately, then swaps the font in once loaded, so headings never block
+   first render. Keep this path in sync with the preload in index.html. */
 @font-face {
   font-family: "Nasalization";
-  src: url("./assets/fonts/nasalization/Nasalization-Regular.otf") format("opentype");
+  src: url("/fonts/Nasalization-Regular.woff2") format("woff2");
   font-weight: 400;
   font-style: normal;
   font-display: swap;
