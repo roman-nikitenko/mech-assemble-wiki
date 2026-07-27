@@ -1,3 +1,4 @@
+import { lazy, Suspense, type ComponentType } from "react";
 import { Link, Route, Routes } from "react-router-dom";
 import { PublicLayout } from "./pages/PublicLayout";
 import { BrowsePage } from "./pages/BrowsePage";
@@ -8,27 +9,50 @@ import { WeaponsPage } from "./pages/WeaponsPage";
 import { WeaponDetailPage } from "./pages/WeaponDetailPage";
 import { AccessoriesPage } from "./pages/AccessoriesPage";
 import { PilotsPage } from "./pages/PilotsPage";
-import { AdminLayout } from "./admin/AdminLayout";
-import { AdminLoginPage } from "./admin/AdminLoginPage";
-import { DashboardPage } from "./admin/DashboardPage";
-import { UsersPage } from "./admin/UsersPage";
-import { SettingsPage } from "./admin/SettingsPage";
-import { AdminMechsPage } from "./admin/mechs/AdminMechsPage";
-import { MechFormPage } from "./admin/mechs/MechFormPage";
-import { AdminWeaponsPage } from "./admin/weapons/AdminWeaponsPage";
-import { WeaponFormPage } from "./admin/weapons/WeaponFormPage";
-import { AdminAccessoriesPage } from "./admin/accessories/AdminAccessoriesPage";
-import { AccessoryFormPage } from "./admin/accessories/AccessoryFormPage";
-import { AdminPilotsPage } from "./admin/pilots/AdminPilotsPage";
-import { PilotFormPage } from "./admin/pilots/PilotFormPage";
-import { AdminTypesPage } from "./admin/types/AdminTypesPage";
-import { TypeFormPage } from "./admin/types/TypeFormPage";
 import { ProfilePage } from "./pages/profile/ProfilePage";
-import { BuildEditorPage } from "./pages/profile/BuildEditorPage";
 import { LoginPage } from "./pages/LoginPage";
+
+// Code-splitting: the public pages above load up front (they're small and part
+// of normal browsing). The admin area and the build editor below are split into
+// separate chunks that only download when their route is actually visited — so a
+// first-time visitor to the Browse page never pays for the admin CRUD forms or
+// the drag-and-drop skill-tree editor (which pulls in the heavy @dnd-kit lib).
+//
+// React.lazy expects a *default* export, but our components use named exports.
+// This tiny helper adapts `import(...)` + a named export into the { default }
+// shape lazy() wants, so we don't have to rewrite every page to `export default`.
+function lazyNamed<M extends Record<string, unknown>, K extends keyof M>(
+  loader: () => Promise<M>,
+  name: K,
+) {
+  return lazy(async () => ({ default: (await loader())[name] as ComponentType }));
+}
+
+const BuildEditorPage = lazyNamed(() => import("./pages/profile/BuildEditorPage"), "BuildEditorPage");
+const AdminLayout = lazyNamed(() => import("./admin/AdminLayout"), "AdminLayout");
+const AdminLoginPage = lazyNamed(() => import("./admin/AdminLoginPage"), "AdminLoginPage");
+const DashboardPage = lazyNamed(() => import("./admin/DashboardPage"), "DashboardPage");
+const UsersPage = lazyNamed(() => import("./admin/UsersPage"), "UsersPage");
+const SettingsPage = lazyNamed(() => import("./admin/SettingsPage"), "SettingsPage");
+const AdminMechsPage = lazyNamed(() => import("./admin/mechs/AdminMechsPage"), "AdminMechsPage");
+const MechFormPage = lazyNamed(() => import("./admin/mechs/MechFormPage"), "MechFormPage");
+const AdminWeaponsPage = lazyNamed(() => import("./admin/weapons/AdminWeaponsPage"), "AdminWeaponsPage");
+const WeaponFormPage = lazyNamed(() => import("./admin/weapons/WeaponFormPage"), "WeaponFormPage");
+const AdminAccessoriesPage = lazyNamed(() => import("./admin/accessories/AdminAccessoriesPage"), "AdminAccessoriesPage");
+const AccessoryFormPage = lazyNamed(() => import("./admin/accessories/AccessoryFormPage"), "AccessoryFormPage");
+const AdminPilotsPage = lazyNamed(() => import("./admin/pilots/AdminPilotsPage"), "AdminPilotsPage");
+const PilotFormPage = lazyNamed(() => import("./admin/pilots/PilotFormPage"), "PilotFormPage");
+const AdminTypesPage = lazyNamed(() => import("./admin/types/AdminTypesPage"), "AdminTypesPage");
+const TypeFormPage = lazyNamed(() => import("./admin/types/TypeFormPage"), "TypeFormPage");
 
 export default function App() {
   return (
+    // Suspense shows this fallback while a lazy route chunk is downloading.
+    <Suspense
+      fallback={
+        <div className="mx-auto max-w-6xl px-4 py-16 text-center text-ink-dim">Loading…</div>
+      }
+    >
     <Routes>
       {/* Public site: PublicLayout renders the header + section tabs. */}
       <Route element={<PublicLayout />}>
@@ -84,5 +108,6 @@ export default function App() {
         }
       />
     </Routes>
+    </Suspense>
   );
 }
