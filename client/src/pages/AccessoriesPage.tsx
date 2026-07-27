@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { imageSrc, useAccessories } from "../api/client";
+import { imageSrc, srcSet, CARD_SIZES, useAccessories } from "../api/client";
 import { RankBadge } from "../components/RankBadge";
 import { LoadingSkeleton } from "../components/LoadingSkeleton";
 import { ErrorPanel } from "../components/ErrorPanel";
@@ -24,7 +24,10 @@ export function AccessoriesPage() {
               {a.imageUrl && (
                 <img
                   src={imageSrc(a.imageUrl)}
+                  srcSet={srcSet(a.imageUrl)}
+                  sizes={CARD_SIZES}
                   alt={a.name}
+                  loading="lazy"
                   className="mb-2 h-32 w-full rounded-lg border border-edge object-cover"
                 />
               )}

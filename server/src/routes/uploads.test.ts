@@ -3,7 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import request from "supertest";
 import { app } from "../app";
-import { uploadsDir } from "./uploads";
+import { uploadsDir, VARIANT_WIDTHS, variantName } from "./uploads";
 import { testAdminToken } from "../test/admin-token";
 
 const ADMIN = { "x-admin-token": testAdminToken() };
@@ -17,25 +17,36 @@ const PNG_1PX = Buffer.from(
 const uploaded: string[] = [];
 
 afterAll(() => {
-  // remove files these tests created
+  // remove the files these tests created — the base image plus every variant.
   for (const url of uploaded) {
-    const file = path.join(uploadsDir, path.basename(url));
-    if (fs.existsSync(file)) fs.unlinkSync(file);
+    const base = path.basename(url);
+    const names = [base, ...VARIANT_WIDTHS.map((w) => variantName(base, w))];
+    for (const name of names) {
+      const file = path.join(uploadsDir, name);
+      if (fs.existsSync(file)) fs.unlinkSync(file);
+    }
   }
 });
 
 describe("POST /api/uploads", () => {
-  it("accepts a png and returns its public url", async () => {
+  it("accepts a png and returns a webp url, with responsive variants written", async () => {
     const res = await request(app)
       .post("/api/uploads")
       .set(ADMIN)
       .attach("image", PNG_1PX, { filename: "pixel.png", contentType: "image/png" });
     expect(res.status).toBe(201);
-    expect(res.body.url).toMatch(/^\/uploads\/[0-9a-f-]+\.png$/);
+    // We always re-encode to WebP, so the stored url is .webp regardless of input.
+    expect(res.body.url).toMatch(/^\/uploads\/[0-9a-f-]+\.webp$/);
     uploaded.push(res.body.url);
-    // ...and the file is actually served back
+    // ...the base file is served back
     const served = await request(app).get(res.body.url);
     expect(served.status).toBe(200);
+    // ...and each responsive variant exists on disk and is served too.
+    for (const w of VARIANT_WIDTHS) {
+      const variantUrl = `/uploads/${variantName(path.basename(res.body.url), w)}`;
+      const variant = await request(app).get(variantUrl);
+      expect(variant.status).toBe(200);
+    }
   });
 
   it("rejects a non-image file", async () => {

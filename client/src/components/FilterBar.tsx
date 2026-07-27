@@ -1,4 +1,5 @@
 import type { GameType, MechRank } from "../api/types";
+import { imageSrc, srcSet } from "../api/client";
 import { STierIcon } from "./STierIcon";
 
 const RANKS: MechRank[] = ["Standard", "S"];
@@ -66,7 +67,15 @@ export function FilterBar({
               onClick={() => onToggleType(t.id)}
               className={chipCls(active)}
             >
-              {t.iconUrl && <img src={t.iconUrl} alt="" className="h-5 w-5" />}
+              {t.iconUrl && (
+                <img
+                  src={imageSrc(t.iconUrl)}
+                  srcSet={srcSet(t.iconUrl)}
+                  sizes="20px"
+                  alt=""
+                  className="h-5 w-5"
+                />
+              )}
               {t.name}
             </button>
           );

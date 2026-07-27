@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../../auth/useAuth";
-import { imageSrc, useMech, useMechs, useTypes, useWeapons } from "../../api/client";
+import { imageSrc, srcSet, CARD_SIZES, useMech, useMechs, useTypes, useWeapons } from "../../api/client";
 import type { MechRank, PostedBuild, WeaponSummary } from "../../api/types";
 import { MAX_CORE_SLOTS, resolvePicks } from "../../profile/buildRules";
 import { PickedSlot, SkillsBlock } from "../../profile/SkillsBlock";
@@ -168,7 +168,10 @@ function BuildEditorContent({ existing }: { existing: PostedBuild | undefined })
                 {m.imageUrl && (
                   <img
                     src={imageSrc(m.imageUrl)}
+                    srcSet={srcSet(m.imageUrl)}
+                    sizes={CARD_SIZES}
                     alt=""
+                    loading="lazy"
                     className="mb-2 h-48 w-full rounded-lg border border-edge object-cover"
                   />
                 )}
@@ -199,7 +202,10 @@ function BuildEditorContent({ existing }: { existing: PostedBuild | undefined })
                 {(w.iconUrl ?? w.imageUrl) && (
                   <img
                     src={imageSrc(w.iconUrl ?? w.imageUrl!)}
+                    srcSet={srcSet(w.iconUrl ?? w.imageUrl!)}
+                    sizes={CARD_SIZES}
                     alt=""
+                    loading="lazy"
                     className="mb-2 h-48 w-full rounded-lg border border-edge object-cover"
                   />
                 )}
@@ -583,7 +589,14 @@ function BuildEditorContent({ existing }: { existing: PostedBuild | undefined })
                 className="relative h-20 w-20 shrink-0 overflow-hidden rounded-xl border border-edge bg-surface hover:border-accent/60 disabled:opacity-50"
               >
                 {art ? (
-                  <img src={imageSrc(art)} alt="" className="h-full w-full object-cover" />
+                  <img
+                    src={imageSrc(art)}
+                    srcSet={srcSet(art)}
+                    sizes="80px"
+                    alt=""
+                    loading="lazy"
+                    className="h-full w-full object-cover"
+                  />
                 ) : (
                   <span className="flex h-full w-full items-center justify-center text-xl font-black text-ink-dim">
                     {w.name.charAt(0)}

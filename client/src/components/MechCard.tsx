@@ -1,10 +1,14 @@
 import { Link } from "react-router-dom";
 import type { MechSummary } from "../api/types";
-import { imageSrc } from "../api/client";
+import { imageSrc, srcSet, CARD_SIZES } from "../api/client";
 import { TypeBadge } from "./TypeBadge";
 import { RankBadge } from "./RankBadge";
 
-export function MechCard({ mech }: { mech: MechSummary }) {
+// `priority` marks the card whose image is the page's LCP (Largest Contentful
+// Paint) — typically the first card in the grid. That image must NOT be
+// lazy-loaded: instead it loads eagerly with fetchPriority="high" so the
+// browser fetches it right away. Every other card stays lazy (see BrowsePage).
+export function MechCard({ mech, priority = false }: { mech: MechSummary; priority?: boolean }) {
   return (
     <Link
       to={`/mechs/${mech.id}`}
@@ -13,7 +17,11 @@ export function MechCard({ mech }: { mech: MechSummary }) {
       {mech.imageUrl ? (
         <img
           src={imageSrc(mech.imageUrl)}
+          srcSet={srcSet(mech.imageUrl)}
+          sizes={CARD_SIZES}
           alt={mech.name}
+          loading={priority ? "eager" : "lazy"}
+          fetchPriority={priority ? "high" : "auto"}
           className="mb-3 h-52 w-full rounded-lg object-cover"
         />
       ) : (

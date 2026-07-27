@@ -39,7 +39,15 @@ app.use("/api/builds", buildsRouter);
 app.use("/api/admin", adminRouter);
 app.use("/api/uploads", uploadsRouter);
 // Serve uploaded images as plain static files: GET /uploads/<name>.
-app.use("/uploads", express.static(uploadsDir));
+// Uploaded filenames are immutable UUIDs (a re-upload always gets a NEW
+// name — see routes/uploads.ts), so the bytes at a given URL never change.
+// That lets us cache them aggressively: `immutable` tells browsers never to
+// revalidate, and a 1-year max-age means repeat page views skip the network
+// entirely (no more 304 round-trips per image).
+app.use(
+  "/uploads",
+  express.static(uploadsDir, { immutable: true, maxAge: "1y" })
+);
 
 // Fallthrough for unknown routes — keep API errors as JSON, not HTML.
 app.use((_req, res) => {
