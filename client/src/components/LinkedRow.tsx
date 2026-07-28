@@ -49,6 +49,7 @@ export function LinkedRow({
       <div className="min-w-0 flex-1">
         <p className="font-semibold">{name}</p>
         {bonus && <p className="text-sm text-ink-dim font-bold">{bonus}</p>}
+        {children}
       </div>
     </div>
   );

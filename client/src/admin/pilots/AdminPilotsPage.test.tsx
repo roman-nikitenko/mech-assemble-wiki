@@ -15,7 +15,7 @@ const pilots: Pilot[] = [
     bonusPerLevel: ["HP +2%"],
     iconUrl: null,
     backgroundUrl: null,
-    mech: { id: "m1", name: "Shadow Warrior", rank: "S" },
+    mech: { id: "m1", name: "Shadow Warrior", rank: "S", iconUrl: null },
     weapon: null,
   },
 ];

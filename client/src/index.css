@@ -15,10 +15,12 @@
   font-display: swap;
 }
 
-/* Rajdhani — the site-wide body/UI font. Five weights (300-700) live in
-   src/assets so Vite fingerprints them for long-term caching. font-display:
-   swap paints fallback text immediately, then swaps Rajdhani in. Made the
-   default below via --font-sans. */
+/* Rajdhani — the site-wide body/UI font. The two hot weights (400 body,
+   700 bold) live in public/fonts/ at stable, unhashed URLs so index.html can
+   <link rel=preload> them — keep those two paths in sync with the preloads in
+   index.html. The remaining weights (300/500/600) stay in src/assets so Vite
+   fingerprints them for long-term caching. font-display: swap paints fallback
+   text immediately, then swaps Rajdhani in. Made the default via --font-sans. */
 @font-face {
   font-family: "Rajdhani";
   src: url("./assets/fonts/rajdhani-v17-latin/rajdhani-v17-latin-300.woff2") format("woff2");
@@ -28,7 +30,7 @@
 }
 @font-face {
   font-family: "Rajdhani";
-  src: url("./assets/fonts/rajdhani-v17-latin/rajdhani-v17-latin-regular.woff2") format("woff2");
+  src: url("/fonts/rajdhani-v17-latin-regular.woff2") format("woff2");
   font-weight: 400;
   font-style: normal;
   font-display: swap;
@@ -49,7 +51,7 @@
 }
 @font-face {
   font-family: "Rajdhani";
-  src: url("./assets/fonts/rajdhani-v17-latin/rajdhani-v17-latin-700.woff2") format("woff2");
+  src: url("/fonts/rajdhani-v17-latin-700.woff2") format("woff2");
   font-weight: 700;
   font-style: normal;
   font-display: swap;

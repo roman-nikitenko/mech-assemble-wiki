@@ -26,19 +26,7 @@ export function OverviewTab({ mech }: { mech: MechDetail }) {
                 name={mech.accessory.name}
                 bonus={mech.accessory.exclusiveEffect}
               >
-                {mech.accessory.attributes.length > 0 && (
-                  <dl className="mt-2 grid grid-cols-2 gap-2">
-                    {mech.accessory.attributes.map((attr) => (
-                      <div
-                        key={attr.name}
-                        className="flex justify-between gap-2 rounded bg-surface-2 px-2 py-1 text-sm"
-                      >
-                        <dt className="text-ink-dim">{attr.name}</dt>
-                        <dd className="font-semibold">{attr.value}</dd>
-                      </div>
-                    ))}
-                  </dl>
-                )}
+                
               </LinkedRow>
             )}
           </div>
