@@ -48,8 +48,9 @@ async function validateWeaponLinks(input: {
 // detail endpoint. The legacy `upgrades` tree is deliberately omitted (dormant).
 const WEAPON_DETAIL_INCLUDE = {
   type: { select: { id: true, name: true, iconUrl: true } },
-  mech: { select: { id: true, name: true } },
-  pilot: { select: { id: true, name: true } },
+  // iconUrl + a bonus feed the detail page's linked mech/pilot rows.
+  mech: { select: { id: true, name: true, iconUrl: true, specialBonus: true } },
+  pilot: { select: { id: true, name: true, iconUrl: true, unlockBoost: true } },
   weaponSkins: true,
   skillNodes: { orderBy: { sortOrder: "asc" as const } },
   helpers: { include: { ranks: { orderBy: { rank: "asc" as const } } } },

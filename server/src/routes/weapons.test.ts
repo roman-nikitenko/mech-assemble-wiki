@@ -410,7 +410,12 @@ describe("GET /api/weapons/:id", () => {
     expect(res.status).toBe(200);
     expect(res.body.id).toBe(weapon.id);
     expect(res.body.type.name).toBe("[test:weapons] Plasma");
-    expect(res.body.mech).toEqual({ id: mech.id, name: "[test:weapons] Kit Owner" });
+    expect(res.body.mech).toEqual({
+      id: mech.id,
+      name: "[test:weapons] Kit Owner",
+      iconUrl: null,
+      specialBonus: null,
+    });
     expect(res.body.weaponSkins).toHaveLength(1);
     expect(res.body.skillNodes).toHaveLength(1);
     expect(res.body.helpers).toHaveLength(1);

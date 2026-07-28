@@ -10,8 +10,9 @@ export const pilotsRouter = Router();
 // Every pilot response carries its linked mech (or null) — the admin table's
 // "linked mech" column needs it.
 const PILOT_INCLUDE = {
-  mech: { select: { id: true, name: true, rank: true } },
-  weapon: { select: { id: true, name: true } },
+  // iconUrl feeds the public card's clickable "linked mech/weapon" icon.
+  mech: { select: { id: true, name: true, rank: true, iconUrl: true } },
+  weapon: { select: { id: true, name: true, iconUrl: true } },
 } satisfies Prisma.PilotInclude;
 
 // Shared by POST and PUT: a pilot may only link to an existing S-tier mech.

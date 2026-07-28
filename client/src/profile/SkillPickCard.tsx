@@ -12,18 +12,18 @@ export const SKILL_CARD: Record<
   { frame: string; header: string; footer: string }
 > = {
   Normal: {
-    frame: "border-thunder/70 bg-thunder/10",
-    header: "bg-thunder text-bg",
+    frame: "border-thunder/70 bg-[#195998]",
+    header: "text-white text-bg",
     footer: "border-thunder/40 text-thunder",
   },
   Premium: {
-    frame: "border-skill-premium bg-skill-premium/85",
-    header: "bg-black/30 text-white",
+    frame: "border-skill-premium bg-[#BF7805]",
+    header: " text-white",
     footer: "border-black/25 text-white",
   },
   Core: {
     frame: "border-skill-core bg-skill-core/85",
-    header: "bg-black/30 text-white",
+    header: "text-white text-white",
     footer: "border-black/25 text-white",
   },
 };

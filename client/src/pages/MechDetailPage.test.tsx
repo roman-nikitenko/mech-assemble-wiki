@@ -63,7 +63,7 @@ describe("MechDetailPage tabs are driven by data", () => {
     expect(screen.queryByRole("tab", { name: "Weapon" })).not.toBeInTheDocument();
     expect(screen.queryByRole("tab", { name: "Awaken" })).not.toBeInTheDocument();
     expect(
-      screen.queryByRole("tab", { name: "Skins & Helpers" })
+      screen.queryByRole("tab", { name: "Skins" })
     ).not.toBeInTheDocument();
   });
 
@@ -102,6 +102,6 @@ describe("MechDetailPage tabs are driven by data", () => {
     });
     expect(await screen.findByRole("tab", { name: "Weapon" })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: "Awaken" })).toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: "Skins & Helpers" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Skin" })).toBeInTheDocument();
   });
 });

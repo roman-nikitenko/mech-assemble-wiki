@@ -94,6 +94,9 @@ export function useCreateMech() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["mechs"] });
       qc.invalidateQueries({ queryKey: ["pilots"] });
+      // Linking a weapon/accessory moves its ownership, so refresh those lists.
+      qc.invalidateQueries({ queryKey: ["weapons"] });
+      qc.invalidateQueries({ queryKey: ["accessories"] });
     },
   });
 }
@@ -106,6 +109,9 @@ export function useUpdateMech(id: string) {
       qc.invalidateQueries({ queryKey: ["mechs"] });
       qc.invalidateQueries({ queryKey: ["mech", id] });
       qc.invalidateQueries({ queryKey: ["pilots"] });
+      // Linking a weapon/accessory moves its ownership, so refresh those lists.
+      qc.invalidateQueries({ queryKey: ["weapons"] });
+      qc.invalidateQueries({ queryKey: ["accessories"] });
     },
   });
 }

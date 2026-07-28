@@ -33,6 +33,12 @@ export interface MechInput {
   // null = explicitly vacate, string = assign that pilot (moving them from
   // any other mech).
   pilotId: string | null | undefined;
+  // Same tri-state as pilotId, for the mech's unique weapon and accessory.
+  // The FK lives on the weapon/accessory row (mech_id, unique = one per mech),
+  // so an id here MOVES that weapon/accessory onto this mech. Editable from
+  // this side as a mirror of the weapon/accessory admin forms.
+  weaponId: string | null | undefined;
+  accessoryId: string | null | undefined;
   skills: SkillNodeInput[];
   skins: MechSkinInput[];
 }
@@ -85,6 +91,13 @@ export function parseMechInput(body: unknown): ParseResult {
 
   if (b.pilotId !== undefined && b.pilotId !== null && typeof b.pilotId !== "string") {
     return { ok: false, message: "pilotId must be a pilot id string or null." };
+  }
+
+  if (b.weaponId !== undefined && b.weaponId !== null && typeof b.weaponId !== "string") {
+    return { ok: false, message: "weaponId must be a weapon id string or null." };
+  }
+  if (b.accessoryId !== undefined && b.accessoryId !== null && typeof b.accessoryId !== "string") {
+    return { ok: false, message: "accessoryId must be an accessory id string or null." };
   }
 
   const optionalFields = ["epithet", "specialBonus", "lore", "imageUrl", "iconUrl", "cardSkillIconUrl"] as const;
@@ -158,6 +171,8 @@ export function parseMechInput(body: unknown): ParseResult {
       rank: b.rank as MechRank,
       traitNames,
       pilotId: b.pilotId as string | null | undefined,
+      weaponId: b.weaponId as string | null | undefined,
+      accessoryId: b.accessoryId as string | null | undefined,
       epithet: parsed.epithet,
       specialBonus: parsed.specialBonus,
       lore: parsed.lore,

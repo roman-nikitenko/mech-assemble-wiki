@@ -15,6 +15,24 @@
       href="/fonts/Nasalization-Regular.woff2"
       crossorigin
     />
+    <!-- Rajdhani is the site-wide body/UI font; preload the two most-used
+         weights (400 body, 700 bold) so above-the-fold text swaps in fast.
+         The other weights (300/500/600) stay on the CSS/swap path. Paths must
+         match the @font-face rules in src/index.css. -->
+    <link
+      rel="preload"
+      as="font"
+      type="font/woff2"
+      href="/fonts/rajdhani-v17-latin-regular.woff2"
+      crossorigin
+    />
+    <link
+      rel="preload"
+      as="font"
+      type="font/woff2"
+      href="/fonts/rajdhani-v17-latin-700.woff2"
+      crossorigin
+    />
     <title>Mech Assemble Wiki</title>
   </head>
   <body>

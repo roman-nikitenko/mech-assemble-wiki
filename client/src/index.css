@@ -15,6 +15,48 @@
   font-display: swap;
 }
 
+/* Rajdhani — the site-wide body/UI font. The two hot weights (400 body,
+   700 bold) live in public/fonts/ at stable, unhashed URLs so index.html can
+   <link rel=preload> them — keep those two paths in sync with the preloads in
+   index.html. The remaining weights (300/500/600) stay in src/assets so Vite
+   fingerprints them for long-term caching. font-display: swap paints fallback
+   text immediately, then swaps Rajdhani in. Made the default via --font-sans. */
+@font-face {
+  font-family: "Rajdhani";
+  src: url("./assets/fonts/rajdhani-v17-latin/rajdhani-v17-latin-300.woff2") format("woff2");
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Rajdhani";
+  src: url("/fonts/rajdhani-v17-latin-regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Rajdhani";
+  src: url("./assets/fonts/rajdhani-v17-latin/rajdhani-v17-latin-500.woff2") format("woff2");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Rajdhani";
+  src: url("./assets/fonts/rajdhani-v17-latin/rajdhani-v17-latin-600.woff2") format("woff2");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Rajdhani";
+  src: url("/fonts/rajdhani-v17-latin-700.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 /* Design tokens. Tailwind v4 reads @theme and generates utilities from it:
    --color-surface becomes bg-surface / text-surface / border-surface, etc.
    Change a value here and the whole app follows — no config file needed. */
@@ -22,6 +64,11 @@
   /* --font-<name> auto-generates a `font-<name>` utility in Tailwind v4, so
      `class="font-nasalization"` applies this stack on any element. */
   --font-nasalization: "Nasalization", ui-sans-serif, sans-serif;
+
+  /* Overriding --font-sans makes Rajdhani the default font for the whole site
+     (Tailwind's Preflight applies --font-sans to the document, and `font-sans`
+     resolves here too). Headings can still opt into `font-nasalization`. */
+  --font-sans: "Rajdhani", ui-sans-serif, system-ui, sans-serif;
 
   /* dark, blue-tinted neutrals */
   --color-bg: #0b0f1a;
@@ -49,6 +96,13 @@
   --color-skill-core: #813eaf;
 }
 
+/* Rajdhani has a smaller x-height than the old default, so it reads small at
+   16px. Nudge the root up (16 -> 18); every rem-based Tailwind size
+   (text-*, spacing) scales with it, keeping proportions intact. */
+html {
+  font-size: 18px;
+}
+
 body {
-  @apply bg-bg text-ink antialiased;
+  @apply bg-bg text-ink antialiased font-sans;
 }
