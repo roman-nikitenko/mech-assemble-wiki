@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { WeaponDetailPage } from "./WeaponDetailPage";
@@ -15,8 +16,8 @@ const weapon: WeaponDetail = {
   imageUrl: null,
   iconUrl: null,
   type: { id: "t1", name: "Plasma", iconUrl: null },
-  mech: { id: "m1", name: "Owner Mech" },
-  pilot: { id: "p1", name: "Kael" },
+  mech: { id: "m1", name: "Owner Mech", iconUrl: "/uploads/mech.png", specialBonus: "ATK +10%" },
+  pilot: { id: "p1", name: "Kael", iconUrl: null, unlockBoost: "Crit +5%" },
   weaponSkins: [{ id: "s1", name: "Gold", bonuses: ["ATK +2%"], imageUrl: null }],
   helpers: [
     { id: "h1", name: "Buddy", passiveEffect: "helps", ranks: [{ id: "r1", rank: 1, effect: "+1" }] },
@@ -57,13 +58,24 @@ function renderPage(status: number, body: unknown, id = weapon.id) {
 afterEach(() => vi.restoreAllMocks());
 
 describe("WeaponDetailPage", () => {
-  it("renders the weapon header and kit sections", async () => {
+  it("renders the header, Overview by default, and kit sections behind tabs", async () => {
+    const user = userEvent.setup();
     renderPage(200, weapon);
     expect(await screen.findByRole("heading", { name: "Doom Cannon", level: 1 })).toBeInTheDocument();
     const ownerLink = await screen.findByRole("link", { name: /Owner Mech/ });
     expect(ownerLink).toHaveAttribute("href", "/mechs/m1");
-    expect(screen.getByText("Skills")).toBeInTheDocument();
-    expect(screen.getByText("Skins")).toBeInTheDocument();
+
+    // Overview is the default tab: base stats + rank-up preview are visible.
+    expect(screen.getByText("Base Stats")).toBeInTheDocument();
+    expect(screen.getByText("DMG +30%")).toBeInTheDocument();
+
+    // Skills tab reveals the skill tree.
+    await user.click(screen.getByRole("tab", { name: "Skills" }));
+    expect(await screen.findByText("Root")).toBeInTheDocument();
+
+    // Skin tab reveals the weapon skins and helpers.
+    await user.click(screen.getByRole("tab", { name: "Skin" }));
+    expect(await screen.findByText("Skins")).toBeInTheDocument();
     expect(screen.getByText("Weapon helpers")).toBeInTheDocument();
   });
 

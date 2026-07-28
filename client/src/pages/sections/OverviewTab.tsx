@@ -1,56 +1,6 @@
-import type { ReactNode } from "react";
-import { Link } from "react-router-dom";
-import { imageSrc, srcSet } from "../../api/client";
-import { Gem, RANK_GEMS } from "../../components/Gem";
+import { LinkedRow } from "../../components/LinkedRow";
+import { RankUpPreview } from "../../components/RankUpPreview";
 import type { MechDetail } from "../../api/types";
-
-/** One linked-kit row: icon on the left (clickable when `to` is given) and the
-    item's bonus to its right. `children` carries any extra detail (e.g. the
-    accessory's stat attributes). */
-function LinkedRow({
-  to,
-  iconUrl,
-  name,
-  bonus,
-  children,
-}: {
-  to?: string;
-  iconUrl: string | null;
-  name: string;
-  bonus: string | null;
-  children?: ReactNode;
-}) {
-  const icon = iconUrl ? (
-    <img
-      src={imageSrc(iconUrl)}
-      srcSet={srcSet(iconUrl)}
-      sizes="48px"
-      alt={name}
-      loading="lazy"
-      className="h-16 w-16 rounded-lg border border-edge object-cover"
-    />
-  ) : (
-    <span className="flex h-12 w-12 items-center justify-center rounded-lg border border-edge text-xs text-accent">
-      {name.slice(0, 2)}
-    </span>
-  );
-
-  return (
-    <div className="flex items-start gap-3 rounded-xl border border-edge bg-surface p-3">
-      {to ? (
-        <Link to={to} title={name} className="shrink-0 transition hover:brightness-110">
-          {icon}
-        </Link>
-      ) : (
-        <span className="shrink-0">{icon}</span>
-      )}
-      <div className="min-w-0 flex-1">
-        <p className="font-semibold">{name}</p>
-        {bonus && <p className="text-sm text-ink-dim">{bonus}</p>}
-      </div>
-    </div>
-  );
-}
 
 export function OverviewTab({ mech }: { mech: MechDetail }) {
   return (
@@ -111,30 +61,7 @@ export function OverviewTab({ mech }: { mech: MechDetail }) {
           </div>
         </section>
       )}
-      {mech.rankUpPreview.some((step) => step.trim()) && (
-        <section>
-          <h2 className="mb-2 text-sm font-bold uppercase tracking-wider text-ink-dim">
-            Rank-Up Preview
-          </h2>
-          {/* Positional list (index = rank): each non-blank step is a framed
-              band with its rank gem, styled like the pilot bonus rows. */}
-          <ul className="space-y-2 text-sm">
-            {mech.rankUpPreview.map((step, i) =>
-              step.trim() ? (
-                <li
-                  key={i}
-                  className="flex items-stretch overflow-hidden rounded-lg border border-edge bg-surface-2"
-                >
-                  <span className="flex items-center border-r border-edge bg-bg px-3">
-                    <Gem index={i} palette={RANK_GEMS} />
-                  </span>
-                  <span className="px-3 py-2 font-[600]">{step}</span>
-                </li>
-              ) : null,
-            )}
-          </ul>
-        </section>
-      )}
+      <RankUpPreview steps={mech.rankUpPreview} />
     </div>
   );
 }

@@ -35,7 +35,7 @@ export function SkillNodeBranch({ nodes, parentId }: { nodes: SkillNodeRow[]; pa
                 from Lv.{node.appearanceLevel}
               </span>
             </div>
-            {node.description && <p className="mt-1 text-sm text-ink-dim">{node.description}</p>}
+            {node.description && <p className="mt-1 font-semibold text-sm text-ink-dim">{node.description}</p>}
           </div>
           <SkillNodeBranch nodes={nodes} parentId={node.id} />
         </div>

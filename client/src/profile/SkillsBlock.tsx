@@ -26,11 +26,11 @@ export function PickedSlot({
   cardImageUrl?: string | null;
   onRemove?: () => void;
 }) {
-  const cls = `flex min-h-50 flex-col gap-1 rounded-xl border-2 p-2 text-center ${SKILL_CARD[skill.type].frame}`;
+  const cls = `flex min-h-50 flex-col gap-4 rounded-xl border-2 p-2 text-center ${SKILL_CARD[skill.type].frame}`;
   const content = (
     <>
       <span
-        className={`rounded-lg px-1 py-0.5 text-xs font-black ${SKILL_CARD[skill.type].header} ${
+        className={`text-xs pb-1 border-b border-b-white/30 font-black ${SKILL_CARD[skill.type].header} ${
           skill.type === "Core" ? "italic" : ""
         }`}
       >
@@ -40,7 +40,7 @@ export function PickedSlot({
         <img src={imageSrc(cardImageUrl)} alt="" className="h-14 w-full object-contain" />
       )}
       {skill.description && (
-        <span className="px-0.5 text-xs font-semibold">{skill.description}</span>
+        <span className="px-0.5 text-xs font-bold">{skill.description}</span>
       )}
     </>
   );

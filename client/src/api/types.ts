@@ -134,8 +134,8 @@ export interface WeaponDetail {
   imageUrl: string | null;
   iconUrl: string | null;
   type: GameType | null;
-  mech: { id: string; name: string } | null;
-  pilot: { id: string; name: string } | null;
+  mech: { id: string; name: string; iconUrl: string | null; specialBonus: string | null } | null;
+  pilot: { id: string; name: string; iconUrl: string | null; unlockBoost: string | null } | null;
   weaponSkins: WeaponSkinRow[];
   helpers: Helper[];
   skillNodes: SkillNodeRow[];
@@ -223,7 +223,12 @@ export interface MechDetail extends MechSummary {
     imageUrl: string | null;
     iconUrl: string | null;
   } | null;
-  pilot: { id: string; name: string } | null;
+  pilot: {
+    id: string;
+    name: string;
+    iconUrl: string | null;
+    relationshipBonus: string | null;
+  } | null;
   skins: Skin[];
   helpers: Helper[];
   skillNodes: SkillNodeRow[];

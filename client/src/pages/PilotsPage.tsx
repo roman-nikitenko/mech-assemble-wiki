@@ -45,7 +45,7 @@ export function PilotsPage() {
                   <div className="min-w-0">
                     <p className="font-bold">{p.name}</p>
                     {p.unlockBoost && (
-                      <p className="text-sm text-ink-dim">{p.unlockBoost}</p>
+                      <p className="text-sm text-accent font-bold">{p.unlockBoost}</p>
                     )}
                   </div>
                 </div>
@@ -94,7 +94,7 @@ export function PilotsPage() {
                         <span className="flex items-center border-r border-edge bg-bg px-4">
                           <Gem index={i} />
                         </span>
-                        <span className="px-4 py-2 text-ink-dim">{bonus}</span>
+                        <span className="px-4 py-2 text-ink-dim font-semibold">{bonus}</span>
                       </li>
                     ))}
                   </ul>

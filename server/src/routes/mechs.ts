@@ -131,7 +131,8 @@ const detailInclude = {
   },
   accessory: true,
   type: { select: { id: true, name: true, iconUrl: true } },
-  pilot: { select: { id: true, name: true } },
+  // iconUrl + relationshipBonus feed the header's linked pilot row.
+  pilot: { select: { id: true, name: true, iconUrl: true, relationshipBonus: true } },
   skillNodes: { orderBy: { sortOrder: "asc" as const } },
   skins: { include: { stars: { orderBy: { star: "asc" } } } },
   helpers: { include: { ranks: { orderBy: { rank: "asc" } } } },
