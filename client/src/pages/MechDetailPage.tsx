@@ -62,7 +62,7 @@ export function MechDetailPage() {
         ← All mechs
       </Link>
 
-      <header className="mt-3 mb-5">
+      <header className="mt-3 mb-5 flex gap-5">
         {mech.imageUrl && (
           <img
             src={imageSrc(mech.imageUrl)}
@@ -70,24 +70,27 @@ export function MechDetailPage() {
             className="mb-4 h-48 w-48 rounded-xl border border-edge object-cover"
           />
         )}
-        <div className="flex flex-wrap items-center gap-2">
-          <h1 className="text-3xl font-black tracking-tight">{mech.name}</h1>
-          <RankBadge rank={mech.rank} />
-          {mech.type && <TypeBadge type={mech.type} />}
+        <div className="">
+          <div className="flex flex-wrap items-center gap-2">
+            <h1 className="text-3xl font-black tracking-tight">{mech.name}</h1>
+            <RankBadge rank={mech.rank} />
+            {mech.type && <TypeBadge type={mech.type} />}
+          </div>
+          {mech.epithet && <p className="mt-1 text-ink-dim">{mech.epithet}</p>}
+          <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-ink-dim">
+            {mech.pilot && (
+              <span>
+                Pilot: <span className="text-ink">{mech.pilot.name}</span>
+              </span>
+            )}
+            {mech.specialBonus && (
+              <span>
+                Bonus: <span className="text-accent">{mech.specialBonus}</span>
+              </span>
+            )}
+          </div>
         </div>
-        {mech.epithet && <p className="mt-1 text-ink-dim">{mech.epithet}</p>}
-        <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-ink-dim">
-          {mech.pilot && (
-            <span>
-              Pilot: <span className="text-ink">{mech.pilot.name}</span>
-            </span>
-          )}
-          {mech.specialBonus && (
-            <span>
-              Bonus: <span className="text-accent">{mech.specialBonus}</span>
-            </span>
-          )}
-        </div>
+        
       </header>
 
       <Tabs tabs={tabs} active={activeTab} onChange={setActiveTab} />

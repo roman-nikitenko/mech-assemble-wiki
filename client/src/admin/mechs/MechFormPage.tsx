@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import {
+  useAccessories,
   useCreateMech,
   useMech,
   usePilots,
   useTypes,
   useUpdateMech,
+  useWeapons,
 } from "../../api/client";
 import type { MechInput, MechRank } from "../../api/types";
 import { ImageUploadField } from "../ImageUploadField";
@@ -21,7 +23,15 @@ interface SkinDraft {
   imageUrl: string | null;
 }
 
-const EMPTY: MechInput = { name: "", rank: "Standard", traitNames: [], pilotId: null, typeId: null };
+const EMPTY: MechInput = {
+  name: "",
+  rank: "Standard",
+  traitNames: [],
+  pilotId: null,
+  weaponId: null,
+  accessoryId: null,
+  typeId: null,
+};
 
 /** One form for BOTH /admin/mechs/new and /admin/mechs/:id/edit — the
     presence of an :id route param decides which mode we're in. */
@@ -36,6 +46,8 @@ export function MechFormPage() {
   const updateMech = useUpdateMech(id ?? "");
   const pilots = usePilots();
   const types = useTypes();
+  const weapons = useWeapons();
+  const accessories = useAccessories();
 
   const [form, setForm] = useState<MechInput>(EMPTY);
   // 7 fixed rank-up slots. Positions are meaningful (slot 4 = rank 4), so
@@ -65,6 +77,8 @@ export function MechFormPage() {
         cardSkillIconUrl: m.cardSkillIconUrl,
         traitNames: m.traits.map((t) => t.trait.name),
         pilotId: m.pilot?.id ?? null,
+        weaponId: m.weapon?.id ?? null,
+        accessoryId: m.accessory?.id ?? null,
       });
       // pad the stored list back out to the 7 visible slots
       setRankUp([...m.rankUpPreview, "", "", "", "", "", "", ""].slice(0, 7));
@@ -220,6 +234,55 @@ export function MechFormPage() {
             </p>
           </div>
         )}
+
+        {/* Linked weapon + accessory. The FK lives on the weapon/accessory row
+            (one per mech), so picking one here MOVES it off any mech it's
+            already on — the same relationship the weapon/accessory forms edit
+            from their side. Shown for every mech (the game only pairs these
+            with S-tier mechs, but we don't gate the UI). */}
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label htmlFor="weapon" className="mb-1 block text-sm font-semibold">
+              Linked weapon
+            </label>
+            <select
+              id="weapon"
+              value={form.weaponId ?? ""}
+              onChange={(e) => set("weaponId", e.target.value || null)}
+              className={fieldCls}
+            >
+              <option value="">— no weapon —</option>
+              {(weapons.data ?? []).map((w) => (
+                <option key={w.id} value={w.id}>
+                  {w.name}
+                  {w.mech && w.mech.id !== id ? ` (on ${w.mech.name})` : ""}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label htmlFor="accessory" className="mb-1 block text-sm font-semibold">
+              Linked accessory
+            </label>
+            <select
+              id="accessory"
+              value={form.accessoryId ?? ""}
+              onChange={(e) => set("accessoryId", e.target.value || null)}
+              className={fieldCls}
+            >
+              <option value="">— no accessory —</option>
+              {(accessories.data ?? []).map((acc) => (
+                <option key={acc.id} value={acc.id}>
+                  {acc.name}
+                  {acc.mech && acc.mech.id !== id ? ` (on ${acc.mech.name})` : ""}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+        <p className="-mt-2 text-xs text-ink-dim">
+          Picking a weapon or accessory already on another mech moves it here.
+        </p>
 
         <div className="grid gap-4 sm:grid-cols-2">
           <div>

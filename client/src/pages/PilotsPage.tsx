@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { imageSrc, srcSet, usePilots } from "../api/client";
 import { LoadingSkeleton } from "../components/LoadingSkeleton";
 import { ErrorPanel } from "../components/ErrorPanel";
+import { Gem } from "../components/Gem";
 
 /** Public pilot list: portrait, boosts, and where the pilot serves
     (a mech's cockpit OR fronting a weapon — never both). */
@@ -17,59 +18,90 @@ export function PilotsPage() {
       ) : (data ?? []).length === 0 ? (
         <p className="mt-8 text-center text-ink-dim">No pilots recorded yet.</p>
       ) : (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {(data ?? []).map((p) => (
-            <div key={p.id} className="rounded-xl border border-edge bg-surface p-4">
-              <div className="flex items-center gap-3">
-                {p.iconUrl && (
-                  <img
-                    src={imageSrc(p.iconUrl)}
-                    srcSet={srcSet(p.iconUrl)}
-                    sizes="56px"
-                    alt={p.name}
-                    loading="lazy"
-                    className="h-14 w-14 rounded-full border border-edge object-cover"
-                  />
-                )}
-                <div>
-                  <p className="font-bold">{p.name}</p>
-                  {p.mech && (
-                    <Link
-                      to={`/mechs/${p.mech.id}`}
-                      className="text-xs text-accent hover:underline"
-                    >
-                      pilots {p.mech.name} →
-                    </Link>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3">
+          {(data ?? []).map((p) => {
+            // A pilot links to a mech OR a weapon (never both) — normalize the
+            // two shapes into one clickable target for the icon row.
+            const linked = p.mech
+              ? { to: `/mechs/${p.mech.id}`, name: p.mech.name, iconUrl: p.mech.iconUrl }
+              : p.weapon
+                ? { to: `/weapons/${p.weapon.id}`, name: p.weapon.name, iconUrl: p.weapon.iconUrl }
+                : null;
+
+            return (
+              <div key={p.id} className="rounded-xl border border-edge bg-surface p-4 pb-0 overflow-hidden">
+                {/* Header: portrait + name, then the unlock boost as plain text. */}
+                <div className="flex items-center gap-3">
+                  {p.iconUrl && (
+                    <img
+                      src={imageSrc(p.iconUrl)}
+                      srcSet={srcSet(p.iconUrl)}
+                      sizes="56px"
+                      alt={p.name}
+                      loading="lazy"
+                      className="h-14 w-14 shrink-0 rounded-full border border-edge object-cover"
+                    />
                   )}
-                  {p.weapon && (
-                    <p className="text-xs text-ink-dim">wields {p.weapon.name}</p>
-                  )}
+                  <div className="min-w-0">
+                    <p className="font-bold">{p.name}</p>
+                    {p.unlockBoost && (
+                      <p className="text-sm text-ink-dim">{p.unlockBoost}</p>
+                    )}
+                  </div>
                 </div>
+
+                {/* Linked mech/weapon: clickable icon on the left, its bonus at right. */}
+                {(linked || p.relationshipBonus) && (
+                  <div className="mt-3 flex items-center gap-2 border-t border-edge pt-3">
+                    {linked && (
+                      <Link
+                        to={linked.to}
+                        title={linked.name}
+                        className="shrink-0 transition hover:brightness-110"
+                      >
+                        {linked.iconUrl ? (
+                          <img
+                            src={imageSrc(linked.iconUrl)}
+                            srcSet={srcSet(linked.iconUrl)}
+                            sizes="40px"
+                            alt={linked.name}
+                            loading="lazy"
+                            className="h-12 w-12 rounded-lg border border-edge object-cover"
+                          />
+                        ) : (
+                          <span className="flex h-10 w-10 items-center justify-center rounded-lg border border-edge text-xs text-accent">
+                            {linked.name.slice(0, 2)}
+                          </span>
+                        )}
+                      </Link>
+                    )}
+                    {p.relationshipBonus && (
+                      <p className="min-w-0 text-sm">{p.relationshipBonus}</p>
+                    )}
+                  </div>
+                )}
+
+                {/* Per-level bonuses (1-4): full-bleed bands (the -mx-4 cancels
+                    the card padding) with the gem in a recessed left cell, but
+                    the gem and text keep their own inner padding. */}
+                {p.bonusPerLevel.length > 0 && (
+                  <ul className="-mx-4 mt-3 space-y-2 text-sm">
+                    {p.bonusPerLevel.map((bonus, i) => (
+                      <li
+                        key={i}
+                        className="flex items-stretch border-y border-edge bg-surface-2 mb-0"
+                      >
+                        <span className="flex items-center border-r border-edge bg-bg px-4">
+                          <Gem index={i} />
+                        </span>
+                        <span className="px-4 py-2 text-ink-dim">{bonus}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
-              {p.unlockBoost && (
-                <p className="mt-2 text-sm">
-                  <span className="text-ink-dim">Unlock: </span>
-                  {p.unlockBoost}
-                </p>
-              )}
-              {p.relationshipBonus && (
-                <p className="mt-1 text-sm">
-                  <span className="text-ink-dim">Relationship: </span>
-                  {p.relationshipBonus}
-                </p>
-              )}
-              {p.bonusPerLevel.length > 0 && (
-                <ul className="mt-2 space-y-1 text-sm">
-                  {p.bonusPerLevel.map((bonus, i) => (
-                    <li key={i} className="flex gap-2">
-                      <span className="shrink-0 text-accent">Lv.{i + 1}</span>
-                      <span className="text-ink-dim">{bonus}</span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </main>

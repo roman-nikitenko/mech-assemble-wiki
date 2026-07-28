@@ -43,6 +43,29 @@ async function validateMechTypeLink(typeId: string | null): Promise<string | nul
   return null;
 }
 
+// A linked weapon/accessory must reference an existing row (or be null/absent).
+// The link itself — which moves it off any other mech via its unique mech_id —
+// happens inside the create/update transactions below, like the pilot seat.
+async function validateMechWeaponLink(
+  weaponId: string | null | undefined
+): Promise<string | null> {
+  if (weaponId === undefined || weaponId === null) return null;
+  if (!UUID_RE.test(weaponId)) return "Unknown weapon id";
+  const weapon = await prisma.weapon.findUnique({ where: { id: weaponId } });
+  if (!weapon) return "Unknown weapon id";
+  return null;
+}
+
+async function validateMechAccessoryLink(
+  accessoryId: string | null | undefined
+): Promise<string | null> {
+  if (accessoryId === undefined || accessoryId === null) return null;
+  if (!UUID_RE.test(accessoryId)) return "Unknown accessory id";
+  const accessory = await prisma.accessory.findUnique({ where: { id: accessoryId } });
+  if (!accessory) return "Unknown accessory id";
+  return null;
+}
+
 // Validates an optional ?rank= query param against a Prisma enum.
 // Valid values come from the GENERATED enum objects, so adding an enum value
 // to schema.prisma automatically updates validation — no hand-kept list.
@@ -150,13 +173,19 @@ mechsRouter.get("/:id", async (req, res) => {
 mechsRouter.post("/", requireAdmin, async (req, res) => {
   const input = parseMechInput(req.body);
   if (!input.ok) return res.status(400).json({ error: input.message });
-  const { traitNames, pilotId, skills, skins, ...fields } = input.value;
+  const { traitNames, pilotId, weaponId, accessoryId, skills, skins, ...fields } = input.value;
 
   const pilotError = await validateMechPilotLink(pilotId, fields.rank);
   if (pilotError) return res.status(400).json({ error: pilotError });
 
   const typeError = await validateMechTypeLink(input.value.typeId);
   if (typeError) return res.status(400).json({ error: typeError });
+
+  const weaponError = await validateMechWeaponLink(weaponId);
+  if (weaponError) return res.status(400).json({ error: weaponError });
+
+  const accessoryError = await validateMechAccessoryLink(accessoryId);
+  if (accessoryError) return res.status(400).json({ error: accessoryError });
 
   try {
     const mech = await prisma.$transaction(async (tx) => {
@@ -193,6 +222,15 @@ mechsRouter.post("/", requireAdmin, async (req, res) => {
         // either/or: seating into a mech un-seats from any weapon
         await tx.pilot.update({ where: { id: pilotId }, data: { mechId: created.id, weaponId: null } });
       }
+      // Link the unique weapon/accessory by pointing its mech_id here. Like the
+      // pilot, an id MOVES it off any other mech (mech_id is unique). The new
+      // mech has neither yet, so there's nothing to vacate first (unlike PUT).
+      if (weaponId !== undefined && weaponId !== null) {
+        await tx.weapon.update({ where: { id: weaponId }, data: { mechId: created.id } });
+      }
+      if (accessoryId !== undefined && accessoryId !== null) {
+        await tx.accessory.update({ where: { id: accessoryId }, data: { mechId: created.id } });
+      }
       await createSkillNodes(tx, { mechId: created.id }, skills);
       return created;
     });
@@ -212,13 +250,19 @@ mechsRouter.put("/:id", requireAdmin, async (req, res) => {
 
   const input = parseMechInput(req.body);
   if (!input.ok) return res.status(400).json({ error: input.message });
-  const { traitNames, pilotId, skills, skins, ...fields } = input.value;
+  const { traitNames, pilotId, weaponId, accessoryId, skills, skins, ...fields } = input.value;
 
   const pilotError = await validateMechPilotLink(pilotId, fields.rank);
   if (pilotError) return res.status(400).json({ error: pilotError });
 
   const typeError = await validateMechTypeLink(input.value.typeId);
   if (typeError) return res.status(400).json({ error: typeError });
+
+  const weaponError = await validateMechWeaponLink(weaponId);
+  if (weaponError) return res.status(400).json({ error: weaponError });
+
+  const accessoryError = await validateMechAccessoryLink(accessoryId);
+  if (accessoryError) return res.status(400).json({ error: accessoryError });
 
   try {
     const mech = await prisma.$transaction(async (tx) => {
@@ -257,6 +301,22 @@ mechsRouter.put("/:id", requireAdmin, async (req, res) => {
         if (pilotId !== null) {
           // either/or: seating into a mech un-seats from any weapon
           await tx.pilot.update({ where: { id: pilotId }, data: { mechId: id, weaponId: null } });
+        }
+      }
+      // Same tri-state as the pilot for the weapon/accessory links: undefined
+      // leaves them; otherwise vacate whatever currently points here, then
+      // (for a non-null id) re-point the chosen one — vacating first avoids
+      // two rows briefly claiming this mech's unique mech_id.
+      if (weaponId !== undefined) {
+        await tx.weapon.updateMany({ where: { mechId: id }, data: { mechId: null } });
+        if (weaponId !== null) {
+          await tx.weapon.update({ where: { id: weaponId }, data: { mechId: id } });
+        }
+      }
+      if (accessoryId !== undefined) {
+        await tx.accessory.updateMany({ where: { mechId: id }, data: { mechId: null } });
+        if (accessoryId !== null) {
+          await tx.accessory.update({ where: { id: accessoryId }, data: { mechId: id } });
         }
       }
       // Replace the mech's whole skill tree — same set semantics as weapons.

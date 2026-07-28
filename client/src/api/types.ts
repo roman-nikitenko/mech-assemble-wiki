@@ -253,6 +253,10 @@ export interface MechInput {
   // Trait NAMES, not ids — the server finds-or-creates catalog rows by name.
   traitNames?: string[];
   pilotId?: string | null;
+  // Link this mech's unique weapon / accessory (the FK lives on their row).
+  // An id MOVES that weapon/accessory off any other mech; null unlinks.
+  weaponId?: string | null;
+  accessoryId?: string | null;
   skills?: {
     name: string | null;
     description: string | null;
@@ -272,8 +276,8 @@ export interface Pilot {
   bonusPerLevel: string[];
   iconUrl: string | null;
   backgroundUrl: string | null;
-  mech: { id: string; name: string; rank: MechRank } | null;
-  weapon: { id: string; name: string } | null;
+  mech: { id: string; name: string; rank: MechRank; iconUrl: string | null } | null;
+  weapon: { id: string; name: string; iconUrl: string | null } | null;
 }
 
 /** Payload for POST/PUT /api/pilots. */

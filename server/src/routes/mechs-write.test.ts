@@ -15,6 +15,7 @@ const ADMIN = { "x-admin-token": testAdminToken() };
 afterAll(async () => {
   await prisma.pilot.deleteMany({ where: { name: { startsWith: "[test:mechs] " } } });
   await prisma.weapon.deleteMany({ where: { name: { startsWith: "[test:mechs] " } } });
+  await prisma.accessory.deleteMany({ where: { name: { startsWith: "[test:mechs] " } } });
   await prisma.mech.deleteMany({ where: { name: { startsWith: "[test:mechs] " } } });
   await prisma.trait.deleteMany({ where: { name: { startsWith: "[test:mechs] " } } });
   await prisma.type.deleteMany({ where: { name: { startsWith: "[test:mechs] " } } });
@@ -329,6 +330,115 @@ describe("mech <-> pilot wiring", () => {
     const moved = await prisma.pilot.findUnique({ where: { id: pilot.id } });
     expect(moved!.mechId).toBe(created.body.id);
     expect(moved!.weaponId).toBeNull();
+  });
+});
+
+describe("mech <-> weapon/accessory wiring", () => {
+  it("creating a mech with weaponId + accessoryId links both", async () => {
+    const weapon = await prisma.weapon.create({ data: { name: "[test:mechs] Kit Gun" } });
+    const accessory = await prisma.accessory.create({ data: { name: "[test:mechs] Kit Charm" } });
+    const res = await request(app).post("/api/mechs").set(ADMIN).send({
+      name: "[test:mechs] Kitted",
+      rank: "S",
+      weaponId: weapon.id,
+      accessoryId: accessory.id,
+    });
+    expect(res.status).toBe(201);
+    expect((await prisma.weapon.findUnique({ where: { id: weapon.id } }))!.mechId).toBe(res.body.id);
+    expect((await prisma.accessory.findUnique({ where: { id: accessory.id } }))!.mechId).toBe(res.body.id);
+  });
+
+  it("assigning an already-owned weapon MOVES it off the old mech", async () => {
+    const weapon = await prisma.weapon.create({ data: { name: "[test:mechs] Shared Gun" } });
+    const first = await request(app).post("/api/mechs").set(ADMIN).send({
+      name: "[test:mechs] First Owner",
+      rank: "S",
+      weaponId: weapon.id,
+    });
+    const second = await request(app).post("/api/mechs").set(ADMIN).send({
+      name: "[test:mechs] Second Owner",
+      rank: "S",
+      weaponId: weapon.id,
+    });
+    expect(second.status).toBe(201);
+    expect((await prisma.weapon.findUnique({ where: { id: weapon.id } }))!.mechId).toBe(second.body.id);
+    // the first mech no longer has a weapon
+    expect(await prisma.weapon.findFirst({ where: { mechId: first.body.id } })).toBeNull();
+  });
+
+  it("PUT with weaponId: null unlinks the weapon (leaving it standalone)", async () => {
+    const weapon = await prisma.weapon.create({ data: { name: "[test:mechs] Detachable" } });
+    const mech = await request(app).post("/api/mechs").set(ADMIN).send({
+      name: "[test:mechs] Unlinker",
+      rank: "S",
+      weaponId: weapon.id,
+    });
+    const res = await request(app).put(`/api/mechs/${mech.body.id}`).set(ADMIN).send({
+      name: "[test:mechs] Unlinker",
+      rank: "S",
+      weaponId: null,
+    });
+    expect(res.status).toBe(200);
+    const survivor = await prisma.weapon.findUnique({ where: { id: weapon.id } });
+    expect(survivor).not.toBeNull(); // weapon survives — only the link is cleared
+    expect(survivor!.mechId).toBeNull();
+  });
+
+  it("PUT reassigns an accessory from one mech to another", async () => {
+    const accessory = await prisma.accessory.create({ data: { name: "[test:mechs] Roaming Charm" } });
+    const a = await request(app).post("/api/mechs").set(ADMIN).send({
+      name: "[test:mechs] Charm Holder A",
+      rank: "S",
+      accessoryId: accessory.id,
+    });
+    const b = await request(app).post("/api/mechs").set(ADMIN).send({ name: "[test:mechs] Charm Holder B", rank: "S" });
+    const res = await request(app).put(`/api/mechs/${b.body.id}`).set(ADMIN).send({
+      name: "[test:mechs] Charm Holder B",
+      rank: "S",
+      accessoryId: accessory.id,
+    });
+    expect(res.status).toBe(200);
+    expect((await prisma.accessory.findUnique({ where: { id: accessory.id } }))!.mechId).toBe(b.body.id);
+    expect(await prisma.accessory.findFirst({ where: { mechId: a.body.id } })).toBeNull();
+  });
+
+  it("400s on an unknown weaponId", async () => {
+    const res = await request(app).post("/api/mechs").set(ADMIN).send({
+      name: "[test:mechs] Ghost Weapon",
+      rank: "S",
+      weaponId: "00000000-0000-4000-8000-000000000000",
+    });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toContain("Unknown weapon id");
+  });
+
+  it("400s on an unknown accessoryId", async () => {
+    const res = await request(app).post("/api/mechs").set(ADMIN).send({
+      name: "[test:mechs] Ghost Accessory",
+      rank: "S",
+      accessoryId: "00000000-0000-4000-8000-000000000000",
+    });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toContain("Unknown accessory id");
+  });
+
+  it("deleting a mech cascades its weapon but frees its accessory (SetNull)", async () => {
+    const weapon = await prisma.weapon.create({ data: { name: "[test:mechs] Doomed Gun" } });
+    const accessory = await prisma.accessory.create({ data: { name: "[test:mechs] Surviving Charm" } });
+    const mech = await request(app).post("/api/mechs").set(ADMIN).send({
+      name: "[test:mechs] Scrapped",
+      rank: "S",
+      weaponId: weapon.id,
+      accessoryId: accessory.id,
+    });
+    const del = await request(app).delete(`/api/mechs/${mech.body.id}`).set(ADMIN);
+    expect(del.status).toBe(204);
+    // weapon.mech_id is Cascade → gone with the mech
+    expect(await prisma.weapon.findUnique({ where: { id: weapon.id } })).toBeNull();
+    // accessory.mech_id is SetNull → survives, link cleared
+    const freedAcc = await prisma.accessory.findUnique({ where: { id: accessory.id } });
+    expect(freedAcc).not.toBeNull();
+    expect(freedAcc!.mechId).toBeNull();
   });
 });
 
