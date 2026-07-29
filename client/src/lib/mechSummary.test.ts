@@ -58,7 +58,22 @@ describe("mechSummary", () => {
   it("mentions the linked weapon and accessory with their effects", () => {
     const text = mechSummary({
       ...base,
-      weapon: { ...base, name: "Void Reaver", description: "cleaves swarms" } as MechDetail["weapon"],
+      weapon: {
+        id: "w1",
+        name: "Void Reaver",
+        description: "cleaves swarms",
+        baseStats: null,
+        tier: "S",
+        rankUpPreview: [],
+        imageUrl: null,
+        iconUrl: null,
+        type: null,
+        upgrades: [],
+        weaponSkins: [],
+        helpers: [],
+        pilot: null,
+        skillNodes: [],
+      },
       accessory: {
         id: "ac1",
         name: "Abyss Core",
