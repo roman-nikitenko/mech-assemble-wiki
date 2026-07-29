@@ -5,6 +5,7 @@ import { FilterBar } from "../components/FilterBar";
 import { MechCard } from "../components/MechCard";
 import { LoadingSkeleton } from "../components/LoadingSkeleton";
 import { ErrorPanel } from "../components/ErrorPanel";
+import { Seo } from "../components/Seo";
 
 export function BrowsePage() {
   const [typeIds, setTypeIds] = useState<string[]>([]);
@@ -35,6 +36,10 @@ export function BrowsePage() {
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-6">
+      <Seo
+        title="Mech Assemble Wiki — Mech Assemble: Zombie Swarm database"
+        path="/"
+      />
       {/* Title + Admin link live in PublicLayout now. */}
       <FilterBar
         types={types.data ?? []}

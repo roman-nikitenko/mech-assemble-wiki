@@ -2,7 +2,14 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <!-- Favicons, from most- to least-preferred. Modern browsers use the SVG;
+         older ones and Google Search fall back to the .ico; the PNGs cover
+         Android/Google surfaces and iOS home-screen (apple-touch-icon). All
+         are rasterized from favicon.svg. -->
+    <link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <!-- Preload the display font so its download starts during HTML parse
          instead of after the CSS loads and lays out text. `crossorigin` is
@@ -33,7 +40,38 @@
       href="/fonts/rajdhani-v17-latin-700.woff2"
       crossorigin
     />
-    <title>Mech Assemble Wiki</title>
+    <!-- Default title + description. Per-page <Seo> components (React 19 native
+         metadata) override these once the app mounts; these are the fallback a
+         crawler or social scraper sees before JS runs, and cover pages that
+         don't set their own. -->
+    <title>Mech Assemble Wiki — Mech Assemble: Zombie Swarm database</title>
+    <meta
+      name="description"
+      content="The community database for Mech Assemble: Zombie Swarm. Look up any mech's skills, unique weapon, accessory, pilots, skins, and awakening progression."
+    />
+    <meta name="theme-color" content="#0b0f1a" />
+
+    <!-- Global social-share defaults. Page-specific og:title/description/url
+         are added per-page by <Seo>; these site-level ones live here so they
+         aren't repeated on every page. Update og:url/twitter image domain to
+         match the real site URL (see src/lib/site.ts). -->
+    <meta property="og:site_name" content="Mech Assemble Wiki" />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="https://mech-assemble-wiki.online/favicon.svg" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:image" content="https://mech-assemble-wiki.online/favicon.svg" />
+
+    <!-- Structured data: tells search engines this is a wiki/reference site and
+         can enable the sitelinks search box in Google results. -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "Mech Assemble Wiki",
+        "url": "https://mech-assemble-wiki.online/",
+        "description": "The community database for Mech Assemble: Zombie Swarm — mechs, weapons, accessories, pilots, skins, and awakening data."
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>

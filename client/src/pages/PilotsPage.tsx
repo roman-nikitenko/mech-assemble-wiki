@@ -3,6 +3,7 @@ import { imageSrc, srcSet, usePilots } from "../api/client";
 import { LoadingSkeleton } from "../components/LoadingSkeleton";
 import { ErrorPanel } from "../components/ErrorPanel";
 import { Gem } from "../components/Gem";
+import { Seo } from "../components/Seo";
 
 /** Public pilot list: portrait, boosts, and where the pilot serves
     (a mech's cockpit OR fronting a weapon — never both). */
@@ -11,6 +12,11 @@ export function PilotsPage() {
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-6">
+      <Seo
+        title="Pilots — Mech Assemble Wiki"
+        description="All pilots in Mech Assemble: Zombie Swarm — their boosts, relationship bonuses, and the mech or weapon they serve."
+        path="/pilots"
+      />
       {isPending ? (
         <LoadingSkeleton variant="cards" />
       ) : isError ? (

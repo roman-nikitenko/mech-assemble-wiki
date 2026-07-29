@@ -7,6 +7,7 @@ import { RankBadge } from "../components/RankBadge";
 import { WeaponSkins, WeaponHelpers } from "../components/WeaponKit";
 import { LoadingSkeleton } from "../components/LoadingSkeleton";
 import { ErrorPanel } from "../components/ErrorPanel";
+import { Seo } from "../components/Seo";
 import { WeaponOverviewTab } from "./sections/WeaponOverviewTab";
 import { SkillsTab } from "./sections/SkillsTab";
 
@@ -53,6 +54,17 @@ export function WeaponDetailPage() {
 
   return (
     <main className="mx-auto max-w-4xl px-4 py-6">
+      <Seo
+        title={`${weapon.name} — Mech Assemble Wiki`}
+        description={
+          weapon.description ??
+          `${weapon.name} — ${
+            weapon.tier === "S" ? "S-tier" : "Standard"
+          } weapon in Mech Assemble: Zombie Swarm. Stats, skill tree, skins, and its linked mech.`
+        }
+        path={`/weapons/${weapon.id}`}
+        image={weapon.imageUrl ? imageSrc(weapon.imageUrl) : undefined}
+      />
       <Link to="/weapons" className="text-sm text-ink-dim hover:text-accent">
         ← All weapons
       </Link>

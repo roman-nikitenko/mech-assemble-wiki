@@ -7,6 +7,7 @@ import { RankBadge } from "../components/RankBadge";
 import { TypeBadge } from "../components/TypeBadge";
 import { LoadingSkeleton } from "../components/LoadingSkeleton";
 import { ErrorPanel } from "../components/ErrorPanel";
+import { Seo } from "../components/Seo";
 
 /** Public weapon list. Each card links to the weapon's detail page
     (/weapons/:id), which shows its full kit. */
@@ -36,6 +37,11 @@ export function WeaponsPage() {
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-6">
+      <Seo
+        title="Weapons — Mech Assemble Wiki"
+        description="Browse every weapon in Mech Assemble: Zombie Swarm — tiers, stats, skill trees, skins, and the mechs they belong to."
+        path="/weapons"
+      />
       <FilterBar
         types={types.data ?? []}
         selectedTypeIds={typeIds}
