@@ -43,7 +43,7 @@ export function PilotsPage() {
                     />
                   )}
                   <div className="min-w-0">
-                    <p className="font-bold">{p.name}</p>
+                    <p className="font-bold text-2xl">{p.name}</p>
                     {p.unlockBoost && (
                       <p className="text-sm text-accent font-bold">{p.unlockBoost}</p>
                     )}
