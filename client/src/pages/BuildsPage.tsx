@@ -7,6 +7,7 @@ import { AuthorTag } from "../profile/AuthorTag";
 import { noteExcerpt } from "../profile/noteMarkup";
 import { formatDate } from "../lib/date";
 import { ShareButton } from "../profile/ShareButton";
+import { Seo } from "../components/Seo";
 
 /** Public community build feed. Shows all builds posted by any user. */
 export function BuildsPage() {
@@ -24,6 +25,11 @@ export function BuildsPage() {
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-6">
+      <Seo
+        title="Community Builds — Mech Assemble Wiki"
+        description="Community-made mech builds for Mech Assemble: Zombie Swarm — skills, weapons, and setups shared by other players."
+        path="/builds"
+      />
       <h2 className="text-xl font-bold">Builds</h2>
       <p className="mb-4 mt-1 text-xs text-ink-dim">
         Community builds — post your own from{" "}

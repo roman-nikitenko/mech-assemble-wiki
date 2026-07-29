@@ -6,7 +6,9 @@ import { TypeBadge } from "../components/TypeBadge";
 import { RankBadge } from "../components/RankBadge";
 import { LoadingSkeleton } from "../components/LoadingSkeleton";
 import { LinkedRow } from "../components/LinkedRow";
+import { Seo } from "../components/Seo";
 import { ErrorPanel } from "../components/ErrorPanel";
+import { mechSummary } from "../lib/mechSummary";
 import { OverviewTab } from "./sections/OverviewTab";
 import { SkillsTab } from "./sections/SkillsTab";
 import { WeaponTab } from "./sections/WeaponTab";
@@ -59,6 +61,14 @@ export function MechDetailPage() {
 
   return (
     <main className="mx-auto max-w-4xl px-4 py-6">
+      <Seo
+        title={`${mech.name} — Mech Assemble Wiki`}
+        description={`${mech.name}${mech.epithet ? ` (${mech.epithet})` : ""} — ${
+          mech.rank === "S" ? "S-tier" : "Standard"
+        } mech in Mech Assemble: Zombie Swarm. Skills, weapon, accessory, pilot, skins, and awakening.`}
+        path={`/mechs/${mech.id}`}
+        image={mech.imageUrl ? imageSrc(mech.imageUrl) : undefined}
+      />
       <Link to="/" className="text-sm text-ink-dim hover:text-accent">
         ← All mechs
       </Link>
@@ -78,7 +88,10 @@ export function MechDetailPage() {
             {mech.type && <TypeBadge type={mech.type} />}
           </div>
           {mech.epithet && <p className="mt-1 text-ink-dim">{mech.epithet}</p>}
-          <div className="mt-2 flex flex-col flex-wrap gap-x-4 gap-y-1 text-sm text-ink-dim">
+          {/* Factual auto-summary — real per-mech text for search engines to
+              index, sitting right under the name (see lib/mechSummary). */}
+          <p className="mt-3 text-sm leading-relaxed text-ink-dim">{mechSummary(mech)}</p>
+          <div className="mt-3 flex flex-col flex-wrap gap-x-4 gap-y-1 text-sm text-ink-dim">
             {mech.specialBonus && (
               <span>
                 Bonus: <span className="text-accent font-black">{mech.specialBonus}</span>

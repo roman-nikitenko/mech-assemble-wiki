@@ -3,6 +3,7 @@ import { imageSrc, srcSet, CARD_SIZES, useAccessories } from "../api/client";
 import { RankBadge } from "../components/RankBadge";
 import { LoadingSkeleton } from "../components/LoadingSkeleton";
 import { ErrorPanel } from "../components/ErrorPanel";
+import { Seo } from "../components/Seo";
 
 /** Public accessory list: base attributes for everyone, plus the exclusive
     effect when the accessory is bound to a specific mech. */
@@ -11,6 +12,11 @@ export function AccessoriesPage() {
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-6">
+      <Seo
+        title="Accessories — Mech Assemble Wiki"
+        description="Every accessory in Mech Assemble: Zombie Swarm — attributes and the exclusive effects unlocked when bound to a mech."
+        path="/accessories"
+      />
       {isPending ? (
         <LoadingSkeleton variant="cards" />
       ) : isError ? (

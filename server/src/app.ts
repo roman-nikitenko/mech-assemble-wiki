@@ -15,6 +15,7 @@ import { meRouter } from "./routes/me";
 import { buildsRouter } from "./routes/builds";
 import { adminRouter } from "./routes/admin";
 import { authRouter } from "./routes/auth";
+import { sitemapRouter } from "./routes/sitemap";
 
 export const app = express();
 
@@ -38,6 +39,8 @@ app.use("/api/me", meRouter);
 app.use("/api/builds", buildsRouter);
 app.use("/api/admin", adminRouter);
 app.use("/api/uploads", uploadsRouter);
+// GET /api/sitemap.xml — generated from the DB for search engines.
+app.use("/api/sitemap.xml", sitemapRouter);
 // Serve uploaded images as plain static files: GET /uploads/<name>.
 // Uploaded filenames are immutable UUIDs (a re-upload always gets a NEW
 // name — see routes/uploads.ts), so the bytes at a given URL never change.
