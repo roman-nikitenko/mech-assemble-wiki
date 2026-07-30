@@ -16,6 +16,7 @@ import { buildsRouter } from "./routes/builds";
 import { adminRouter } from "./routes/admin";
 import { authRouter } from "./routes/auth";
 import { sitemapRouter } from "./routes/sitemap";
+import { pageMetaRouter } from "./routes/pageMeta";
 
 export const app = express();
 
@@ -51,6 +52,11 @@ app.use(
   "/uploads",
   express.static(uploadsDir, { immutable: true, maxAge: "1y" })
 );
+
+// Server-rendered <head> for detail pages so social scrapers (which don't run
+// JS) get item-specific link previews. In production nginx proxies only these
+// path prefixes to Node; all other routes serve the static SPA build.
+app.use(pageMetaRouter);
 
 // Fallthrough for unknown routes — keep API errors as JSON, not HTML.
 app.use((_req, res) => {
