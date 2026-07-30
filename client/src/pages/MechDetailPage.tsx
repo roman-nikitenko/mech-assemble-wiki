@@ -66,7 +66,7 @@ export function MechDetailPage() {
         description={`${mech.name}${mech.epithet ? ` (${mech.epithet})` : ""} — ${
           mech.rank === "S" ? "S-tier" : "Standard"
         } mech in Mech Assemble: Zombie Swarm. Skills, weapon, accessory, pilot, skins, and awakening.`}
-        path={`/mechs/${mech.id}`}
+        path={`/mechs/${mech.slug ?? mech.id}`}
         image={mech.imageUrl ? imageSrc(mech.imageUrl) : undefined}
       />
       <Link to="/" className="text-sm text-ink-dim hover:text-accent">

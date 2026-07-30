@@ -5,6 +5,7 @@ import { NotePreview } from "./NotePreview";
 
 const mech: MechSummary = {
   id: "m1",
+  slug: "iron-colossus",
   name: "Iron Colossus",
   epithet: null,
   type: null,

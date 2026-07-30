@@ -11,7 +11,7 @@ import { RankBadge } from "./RankBadge";
 export function MechCard({ mech, priority = false }: { mech: MechSummary; priority?: boolean }) {
   return (
     <Link
-      to={`/mechs/${mech.id}`}
+      to={`/mechs/${mech.slug ?? mech.id}`}
       className="block rounded-xl border border-edge bg-surface p-4 transition hover:border-accent/60 hover:bg-surface-2"
     >
       {mech.imageUrl ? (

@@ -15,6 +15,10 @@ export interface MechSkinInput {
 
 export interface MechInput {
   name: string;
+  // Optional public URL slug. Blank/absent means "derive one from the name";
+  // when present it's still slugified + made unique server-side, so the admin
+  // can hand-pick a slug but can't submit an invalid or duplicate one.
+  slug: string | null;
   epithet: string | null;
   typeId: string | null;
   rank: MechRank;
@@ -100,7 +104,7 @@ export function parseMechInput(body: unknown): ParseResult {
     return { ok: false, message: "accessoryId must be an accessory id string or null." };
   }
 
-  const optionalFields = ["epithet", "specialBonus", "lore", "imageUrl", "iconUrl", "cardSkillIconUrl"] as const;
+  const optionalFields = ["slug", "epithet", "specialBonus", "lore", "imageUrl", "iconUrl", "cardSkillIconUrl"] as const;
   const parsed: Record<string, string | null> = {};
   for (const field of optionalFields) {
     const v = optionalString(b[field]);
@@ -173,6 +177,7 @@ export function parseMechInput(body: unknown): ParseResult {
       pilotId: b.pilotId as string | null | undefined,
       weaponId: b.weaponId as string | null | undefined,
       accessoryId: b.accessoryId as string | null | undefined,
+      slug: parsed.slug,
       epithet: parsed.epithet,
       specialBonus: parsed.specialBonus,
       lore: parsed.lore,

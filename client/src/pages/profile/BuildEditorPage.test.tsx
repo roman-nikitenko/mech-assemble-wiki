@@ -52,6 +52,7 @@ const authState = vi.hoisted(() => ({ loggedIn: true }));
 
 const summary: MechSummary = {
   id: "m1",
+  slug: "iron-colossus",
   name: "Iron Colossus",
   epithet: null,
   type: null,

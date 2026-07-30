@@ -21,6 +21,7 @@ beforeAll(async () => {
   const alpha = await prisma.mech.create({
     data: {
       name: `${P}Alpha`,
+      slug: "test-mechs-read-alpha",
       epithet: "Fixture Prime",
       typeId: volt.id,
       rank: "S",
@@ -95,6 +96,7 @@ describe("GET /api/mechs", () => {
       "imageUrl",
       "name",
       "rank",
+      "slug",
       "type",
     ]);
   });
@@ -168,5 +170,18 @@ describe("GET /api/mechs/:id", () => {
     const res = await request(app).get("/api/mechs/abc");
     expect(res.status).toBe(404);
     expect(res.body).toEqual({ error: "Mech not found" });
+  });
+
+  it("resolves a mech by its slug, and the UUID still works", async () => {
+    // Pretty slug URL — what public links use now.
+    const bySlug = await request(app).get("/api/mechs/test-mechs-read-alpha");
+    expect(bySlug.status).toBe(200);
+    expect(bySlug.body.id).toBe(alphaId);
+    expect(bySlug.body.slug).toBe("test-mechs-read-alpha");
+
+    // Old UUID URL still resolves to the same mech (backward compatible).
+    const byId = await request(app).get(`/api/mechs/${alphaId}`);
+    expect(byId.status).toBe(200);
+    expect(byId.body.id).toBe(alphaId);
   });
 });

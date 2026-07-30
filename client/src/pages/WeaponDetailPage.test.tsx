@@ -16,7 +16,7 @@ const weapon: WeaponDetail = {
   imageUrl: null,
   iconUrl: null,
   type: { id: "t1", name: "Plasma", iconUrl: null },
-  mech: { id: "m1", name: "Owner Mech", iconUrl: "/uploads/mech.png", specialBonus: "ATK +10%" },
+  mech: { id: "m1", slug: "owner-mech", name: "Owner Mech", iconUrl: "/uploads/mech.png", specialBonus: "ATK +10%" },
   pilot: { id: "p1", name: "Kael", iconUrl: null, unlockBoost: "Crit +5%" },
   weaponSkins: [{ id: "s1", name: "Gold", bonuses: ["ATK +2%"], imageUrl: null }],
   helpers: [
@@ -63,7 +63,7 @@ describe("WeaponDetailPage", () => {
     renderPage(200, weapon);
     expect(await screen.findByRole("heading", { name: "Doom Cannon", level: 1 })).toBeInTheDocument();
     const ownerLink = await screen.findByRole("link", { name: /Owner Mech/ });
-    expect(ownerLink).toHaveAttribute("href", "/mechs/m1");
+    expect(ownerLink).toHaveAttribute("href", "/mechs/owner-mech");
 
     // Overview is the default tab: base stats + rank-up preview are visible.
     expect(screen.getByText("Base Stats")).toBeInTheDocument();

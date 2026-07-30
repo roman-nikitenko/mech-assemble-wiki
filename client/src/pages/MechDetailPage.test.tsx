@@ -8,6 +8,7 @@ import type { MechDetail } from "../api/types";
 // A minimal Standard mech: no weapon, no awakening, no skins/helpers.
 const bareMech: MechDetail = {
   id: "11111111-1111-4111-8111-111111111111",
+  slug: "test-mech",
   name: "Test Mech",
   epithet: null,
   type: null,

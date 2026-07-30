@@ -412,6 +412,7 @@ describe("GET /api/weapons/:id", () => {
     expect(res.body.type.name).toBe("[test:weapons] Plasma");
     expect(res.body.mech).toEqual({
       id: mech.id,
+      slug: null,
       name: "[test:weapons] Kit Owner",
       iconUrl: null,
       specialBonus: null,

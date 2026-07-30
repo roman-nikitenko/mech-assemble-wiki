@@ -21,13 +21,14 @@ const STATIC_PATHS = ["/", "/weapons", "/accessories", "/pilots", "/builds"];
     rebuild. Reference this URL from robots.txt and Google Search Console. */
 sitemapRouter.get("/", async (_req, res) => {
   const [mechs, weapons] = await Promise.all([
-    prisma.mech.findMany({ select: { id: true } }),
+    prisma.mech.findMany({ select: { id: true, slug: true } }),
     prisma.weapon.findMany({ select: { id: true } }),
   ]);
 
   const paths = [
     ...STATIC_PATHS,
-    ...mechs.map((m) => `/mechs/${m.id}`),
+    // Prefer the pretty slug; fall back to the id if a mech somehow lacks one.
+    ...mechs.map((m) => `/mechs/${m.slug ?? m.id}`),
     ...weapons.map((w) => `/weapons/${w.id}`),
   ];
 

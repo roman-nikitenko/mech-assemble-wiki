@@ -1,0 +1,16 @@
+# Mech Assemble Wiki
+
+> A community database for the mobile game Mech Assemble: Zombie Swarm. Look up any mech and see its skills, skill upgrade tree, unique weapon, accessory, skins, helpers, pilots, and awakening progression.
+
+This is a read-only reference site. Game data is entered by an admin; visitors browse it. There are no user accounts on the public pages.
+
+## Main pages
+
+- [All Mechs](https://mech-assemble-wiki.online/): Browse every mech in the game; each links to a detail page with skills, weapon, accessory, pilot, skins, and awakening.
+- [Weapons](https://mech-assemble-wiki.online/weapons): Unique weapons, their stats, upgrades, and skins.
+- [Accessories](https://mech-assemble-wiki.online/accessories): Accessories and their exclusive effects.
+- [Pilots](https://mech-assemble-wiki.online/pilots): Pilots and the bonuses they grant.
+
+## Optional
+
+- [Full page sitemap](https://mech-assemble-wiki.online/api/sitemap.xml): Machine-readable list of every mech and weapon page, generated from the live database.
