@@ -13,7 +13,7 @@ export function OverviewTab({ mech }: { mech: MechDetail }) {
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             {mech.weapon && (
               <LinkedRow
-                to={`/weapons/${mech.weapon.id}`}
+                to={`/weapons/${mech.weapon.slug ?? mech.weapon.id}`}
                 iconUrl={mech.weapon.iconUrl}
                 name={mech.weapon.name}
                 bonus={mech.weapon.description}

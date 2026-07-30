@@ -7,6 +7,7 @@ import type { WeaponSummary } from "../api/types";
 
 const weapon: WeaponSummary = {
   id: "33333333-3333-4333-8333-333333333333",
+  slug: "doom-cannon",
   name: "Doom Cannon",
   description: "Big boom.",
   tier: "S",
@@ -49,6 +50,6 @@ describe("WeaponsPage", () => {
   it("links each card to its weapon detail page", async () => {
     renderPage();
     const link = await screen.findByRole("link", { name: /Doom Cannon/ });
-    expect(link).toHaveAttribute("href", "/weapons/33333333-3333-4333-8333-333333333333");
+    expect(link).toHaveAttribute("href", "/weapons/doom-cannon");
   });
 });

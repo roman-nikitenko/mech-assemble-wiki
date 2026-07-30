@@ -9,6 +9,7 @@ import {
   useWeapons,
 } from "../../api/client";
 import type { MechRank, WeaponInput } from "../../api/types";
+import { slugify } from "../../lib/slug";
 import { ImageUploadField } from "../ImageUploadField";
 import { SkillTreeEditor } from "../skilltree/SkillTreeEditor";
 import { draftsFromNodes, serializeDrafts, type SkillDraft } from "../skilltree/skillTreeDrafts";
@@ -22,7 +23,7 @@ interface SkinDraft {
   imageUrl: string | null;
 }
 
-const EMPTY: WeaponInput = { name: "", tier: "Standard", typeId: null, mechId: null, pilotId: null };
+const EMPTY: WeaponInput = { name: "", slug: "", tier: "Standard", typeId: null, mechId: null, pilotId: null };
 
 /** One form for /admin/weapons/new AND /admin/weapons/:id/edit. */
 export function WeaponFormPage() {
@@ -49,6 +50,7 @@ export function WeaponFormPage() {
       if (weapon) {
         setForm({
           name: weapon.name,
+          slug: weapon.slug ?? "",
           description: weapon.description,
           tier: weapon.tier,
           typeId: weapon.type?.id ?? null,
@@ -129,6 +131,24 @@ export function WeaponFormPage() {
             Name *
           </label>
           <input id="name" value={form.name} onChange={(e) => set("name", e.target.value)} className={fieldCls} />
+        </div>
+
+        <div>
+          <label htmlFor="slug" className="mb-1 block text-sm font-semibold">
+            URL slug
+          </label>
+          <input
+            id="slug"
+            value={form.slug ?? ""}
+            onChange={(e) => set("slug", e.target.value)}
+            className={fieldCls}
+            placeholder="auto-generated from the name if left blank"
+          />
+          {/* The slug is the public page address: /weapons/<slug>. Leave it
+              blank to derive it from the name; editing it changes the URL. */}
+          <p className="mt-1 text-xs text-ink-dim">
+            Public page address: <span className="font-mono">/weapons/{slugify(form.slug || form.name) || "…"}</span>
+          </p>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">

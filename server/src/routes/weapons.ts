@@ -5,10 +5,12 @@ import { requireAdmin } from "../lib/auth";
 import { parseWeaponInput } from "../lib/weapon-input";
 import { createSkillNodes } from "../lib/skill-nodes";
 import { UUID_RE } from "../lib/uuid";
+import { slugify } from "../lib/slug";
 
 export const weaponsRouter = Router();
 
-// Everything the admin list and forms need in one shape.
+// Everything the admin list and forms need in one shape. (slug is a scalar
+// column, so it comes back automatically — no select entry needed here.)
 const WEAPON_INCLUDE = {
   type: { select: { id: true, name: true, iconUrl: true } },
   mech: { select: { id: true, name: true } },
@@ -16,6 +18,28 @@ const WEAPON_INCLUDE = {
   weaponSkins: true,
   skillNodes: { orderBy: { sortOrder: "asc" as const } },
 } satisfies Prisma.WeaponInclude;
+
+// Picks a slug not already taken by another weapon. `desired` is the admin's
+// input (or the weapon name when they left it blank); it's slugified here, so
+// callers can pass raw text. On collision it appends -2, -3, ... `excludeId`
+// lets a weapon keep its own slug on update. Mirrors uniqueMechSlug — but
+// weapon names aren't unique, so the suffix path is hit routinely, not rarely.
+async function uniqueWeaponSlug(
+  tx: Prisma.TransactionClient,
+  desired: string,
+  excludeId?: string,
+): Promise<string> {
+  const base = slugify(desired) || "weapon";
+  let candidate = base;
+  for (let n = 2; ; n++) {
+    const clash = await tx.weapon.findFirst({
+      where: { slug: candidate, ...(excludeId ? { id: { not: excludeId } } : {}) },
+      select: { id: true },
+    });
+    if (!clash) return candidate;
+    candidate = `${base}-${n}`;
+  }
+}
 
 // Shared by POST and PUT: link validations that need the database.
 // Returns a user-facing message or null when everything checks out.
@@ -66,12 +90,15 @@ weaponsRouter.get("/", async (_req, res) => {
   res.json(weapons);
 });
 
-// GET /api/weapons/:id — public single-weapon read for the detail page.
-weaponsRouter.get("/:id", async (req, res) => {
-  const { id } = req.params;
-  if (!UUID_RE.test(id)) return res.status(404).json({ error: "Weapon not found" });
+// GET /api/weapons/:idOrSlug — public single-weapon read for the detail page.
+// Accepts EITHER the pretty slug (/weapons/void-reaver, what links use now) OR
+// the raw UUID (old links stay valid).
+weaponsRouter.get("/:idOrSlug", async (req, res) => {
+  const { idOrSlug } = req.params;
+  // Looks-like-a-UUID => look up by id; otherwise treat it as a slug.
+  const where = UUID_RE.test(idOrSlug) ? { id: idOrSlug } : { slug: idOrSlug };
   const weapon = await prisma.weapon.findUnique({
-    where: { id },
+    where,
     include: WEAPON_DETAIL_INCLUDE,
   });
   if (!weapon) return res.status(404).json({ error: "Weapon not found" });
@@ -82,16 +109,19 @@ weaponsRouter.get("/:id", async (req, res) => {
 weaponsRouter.post("/", requireAdmin, async (req, res) => {
   const input = parseWeaponInput(req.body);
   if (!input.ok) return res.status(400).json({ error: input.message });
-  const { pilotId, skins, skills, ...fields } = input.value;
+  const { pilotId, skins, skills, slug, ...fields } = input.value;
 
   const linkError = await validateWeaponLinks(input.value);
   if (linkError) return res.status(400).json({ error: linkError });
 
   try {
     const weapon = await prisma.$transaction(async (tx) => {
+      // Slugify the admin's slug (or the name if blank) and make it unique.
+      const finalSlug = await uniqueWeaponSlug(tx, slug ?? fields.name);
       const created = await tx.weapon.create({
         data: {
           ...fields,
+          slug: finalSlug,
           weaponSkins: { create: skins },
         },
         select: { id: true },
@@ -120,6 +150,9 @@ weaponsRouter.post("/", requireAdmin, async (req, res) => {
       if (target.includes("mech_id")) {
         return res.status(409).json({ error: "That mech already owns a weapon." });
       }
+      if (target.includes("slug")) {
+        return res.status(409).json({ error: "That slug is already in use." });
+      }
     }
     throw err;
   }
@@ -133,19 +166,23 @@ weaponsRouter.put("/:id", requireAdmin, async (req, res) => {
 
   const input = parseWeaponInput(req.body);
   if (!input.ok) return res.status(400).json({ error: input.message });
-  const { pilotId, skins, skills, ...fields } = input.value;
+  const { pilotId, skins, skills, slug, ...fields } = input.value;
 
   const linkError = await validateWeaponLinks(input.value);
   if (linkError) return res.status(400).json({ error: linkError });
 
   try {
     const weapon = await prisma.$transaction(async (tx) => {
+      // Recompute the slug from the admin's field (or the name if blank),
+      // excluding THIS weapon — so re-saving without touching the slug keeps it.
+      const finalSlug = await uniqueWeaponSlug(tx, slug ?? fields.name, id);
       // Replace-the-set: same pattern as mech traits.
       await tx.weaponSkin.deleteMany({ where: { weaponId: id } });
       await tx.weapon.update({
         where: { id },
         data: {
           ...fields,
+          slug: finalSlug,
           weaponSkins: { create: skins },
         },
       });
@@ -179,6 +216,9 @@ weaponsRouter.put("/:id", requireAdmin, async (req, res) => {
       const target = (err.meta?.target as string[] | undefined) ?? [];
       if (target.includes("mech_id")) {
         return res.status(409).json({ error: "That mech already owns a weapon." });
+      }
+      if (target.includes("slug")) {
+        return res.status(409).json({ error: "That slug is already in use." });
       }
     }
     throw err;

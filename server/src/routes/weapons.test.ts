@@ -436,4 +436,25 @@ describe("GET /api/weapons/:id", () => {
     expect(res.status).toBe(404);
     expect(res.body.error).toBe("Weapon not found");
   });
+
+  it("resolves a weapon by its slug, and the UUID still works", async () => {
+    // Create through the API so the server generates a slug from the name.
+    const created = await request(app)
+      .post("/api/weapons")
+      .set(ADMIN)
+      .send({ name: "[test:weapons] Slug Blade", tier: "S" });
+    expect(created.status).toBe(201);
+    const { id, slug } = created.body;
+    expect(slug).toBe("test-weapons-slug-blade");
+
+    // Pretty slug URL — what public links use now.
+    const bySlug = await request(app).get(`/api/weapons/${slug}`);
+    expect(bySlug.status).toBe(200);
+    expect(bySlug.body.id).toBe(id);
+
+    // Old UUID URL still resolves to the same weapon (backward compatible).
+    const byId = await request(app).get(`/api/weapons/${id}`);
+    expect(byId.status).toBe(200);
+    expect(byId.body.id).toBe(id);
+  });
 });

@@ -38,6 +38,7 @@ const mechDetail: MechDetail = {
 
 const weapon: WeaponSummary = {
   id: "w1",
+  slug: "blade-of-dawn",
   name: "Blade of Dawn",
   description: null,
   tier: "S",

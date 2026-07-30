@@ -89,6 +89,7 @@ const fireType: GameType = { id: "t1", name: "Fire", iconUrl: null };
 
 const weaponFixture = (over: Partial<WeaponSummary>): WeaponSummary => ({
   id: "w1",
+  slug: "blade-of-dawn",
   name: "Blade of Dawn",
   description: null,
   tier: "S",

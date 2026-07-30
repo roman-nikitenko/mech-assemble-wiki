@@ -8,6 +8,7 @@ import type { WeaponSummary } from "../../api/types";
 const weapons: WeaponSummary[] = [
   {
     id: "w1",
+    slug: "ninja-spikes-gun",
     name: "Ninja Spikes Gun",
     description: null,
     tier: "S",
