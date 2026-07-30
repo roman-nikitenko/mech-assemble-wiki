@@ -21,6 +21,9 @@ export type MechRank = "Standard" | "S";
 /** Shape returned by GET /api/mechs (browse page). */
 export interface MechSummary {
   id: string;
+  // Pretty URL identifier (e.g. "abyssal-knight"); links prefer it over id.
+  // Nullable defensively — in practice every mech has one.
+  slug: string | null;
   name: string;
   epithet: string | null;
   type: GameType | null;
@@ -134,7 +137,7 @@ export interface WeaponDetail {
   imageUrl: string | null;
   iconUrl: string | null;
   type: GameType | null;
-  mech: { id: string; name: string; iconUrl: string | null; specialBonus: string | null } | null;
+  mech: { id: string; slug: string | null; name: string; iconUrl: string | null; specialBonus: string | null } | null;
   pilot: { id: string; name: string; iconUrl: string | null; unlockBoost: string | null } | null;
   weaponSkins: WeaponSkinRow[];
   helpers: Helper[];
@@ -244,6 +247,9 @@ export interface Trait {
 /** Payload for POST/PUT /api/mechs (admin form). */
 export interface MechInput {
   name: string;
+  // Optional public URL slug. Leave blank to auto-derive from the name; the
+  // server slugifies and de-duplicates whatever it receives.
+  slug?: string | null;
   epithet?: string | null;
   typeId?: string | null;
   rank: MechRank;
@@ -312,7 +318,7 @@ export interface AccessorySummary {
   exclusiveEffect: string | null;
   imageUrl: string | null;
   iconUrl: string | null;
-  mech: { id: string; name: string } | null;
+  mech: { id: string; slug: string | null; name: string } | null;
 }
 
 /** A build's publication state (mirrors the server BuildStatus enum). */

@@ -43,6 +43,12 @@ enum BuildStatus {
 model Mech {
   id           String   @id @default(uuid()) @db.Uuid
   name         String   @unique
+  // URL-safe public identifier shown in the address bar instead of the UUID
+  // (e.g. /mechs/abyssal-knight). Nullable so the column can be added to a
+  // populated table, then backfilled; the app generates one for every new
+  // mech and the migration backfills existing rows, so in practice it's always
+  // set. Unique because it's a public key; the UUID stays the primary key.
+  slug         String?  @unique
   epithet      String? // subtitle, e.g. "Shadow Hunter"
   // Element type is a CATALOG ROW now, not an enum: the admin manages types
   // (name + icon) in the UI. Nullable by design — the catalog starts empty

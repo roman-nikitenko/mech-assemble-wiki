@@ -7,6 +7,7 @@ import { BuildDetailPage } from "./BuildDetailPage";
 
 const mechSummary: MechSummary = {
   id: "m1",
+  slug: "iron-colossus",
   name: "Iron Colossus",
   epithet: null,
   type: null,

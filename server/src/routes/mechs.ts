@@ -5,6 +5,7 @@ import { requireAdmin } from "../lib/auth";
 import { buildTree } from "../lib/build-tree";
 import { parseMechInput } from "../lib/mech-input";
 import { createSkillNodes } from "../lib/skill-nodes";
+import { slugify } from "../lib/slug";
 import { UUID_RE } from "../lib/uuid";
 
 export const mechsRouter = Router();
@@ -13,6 +14,8 @@ export const mechsRouter = Router();
 const SUMMARY_SELECT = {
   id: true,
   name: true,
+  // slug feeds the public URL (/mechs/<slug>); cards and links prefer it.
+  slug: true,
   epithet: true,
   type: { select: { id: true, name: true, iconUrl: true } },
   rank: true,
@@ -85,6 +88,28 @@ function parseEnumParam<T extends Record<string, string>>(
   };
 }
 
+// Picks a slug not already taken by another mech. `desired` is the admin's
+// input (or the mech name when they left it blank); it's slugified here, so
+// callers can pass raw text. On collision it appends -2, -3, ... `excludeId`
+// lets a mech keep its own slug on update (so re-saving is a no-op, not a bump).
+async function uniqueMechSlug(
+  tx: Prisma.TransactionClient,
+  desired: string,
+  excludeId?: string,
+): Promise<string> {
+  // Fallback base guards the edge case of a name that slugifies to "".
+  const base = slugify(desired) || "mech";
+  let candidate = base;
+  for (let n = 2; ; n++) {
+    const clash = await tx.mech.findFirst({
+      where: { slug: candidate, ...(excludeId ? { id: { not: excludeId } } : {}) },
+      select: { id: true },
+    });
+    if (!clash) return candidate;
+    candidate = `${base}-${n}`;
+  }
+}
+
 // GET /api/mechs?typeId=<uuid>&rank=S — summaries for the browse page.
 mechsRouter.get("/", async (req, res) => {
   // typeId filters by catalog row. Anything that isn't a uuid can't match —
@@ -138,18 +163,17 @@ const detailInclude = {
   helpers: { include: { ranks: { orderBy: { rank: "asc" } } } },
 } satisfies Prisma.MechInclude;
 
-// GET /api/mechs/:id — one mech with everything nested.
-mechsRouter.get("/:id", async (req, res) => {
-  const { id } = req.params;
-  // A malformed UUID would make Postgres/Prisma throw before the lookup even
-  // runs. Catching it here means every kind of "no such mech" gets the same
-  // clean 404 instead of a confusing 500.
-  if (!UUID_RE.test(id)) {
-    return res.status(404).json({ error: "Mech not found" });
-  }
+// GET /api/mechs/:idOrSlug — one mech with everything nested. Accepts EITHER
+// the pretty slug (/mechs/abyssal-knight, what links use now) OR the raw UUID
+// (/mechs/<uuid>, so any old bookmarked or indexed link keeps working).
+mechsRouter.get("/:idOrSlug", async (req, res) => {
+  const { idOrSlug } = req.params;
+  // Looks-like-a-UUID => look up by id; otherwise treat it as a slug. Both
+  // columns are unique, so findUnique works for either.
+  const where = UUID_RE.test(idOrSlug) ? { id: idOrSlug } : { slug: idOrSlug };
 
   const mech = await prisma.mech.findUnique({
-    where: { id },
+    where,
     include: detailInclude,
   });
   if (!mech) {
@@ -174,7 +198,7 @@ mechsRouter.get("/:id", async (req, res) => {
 mechsRouter.post("/", requireAdmin, async (req, res) => {
   const input = parseMechInput(req.body);
   if (!input.ok) return res.status(400).json({ error: input.message });
-  const { traitNames, pilotId, weaponId, accessoryId, skills, skins, ...fields } = input.value;
+  const { traitNames, pilotId, weaponId, accessoryId, skills, skins, slug, ...fields } = input.value;
 
   const pilotError = await validateMechPilotLink(pilotId, fields.rank);
   if (pilotError) return res.status(400).json({ error: pilotError });
@@ -190,9 +214,13 @@ mechsRouter.post("/", requireAdmin, async (req, res) => {
 
   try {
     const mech = await prisma.$transaction(async (tx) => {
+      // Slug from the admin's input, or derived from the name when left blank,
+      // then made unique against existing mechs.
+      const finalSlug = await uniqueMechSlug(tx, slug ?? fields.name);
       const created = await tx.mech.create({
         data: {
           ...fields,
+          slug: finalSlug,
           // Traits arrive as NAMES: link the existing catalog trait when one
           // matches, otherwise create it — the admin never manages trait ids.
           traits: {
@@ -238,6 +266,10 @@ mechsRouter.post("/", requireAdmin, async (req, res) => {
     res.status(201).json(mech);
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
+      const target = (err.meta?.target as string[] | undefined) ?? [];
+      if (target.includes("slug")) {
+        return res.status(409).json({ error: "That slug is already in use." });
+      }
       return res.status(409).json({ error: `A mech named '${fields.name}' already exists.` });
     }
     throw err;
@@ -251,7 +283,7 @@ mechsRouter.put("/:id", requireAdmin, async (req, res) => {
 
   const input = parseMechInput(req.body);
   if (!input.ok) return res.status(400).json({ error: input.message });
-  const { traitNames, pilotId, weaponId, accessoryId, skills, skins, ...fields } = input.value;
+  const { traitNames, pilotId, weaponId, accessoryId, skills, skins, slug, ...fields } = input.value;
 
   const pilotError = await validateMechPilotLink(pilotId, fields.rank);
   if (pilotError) return res.status(400).json({ error: pilotError });
@@ -270,10 +302,15 @@ mechsRouter.put("/:id", requireAdmin, async (req, res) => {
       await tx.mechTrait.deleteMany({ where: { mechId: id } });
       // Replace-the-set, like traits: deleting a skin cascades to its stars.
       await tx.skin.deleteMany({ where: { mechId: id } });
+      // Recompute the slug from the admin's field (or the name if blank),
+      // excluding THIS mech — so re-saving without touching the slug keeps it
+      // stable, while a rename/edit still takes effect and stays unique.
+      const finalSlug = await uniqueMechSlug(tx, slug ?? fields.name, id);
       const updated = await tx.mech.update({
         where: { id },
         data: {
           ...fields,
+          slug: finalSlug,
           // Same find-or-create-by-name as POST. Unlinked traits stay in the
           // catalog — another mech may share them.
           traits: {
@@ -338,6 +375,9 @@ mechsRouter.put("/:id", requireAdmin, async (req, res) => {
       const target = (err.meta?.target as string[] | undefined) ?? [];
       if (target.includes("mech_id")) {
         return res.status(409).json({ error: "That mech already has a pilot." });
+      }
+      if (target.includes("slug")) {
+        return res.status(409).json({ error: "That slug is already in use." });
       }
       return res.status(409).json({ error: `A mech named '${fields.name}' already exists.` });
     }

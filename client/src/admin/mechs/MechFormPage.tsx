@@ -10,6 +10,7 @@ import {
   useWeapons,
 } from "../../api/client";
 import type { MechInput, MechRank } from "../../api/types";
+import { slugify } from "../../lib/slug";
 import { ImageUploadField } from "../ImageUploadField";
 import { SavedToast } from "../SavedToast";
 import { SkillTreeEditor } from "../skilltree/SkillTreeEditor";
@@ -25,6 +26,7 @@ interface SkinDraft {
 
 const EMPTY: MechInput = {
   name: "",
+  slug: "",
   rank: "Standard",
   traitNames: [],
   pilotId: null,
@@ -67,6 +69,7 @@ export function MechFormPage() {
       const m = existing.data;
       setForm({
         name: m.name,
+        slug: m.slug ?? "",
         epithet: m.epithet,
         typeId: m.type?.id ?? null,
         rank: m.rank,
@@ -180,6 +183,24 @@ export function MechFormPage() {
             Name *
           </label>
           <input id="name" value={form.name} onChange={(e) => set("name", e.target.value)} className={fieldCls} />
+        </div>
+
+        <div>
+          <label htmlFor="slug" className="mb-1 block text-sm font-semibold">
+            URL slug
+          </label>
+          <input
+            id="slug"
+            value={form.slug ?? ""}
+            onChange={(e) => set("slug", e.target.value)}
+            className={fieldCls}
+            placeholder="auto-generated from the name if left blank"
+          />
+          {/* The slug is the public page address: /mechs/<slug>. Leave it blank
+              to derive it from the name; editing it changes the URL. */}
+          <p className="mt-1 text-xs text-ink-dim">
+            Public page address: <span className="font-mono">/mechs/{slugify(form.slug || form.name) || "…"}</span>
+          </p>
         </div>
 
         <div>

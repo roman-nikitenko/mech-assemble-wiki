@@ -49,7 +49,8 @@ async function validateWeaponLinks(input: {
 const WEAPON_DETAIL_INCLUDE = {
   type: { select: { id: true, name: true, iconUrl: true } },
   // iconUrl + a bonus feed the detail page's linked mech/pilot rows.
-  mech: { select: { id: true, name: true, iconUrl: true, specialBonus: true } },
+  // slug lets the "linked mech" row link to the pretty /mechs/<slug> URL.
+  mech: { select: { id: true, slug: true, name: true, iconUrl: true, specialBonus: true } },
   pilot: { select: { id: true, name: true, iconUrl: true, unlockBoost: true } },
   weaponSkins: true,
   skillNodes: { orderBy: { sortOrder: "asc" as const } },

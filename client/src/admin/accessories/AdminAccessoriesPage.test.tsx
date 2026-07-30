@@ -14,7 +14,7 @@ const accessories: AccessorySummary[] = [
     exclusiveEffect: "Crit hits restore 1% HP",
     imageUrl: null,
     iconUrl: null,
-    mech: { id: "m1", name: "Shadow Warrior" },
+    mech: { id: "m1", slug: "shadow-warrior", name: "Shadow Warrior" },
   },
 ];
 

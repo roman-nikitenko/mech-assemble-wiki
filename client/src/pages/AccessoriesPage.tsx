@@ -53,7 +53,7 @@ export function AccessoriesPage() {
               )}
               {a.exclusiveEffect && a.mech && (
                 <p className="mt-2 text-sm">
-                  <Link to={`/mechs/${a.mech.id}`} className="text-accent hover:underline">
+                  <Link to={`/mechs/${a.mech.slug ?? a.mech.id}`} className="text-accent hover:underline">
                     {a.mech.name}
                   </Link>
                   <span className="text-ink-dim"> exclusive: </span>

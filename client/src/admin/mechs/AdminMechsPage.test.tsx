@@ -9,6 +9,7 @@ import type { MechSummary } from "../../api/types";
 const mechs: MechSummary[] = [
   {
     id: "m1",
+    slug: "shadow-warrior",
     name: "Shadow Warrior",
     epithet: "Shadow Hunter",
     type: null,
