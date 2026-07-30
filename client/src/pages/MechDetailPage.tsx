@@ -62,7 +62,7 @@ export function MechDetailPage() {
   return (
     <main className="mx-auto max-w-4xl px-4 py-6">
       <Seo
-        title={`${mech.name} — Mech Assemble Wiki`}
+        title={`Mech Assemble Wiki — "${mech.name}"`}
         description={`${mech.name}${mech.epithet ? ` (${mech.epithet})` : ""} — ${
           mech.rank === "S" ? "S-tier" : "Standard"
         } mech in Mech Assemble: Zombie Swarm. Skills, weapon, accessory, pilot, skins, and awakening.`}
