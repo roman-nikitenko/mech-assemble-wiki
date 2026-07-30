@@ -70,7 +70,7 @@ export function WeaponsPage() {
           {visible.map((w) => (
             <Link
               key={w.id}
-              to={`/weapons/${w.id}`}
+              to={`/weapons/${w.slug ?? w.id}`}
               className="block rounded-xl border border-edge bg-surface p-4 transition-colors hover:border-accent"
             >
               {w.imageUrl && (

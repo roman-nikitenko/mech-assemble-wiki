@@ -22,14 +22,14 @@ const STATIC_PATHS = ["/", "/weapons", "/accessories", "/pilots", "/builds"];
 sitemapRouter.get("/", async (_req, res) => {
   const [mechs, weapons] = await Promise.all([
     prisma.mech.findMany({ select: { id: true, slug: true } }),
-    prisma.weapon.findMany({ select: { id: true } }),
+    prisma.weapon.findMany({ select: { id: true, slug: true } }),
   ]);
 
   const paths = [
     ...STATIC_PATHS,
-    // Prefer the pretty slug; fall back to the id if a mech somehow lacks one.
+    // Prefer the pretty slug; fall back to the id if a row somehow lacks one.
     ...mechs.map((m) => `/mechs/${m.slug ?? m.id}`),
-    ...weapons.map((w) => `/weapons/${w.id}`),
+    ...weapons.map((w) => `/weapons/${w.slug ?? w.id}`),
   ];
 
   const urls = paths

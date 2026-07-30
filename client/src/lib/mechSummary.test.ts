@@ -61,6 +61,7 @@ describe("mechSummary", () => {
       ...base,
       weapon: {
         id: "w1",
+        slug: "void-reaver",
         name: "Void Reaver",
         description: "cleaves swarms",
         baseStats: null,

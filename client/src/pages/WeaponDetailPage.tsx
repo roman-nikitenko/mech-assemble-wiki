@@ -62,7 +62,7 @@ export function WeaponDetailPage() {
             weapon.tier === "S" ? "S-tier" : "Standard"
           } weapon in Mech Assemble: Zombie Swarm. Stats, skill tree, skins, and its linked mech.`
         }
-        path={`/weapons/${weapon.id}`}
+        path={`/weapons/${weapon.slug ?? weapon.id}`}
         image={weapon.imageUrl ? imageSrc(weapon.imageUrl) : undefined}
       />
       <Link to="/weapons" className="text-sm text-ink-dim hover:text-accent">

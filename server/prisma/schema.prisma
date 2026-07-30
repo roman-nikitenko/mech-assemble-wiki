@@ -294,6 +294,11 @@ model Weapon {
   // "a mech owns at most one weapon". The owner is set from the admin.
   mechId      String? @unique @map("mech_id") @db.Uuid
   name        String
+  // Public URL key (/weapons/<slug>), like mechs.slug. Nullable so it could be
+  // added to the populated table; the app generates + de-duplicates one for
+  // every weapon. Unlike mechs, weapon NAMES aren't unique, so slug collisions
+  // are normal here and get -2/-3 suffixes.
+  slug        String? @unique
   description String?
   baseStats   Json?   @map("base_stats")
   // Weapons carry a type in the game too. Schema + API surface only for now —

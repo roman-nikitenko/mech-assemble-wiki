@@ -12,6 +12,10 @@ export interface WeaponSkinInput {
 
 export interface WeaponInput {
   name: string;
+  // Optional public URL slug. Blank/absent means "derive one from the name";
+  // when present it's still slugified + made unique server-side, so the admin
+  // can hand-pick a slug but can't submit an invalid or duplicate one.
+  slug: string | null;
   description: string | null;
   // Weapons share the mech rank enum (Standard | S) as their tier.
   tier: MechRank;
@@ -111,6 +115,8 @@ export function parseWeaponInput(body: unknown): ParseResult {
     return { ok: false, message: "pilotId must be a pilot id string or null." };
   }
 
+  const slug = optionalString(b.slug);
+  if (slug === undefined) return { ok: false, message: "slug must be a string." };
   const description = optionalString(b.description);
   if (description === undefined) return { ok: false, message: "description must be a string." };
   const imageUrl = optionalString(b.imageUrl);
@@ -122,6 +128,7 @@ export function parseWeaponInput(body: unknown): ParseResult {
     ok: true,
     value: {
       name: b.name.trim(),
+      slug,
       description,
       tier: tier as MechRank,
       rankUpPreview,

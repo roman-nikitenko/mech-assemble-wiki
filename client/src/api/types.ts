@@ -110,6 +110,7 @@ export interface SkillNodeRow {
 
 export interface Weapon {
   id: string;
+  slug: string | null;
   name: string;
   description: string | null;
   baseStats: Stats | null;
@@ -129,6 +130,7 @@ export interface Weapon {
     minus the dormant `upgrades` tree, plus the owner mech (may be null). */
 export interface WeaponDetail {
   id: string;
+  slug: string | null;
   name: string;
   description: string | null;
   baseStats: Stats | null;
@@ -147,6 +149,7 @@ export interface WeaponDetail {
 /** Shape of GET /api/weapons rows (admin list, edit prefill, pilot form). */
 export interface WeaponSummary {
   id: string;
+  slug: string | null;
   name: string;
   description: string | null;
   tier: MechRank;
@@ -163,6 +166,9 @@ export interface WeaponSummary {
 /** Payload for POST/PUT /api/weapons. */
 export interface WeaponInput {
   name: string;
+  // Optional public URL slug. Leave blank to auto-derive from the name; the
+  // server slugifies and de-duplicates whatever it receives.
+  slug?: string | null;
   description?: string | null;
   tier?: MechRank;
   rankUpPreview?: string[];

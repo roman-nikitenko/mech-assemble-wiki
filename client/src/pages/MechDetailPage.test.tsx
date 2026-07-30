@@ -74,6 +74,7 @@ describe("MechDetailPage tabs are driven by data", () => {
       rank: "S",
       weapon: {
         id: "w1",
+        slug: "blade",
         name: "Blade",
         description: null,
         baseStats: null,
