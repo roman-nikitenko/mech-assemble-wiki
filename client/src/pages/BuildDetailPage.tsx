@@ -1,6 +1,7 @@
 import { Link, useParams } from "react-router-dom";
 import { imageSrc, useMech, useMechs, usePostedBuild, useWeapons } from "../api/client";
 import type { WeaponSummary } from "../api/types";
+import { Seo } from "../components/Seo";
 import { AuthorTag } from "../profile/AuthorTag";
 import { resolvePicks } from "../profile/buildRules";
 import { PickedSlot } from "../profile/SkillsBlock";
@@ -80,6 +81,20 @@ export function BuildDetailPage() {
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-6">
+      <Seo
+        title={`Mech Assemble Wiki — "${b.name}"`}
+        description={b.description.trim() || undefined}
+        path={`/builds/${b.id}`}
+        image={
+          isWeaponBuild
+            ? buildWeapon?.imageUrl
+              ? imageSrc(buildWeapon.imageUrl)
+              : undefined
+            : mech?.imageUrl
+              ? imageSrc(mech.imageUrl)
+              : undefined
+        }
+      />
       <Link to="/builds" className="text-sm text-ink-dim hover:text-accent">← All builds</Link>
 
       <div className="relative mt-3 h-96 overflow-hidden rounded-xl border border-edge bg-surface">
