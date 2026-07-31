@@ -17,8 +17,13 @@ import { adminRouter } from "./routes/admin";
 import { authRouter } from "./routes/auth";
 import { sitemapRouter } from "./routes/sitemap";
 import { pageMetaRouter } from "./routes/pageMeta";
+import { feedbackRouter } from "./routes/feedback";
 
 export const app = express();
+
+// Behind nginx, trust the first proxy hop so req.ip is the real client IP
+// (used by the feedback per-IP cooldown), not 127.0.0.1.
+app.set("trust proxy", 1);
 
 // CORS: locally (no CLIENT_ORIGIN set) we allow any origin so the Vite dev
 // server on :5173 can call the API on :3000. In production set CLIENT_ORIGIN
@@ -38,6 +43,7 @@ app.use("/api/weapons", weaponsRouter);
 app.use("/api/accessories", accessoriesRouter);
 app.use("/api/me", meRouter);
 app.use("/api/builds", buildsRouter);
+app.use("/api/feedback", feedbackRouter);
 app.use("/api/admin", adminRouter);
 app.use("/api/uploads", uploadsRouter);
 // GET /api/sitemap.xml — generated from the DB for search engines.

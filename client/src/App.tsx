@@ -9,6 +9,7 @@ import { WeaponsPage } from "./pages/WeaponsPage";
 import { WeaponDetailPage } from "./pages/WeaponDetailPage";
 import { AccessoriesPage } from "./pages/AccessoriesPage";
 import { PilotsPage } from "./pages/PilotsPage";
+import { FeedbackPage } from "./pages/FeedbackPage";
 import { ProfilePage } from "./pages/profile/ProfilePage";
 import { LoginPage } from "./pages/LoginPage";
 
@@ -33,6 +34,7 @@ const AdminLayout = lazyNamed(() => import("./admin/AdminLayout"), "AdminLayout"
 const AdminLoginPage = lazyNamed(() => import("./admin/AdminLoginPage"), "AdminLoginPage");
 const DashboardPage = lazyNamed(() => import("./admin/DashboardPage"), "DashboardPage");
 const UsersPage = lazyNamed(() => import("./admin/UsersPage"), "UsersPage");
+const AdminMessagesPage = lazyNamed(() => import("./admin/AdminMessagesPage"), "AdminMessagesPage");
 const SettingsPage = lazyNamed(() => import("./admin/SettingsPage"), "SettingsPage");
 const AdminMechsPage = lazyNamed(() => import("./admin/mechs/AdminMechsPage"), "AdminMechsPage");
 const MechFormPage = lazyNamed(() => import("./admin/mechs/MechFormPage"), "MechFormPage");
@@ -64,6 +66,7 @@ export default function App() {
         <Route path="/weapons/:id" element={<WeaponDetailPage />} />
         <Route path="/accessories" element={<AccessoriesPage />} />
         <Route path="/pilots" element={<PilotsPage />} />
+        <Route path="/feedback" element={<FeedbackPage />} />
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/profile/builds/new" element={<BuildEditorPage />} />
         <Route path="/profile/builds/:buildId/edit" element={<BuildEditorPage />} />
@@ -78,6 +81,7 @@ export default function App() {
       <Route path="/admin" element={<AdminLayout />}>
         <Route index element={<DashboardPage />} />
         <Route path="users" element={<UsersPage />} />
+        <Route path="messages" element={<AdminMessagesPage />} />
         <Route path="mechs" element={<AdminMechsPage />} />
         <Route path="mechs/new" element={<MechFormPage />} />
         <Route path="mechs/:id/edit" element={<MechFormPage />} />

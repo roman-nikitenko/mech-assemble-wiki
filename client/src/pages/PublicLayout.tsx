@@ -7,6 +7,7 @@ const TABS = [
   { to: "/weapons", label: "Weapons" },
   { to: "/accessories", label: "Accessories" },
   { to: "/pilots", label: "Pilots" },
+  { to: "/feedback", label: "Feedback" },
 ];
 
 const buttonStyles = 'border rounded-lg border-accent px-2 py-1';

@@ -105,4 +105,8 @@ html {
 
 body {
   @apply bg-bg text-ink antialiased font-sans;
+  /* Site-wide letter spacing: 0.03em == 3% of each element's font size.
+     Set on body so it inherits into all text; elements using a `tracking-*`
+     utility (e.g. headings with tracking-tight) still override locally. */
+  letter-spacing: 0.02em;
 }

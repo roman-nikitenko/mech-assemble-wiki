@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { AccessoryInput, AccessorySummary, AdminUser, DashboardStats, GameType, MechDetail, MechInput, MechRank, MechSummary, Pilot, PilotInput, PostedBuild, TypeInput, WeaponDetail, WeaponInput, WeaponSummary } from "./types";
+import type { AccessoryInput, AccessorySummary, AdminUser, DashboardStats, Feedback, GameType, MechDetail, MechInput, MechRank, MechSummary, Pilot, PilotInput, PostedBuild, TypeInput, WeaponDetail, WeaponInput, WeaponSummary } from "./types";
 import { adminHeaders } from "../auth/adminSession";
 
 export const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
@@ -395,5 +395,87 @@ export function useDeleteUser() {
       }
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["admin-users"] }),
+  });
+}
+
+// ---------- Feedback (public form + admin Messages) ----------
+
+export interface FeedbackInput {
+  name: string;
+  message: string;
+  website: string; // honeypot — real users leave this empty
+}
+
+/** Public submit. Surfaces the server's message (e.g. the 429 "Too fast,
+    slow down :)" or a 400 validation message) so the form can show it. */
+export function useSubmitFeedback() {
+  return useMutation({
+    mutationFn: async (input: FeedbackInput) => {
+      const res = await fetch(`${API_URL}/api/feedback`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        throw new Error(data?.error ?? `API error ${res.status}`);
+      }
+      return res.json() as Promise<{ ok: true }>;
+    },
+  });
+}
+
+const FEEDBACK_KEY = ["admin-feedback"] as const;
+const FEEDBACK_UNREAD_KEY = ["feedback-unread-count"] as const;
+
+/** Admin Messages list — newest first (server-ordered). */
+export function useAdminFeedback() {
+  return useQuery({
+    queryKey: FEEDBACK_KEY,
+    queryFn: () => adminFetchJson<Feedback[]>("/api/feedback"),
+  });
+}
+
+/** Unread count for the admin header bell. */
+export function useUnreadFeedbackCount() {
+  return useQuery({
+    queryKey: FEEDBACK_UNREAD_KEY,
+    queryFn: () => adminFetchJson<{ count: number }>("/api/feedback/unread-count"),
+  });
+}
+
+/** Mark every unread message read (called when the Messages page opens). */
+export function useMarkFeedbackRead() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      const res = await fetch(`${API_URL}/api/feedback/mark-read`, {
+        method: "POST",
+        headers: adminHeaders(),
+      });
+      if (!res.ok) throw new Error(`API error ${res.status}`);
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: FEEDBACK_UNREAD_KEY }),
+  });
+}
+
+/** Delete one message. */
+export function useDeleteFeedback() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`${API_URL}/api/feedback/${id}`, {
+        method: "DELETE",
+        headers: adminHeaders(),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        throw new Error(data?.error ?? `API error ${res.status}`);
+      }
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: FEEDBACK_KEY });
+      qc.invalidateQueries({ queryKey: FEEDBACK_UNREAD_KEY });
+    },
   });
 }
