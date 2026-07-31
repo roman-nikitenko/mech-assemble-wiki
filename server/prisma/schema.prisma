@@ -502,3 +502,17 @@ model BuildHeart {
   @@id([buildId, userId])
   @@map("build_hearts")
 }
+
+// ---------- Feedback (public contact form) ----------
+
+// Messages sent from the public /feedback form. `read` is false until the
+// admin opens the Messages list (drives the header bell's unread count).
+model Feedback {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String
+  message   String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("feedback")
+}

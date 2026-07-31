@@ -403,3 +403,12 @@ export interface DashboardStats {
   posts: StatMetric;
   visitors: VisitorMetric | null;
 }
+
+/** One public feedback submission (admin Messages list). */
+export interface Feedback {
+  id: string;
+  name: string;
+  message: string;
+  read: boolean;
+  createdAt: string;
+}
