@@ -57,7 +57,8 @@ async function validateWeaponLinks(input: {
     if (!UUID_RE.test(input.mechId)) return "Unknown mech id";
     const mech = await prisma.mech.findUnique({ where: { id: input.mechId } });
     if (!mech) return "Unknown mech id";
-    if (mech.rank !== "S") return "Only an S-tier mech can own a weapon";
+    // A mech of any rank can own a weapon; @unique on mech_id still keeps it
+    // to one weapon per mech.
   }
   if (input.pilotId !== undefined && input.pilotId !== null) {
     if (!UUID_RE.test(input.pilotId)) return "Unknown pilot id";
