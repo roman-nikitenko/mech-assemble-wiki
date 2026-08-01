@@ -33,7 +33,8 @@ export function WeaponFormPage() {
 
   const types = useTypes();
   const pilots = usePilots();
-  const sMechs = useMechs({ rank: "S" });
+  // A mech of any rank can own a weapon, so the owner list is unfiltered.
+  const ownerMechs = useMechs({});
   const weapons = useWeapons(); // edit-mode prefill source
   const createWeapon = useCreateWeapon();
   const updateWeapon = useUpdateWeapon(id ?? "");
@@ -235,7 +236,7 @@ export function WeaponFormPage() {
               className={fieldCls}
             >
               <option value="">— no mech —</option>
-              {(sMechs.data ?? []).map((m) => (
+              {(ownerMechs.data ?? []).map((m) => (
                 <option key={m.id} value={m.id}>{m.name}</option>
               ))}
             </select>

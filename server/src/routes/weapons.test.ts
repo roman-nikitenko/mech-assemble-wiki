@@ -123,16 +123,16 @@ describe("POST /api/weapons", () => {
     expect(res.body.error).toContain("5");
   });
 
-  it("400s when the owner mech is not S-tier", async () => {
+  it("lets a Standard-tier mech own a weapon", async () => {
     const standard = await prisma.mech.create({
       data: { name: "[test:weapons] Small Owner", rank: "Standard" },
     });
     const res = await request(app).post("/api/weapons").set(ADMIN).send({
-      name: "[test:weapons] Misowned",
+      name: "[test:weapons] Standard-owned",
       mechId: standard.id,
     });
-    expect(res.status).toBe(400);
-    expect(res.body.error).toContain("S-tier");
+    expect(res.status).toBe(201);
+    expect(res.body.mechId).toBe(standard.id);
   });
 
   it("409s when the mech already owns a weapon", async () => {
