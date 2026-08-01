@@ -16,7 +16,7 @@ export function OverviewTab({ mech }: { mech: MechDetail }) {
                 to={`/weapons/${mech.weapon.slug ?? mech.weapon.id}`}
                 iconUrl={mech.weapon.iconUrl}
                 name={mech.weapon.name}
-                bonus={mech.weapon.description}
+                bonus={mech.weapon.linkedEffect}
               />
             )}
             {mech.accessory && (

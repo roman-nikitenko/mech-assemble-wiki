@@ -6,16 +6,21 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { WeaponFormPage } from "./WeaponFormPage";
 
 function renderForm() {
-  // The form loads types, pilots, S-mechs, and weapons (edit prefill) —
-  // an empty array satisfies all of them for these tests.
-  vi.spyOn(globalThis, "fetch").mockImplementation(() =>
-    Promise.resolve(
-      new Response(JSON.stringify([]), {
+  // The form loads types, pilots, mechs (owner dropdown), and weapons (edit
+  // prefill). Return one mech so the owner dropdown has a selectable option;
+  // everything else is satisfied by an empty array.
+  vi.spyOn(globalThis, "fetch").mockImplementation((input) => {
+    const url = typeof input === "string" ? input : (input as Request).url;
+    const body = url.includes("/api/mechs")
+      ? [{ id: "mech-1", name: "Owner Mech" }]
+      : [];
+    return Promise.resolve(
+      new Response(JSON.stringify(body), {
         status: 200,
         headers: { "Content-Type": "application/json" },
       })
-    )
-  );
+    );
+  });
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   render(
     <QueryClientProvider client={qc}>
@@ -46,5 +51,12 @@ describe("WeaponFormPage (create mode)", () => {
     expect(screen.getByLabelText("Skin 1 bonus 1")).toBeInTheDocument();
     expect(screen.getByLabelText("Skin 1 bonus 5")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Remove skin 1" })).toBeInTheDocument();
+  });
+
+  it("shows the Linked effect field during weapon creation", async () => {
+    renderForm();
+    await screen.findByRole("button", { name: "Create weapon" });
+    // Always available — the server clears it when there's no owner mech.
+    expect(screen.getByLabelText("Linked effect")).toBeInTheDocument();
   });
 });

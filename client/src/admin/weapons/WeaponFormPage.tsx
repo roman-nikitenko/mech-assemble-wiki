@@ -53,6 +53,7 @@ export function WeaponFormPage() {
           name: weapon.name,
           slug: weapon.slug ?? "",
           description: weapon.description,
+          linkedEffect: weapon.linkedEffect,
           tier: weapon.tier,
           typeId: weapon.type?.id ?? null,
           mechId: weapon.mech?.id ?? null,
@@ -241,6 +242,25 @@ export function WeaponFormPage() {
               ))}
             </select>
           </div>
+        </div>
+
+        <div>
+          <label htmlFor="linkedEffect" className="mb-1 block text-sm font-semibold">
+            Linked effect
+          </label>
+          <input
+            id="linkedEffect"
+            value={form.linkedEffect ?? ""}
+            onChange={(e) => set("linkedEffect", e.target.value)}
+            className={fieldCls}
+            placeholder="Bonus shown on the owner mech while this weapon is linked"
+          />
+          {/* Only meaningful for a mech-linked weapon; the server clears it
+              when there's no owner mech, so the hint sets expectations. */}
+          <p className="mt-1 text-xs text-ink-dim">
+            Only applies while this weapon is linked to an owner mech. Saved as
+            empty if no owner mech is set.
+          </p>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">

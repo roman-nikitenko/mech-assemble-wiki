@@ -113,6 +113,9 @@ export interface Weapon {
   slug: string | null;
   name: string;
   description: string | null;
+  // Special bonus shown only when this weapon is displayed inside its owner
+  // mech; null for standalone weapons (server-enforced).
+  linkedEffect: string | null;
   baseStats: Stats | null;
   tier: MechRank;
   rankUpPreview: string[];
@@ -133,6 +136,7 @@ export interface WeaponDetail {
   slug: string | null;
   name: string;
   description: string | null;
+  linkedEffect: string | null;
   baseStats: Stats | null;
   tier: MechRank;
   rankUpPreview: string[];
@@ -140,7 +144,7 @@ export interface WeaponDetail {
   iconUrl: string | null;
   type: GameType | null;
   mech: { id: string; slug: string | null; name: string; iconUrl: string | null; specialBonus: string | null } | null;
-  pilot: { id: string; name: string; iconUrl: string | null; unlockBoost: string | null } | null;
+  pilot: { id: string; name: string; iconUrl: string | null; relationshipBonus: string | null } | null;
   weaponSkins: WeaponSkinRow[];
   helpers: Helper[];
   skillNodes: SkillNodeRow[];
@@ -152,6 +156,7 @@ export interface WeaponSummary {
   slug: string | null;
   name: string;
   description: string | null;
+  linkedEffect: string | null;
   tier: MechRank;
   rankUpPreview: string[];
   imageUrl: string | null;
@@ -170,6 +175,7 @@ export interface WeaponInput {
   // server slugifies and de-duplicates whatever it receives.
   slug?: string | null;
   description?: string | null;
+  linkedEffect?: string | null;
   tier?: MechRank;
   rankUpPreview?: string[];
   typeId?: string | null;

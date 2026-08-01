@@ -1,4 +1,5 @@
-import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, useLocation } from "react-router-dom";
 import { imageSrc, srcSet, usePilots } from "../api/client";
 import { LoadingSkeleton } from "../components/LoadingSkeleton";
 import { ErrorPanel } from "../components/ErrorPanel";
@@ -9,6 +10,24 @@ import { Seo } from "../components/Seo";
     (a mech's cockpit OR fronting a weapon — never both). */
 export function PilotsPage() {
   const { data, isPending, isError, refetch } = usePilots();
+  const location = useLocation();
+  // Deep-link target from /pilots#pilot-<id> (e.g. a weapon's linked-pilot
+  // icon). We scroll to that card and flash its border in the accent color.
+  const [highlightedId, setHighlightedId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const match = location.hash.match(/^#pilot-(.+)$/);
+    // Wait until the pilots have rendered before trying to find the card.
+    if (!match || !data) return;
+    const id = match[1];
+    if (!data.some((p) => p.id === id)) return;
+
+    document.getElementById(`pilot-${id}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+    setHighlightedId(id);
+    // Accent border draws the eye on arrival, then fades back to normal.
+    const timer = setTimeout(() => setHighlightedId(null), 2000);
+    return () => clearTimeout(timer);
+  }, [location.hash, data]);
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-6">
@@ -35,7 +54,15 @@ export function PilotsPage() {
                 : null;
 
             return (
-              <div key={p.id} className="rounded-xl border border-edge bg-surface p-4 pb-0 overflow-hidden">
+              <div
+                key={p.id}
+                id={`pilot-${p.id}`}
+                // scroll-mt keeps the card clear of the sticky header when the
+                // deep link scrolls it into view.
+                className={`scroll-mt-20 rounded-xl border bg-surface p-4 pb-0 overflow-hidden transition-colors duration-700 ${
+                  highlightedId === p.id ? "border-accent" : "border-edge"
+                }`}
+              >
                 {/* Header: portrait + name, then the unlock boost as plain text. */}
                 <div className="flex items-center gap-3">
                   {p.iconUrl && (

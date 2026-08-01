@@ -100,9 +100,11 @@ export function MechDetailPage() {
           </div>
           {mech.pilot && (
             // Pilot as a row: icon + name + its bonus. No pilot detail page
-            // exists yet, so the icon is not a link.
+            // exists — the icon deep-links to the pilots list, which scrolls to
+            // and highlights this pilot's card.
             <div className="mt-3">
               <LinkedRow
+                to={`/pilots#pilot-${mech.pilot.id}`}
                 iconUrl={mech.pilot.iconUrl}
                 name={mech.pilot.name}
                 bonus={mech.pilot.relationshipBonus}

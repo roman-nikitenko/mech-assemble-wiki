@@ -23,11 +23,13 @@ export function WeaponOverviewTab({ weapon }: { weapon: WeaponDetail }) {
               />
             )}
             {weapon.pilot && (
-              // No pilot detail page exists yet, so this icon is not a link.
+              // No pilot detail page exists — the icon deep-links to the pilots
+              // list, which scrolls to and highlights this pilot's card.
               <LinkedRow
+                to={`/pilots#pilot-${weapon.pilot.id}`}
                 iconUrl={weapon.pilot.iconUrl}
                 name={weapon.pilot.name}
-                bonus={weapon.pilot.unlockBoost}
+                bonus={weapon.pilot.relationshipBonus}
               />
             )}
           </div>
