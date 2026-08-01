@@ -17,6 +17,9 @@ export interface WeaponInput {
   // can hand-pick a slug but can't submit an invalid or duplicate one.
   slug: string | null;
   description: string | null;
+  // Special bonus shown only while the weapon is equipped on its owner mech.
+  // Normalized to null when mechId is null (mirrors accessories.exclusiveEffect).
+  linkedEffect: string | null;
   // Weapons share the mech rank enum (Standard | S) as their tier.
   tier: MechRank;
   rankUpPreview: string[];
@@ -119,10 +122,14 @@ export function parseWeaponInput(body: unknown): ParseResult {
   if (slug === undefined) return { ok: false, message: "slug must be a string." };
   const description = optionalString(b.description);
   if (description === undefined) return { ok: false, message: "description must be a string." };
+  const linkedEffect = optionalString(b.linkedEffect);
+  if (linkedEffect === undefined) return { ok: false, message: "linkedEffect must be a string." };
   const imageUrl = optionalString(b.imageUrl);
   if (imageUrl === undefined) return { ok: false, message: "imageUrl must be a string." };
   const iconUrl = optionalString(b.iconUrl);
   if (iconUrl === undefined) return { ok: false, message: "iconUrl must be a string." };
+
+  const mechId = (b.mechId as string | null | undefined) ?? null;
 
   return {
     ok: true,
@@ -130,10 +137,13 @@ export function parseWeaponInput(body: unknown): ParseResult {
       name: b.name.trim(),
       slug,
       description,
+      // Only mech-linked weapons carry a linked effect — normalized here so
+      // the rule holds at the DATA level, not just in the form.
+      linkedEffect: mechId === null ? null : linkedEffect,
       tier: tier as MechRank,
       rankUpPreview,
       typeId: (b.typeId as string | null | undefined) ?? null,
-      mechId: (b.mechId as string | null | undefined) ?? null,
+      mechId,
       pilotId: b.pilotId as string | null | undefined,
       imageUrl,
       iconUrl,

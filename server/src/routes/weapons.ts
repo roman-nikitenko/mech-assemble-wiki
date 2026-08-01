@@ -76,7 +76,7 @@ const WEAPON_DETAIL_INCLUDE = {
   // iconUrl + a bonus feed the detail page's linked mech/pilot rows.
   // slug lets the "linked mech" row link to the pretty /mechs/<slug> URL.
   mech: { select: { id: true, slug: true, name: true, iconUrl: true, specialBonus: true } },
-  pilot: { select: { id: true, name: true, iconUrl: true, unlockBoost: true } },
+  pilot: { select: { id: true, name: true, iconUrl: true, relationshipBonus: true } },
   weaponSkins: true,
   skillNodes: { orderBy: { sortOrder: "asc" as const } },
   helpers: { include: { ranks: { orderBy: { rank: "asc" as const } } } },

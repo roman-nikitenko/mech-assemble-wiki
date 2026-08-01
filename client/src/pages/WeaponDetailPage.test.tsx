@@ -18,7 +18,7 @@ const weapon: WeaponDetail = {
   iconUrl: null,
   type: { id: "t1", name: "Plasma", iconUrl: null },
   mech: { id: "m1", slug: "owner-mech", name: "Owner Mech", iconUrl: "/uploads/mech.png", specialBonus: "ATK +10%" },
-  pilot: { id: "p1", name: "Kael", iconUrl: null, unlockBoost: "Crit +5%" },
+  pilot: { id: "p1", name: "Kael", iconUrl: null, relationshipBonus: "Crit +5%" },
   weaponSkins: [{ id: "s1", name: "Gold", bonuses: ["ATK +2%"], imageUrl: null }],
   helpers: [
     { id: "h1", name: "Buddy", passiveEffect: "helps", ranks: [{ id: "r1", rank: 1, effect: "+1" }] },

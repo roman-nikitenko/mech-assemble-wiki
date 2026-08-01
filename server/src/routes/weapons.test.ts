@@ -135,6 +135,26 @@ describe("POST /api/weapons", () => {
     expect(res.body.mechId).toBe(standard.id);
   });
 
+  it("stores linkedEffect when the weapon is mech-linked", async () => {
+    const mech = await prisma.mech.create({ data: { name: "[test:weapons] Linked Owner", rank: "S" } });
+    const res = await request(app).post("/api/weapons").set(ADMIN).send({
+      name: "[test:weapons] With Linked Effect",
+      mechId: mech.id,
+      linkedEffect: "Crit +15% while equipped",
+    });
+    expect(res.status).toBe(201);
+    expect(res.body.linkedEffect).toBe("Crit +15% while equipped");
+  });
+
+  it("nulls linkedEffect when the weapon has no mech", async () => {
+    const res = await request(app).post("/api/weapons").set(ADMIN).send({
+      name: "[test:weapons] Standalone Effect",
+      linkedEffect: "Crit +15% while equipped",
+    });
+    expect(res.status).toBe(201);
+    expect(res.body.linkedEffect).toBeNull();
+  });
+
   it("409s when the mech already owns a weapon", async () => {
     const mech = await prisma.mech.create({ data: { name: "[test:weapons] Greedy Owner", rank: "S" } });
     const first = await request(app)

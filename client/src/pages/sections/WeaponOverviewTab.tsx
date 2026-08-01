@@ -27,7 +27,7 @@ export function WeaponOverviewTab({ weapon }: { weapon: WeaponDetail }) {
               <LinkedRow
                 iconUrl={weapon.pilot.iconUrl}
                 name={weapon.pilot.name}
-                bonus={weapon.pilot.unlockBoost}
+                bonus={weapon.pilot.relationshipBonus}
               />
             )}
           </div>

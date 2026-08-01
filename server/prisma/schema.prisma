@@ -315,6 +315,10 @@ model Weapon {
   // (future list badges on the public site).
   imageUrl String? @map("image_url")
   iconUrl  String? @map("icon_url")
+  // Only for mech-linked weapons — the weapon's special bonus while equipped
+  // on its owner mech. Mirrors accessories.exclusiveEffect: the API normalizes
+  // it to null whenever the weapon has no mech.
+  linkedEffect String? @map("linked_effect")
 
   mech        Mech?           @relation(fields: [mechId], references: [id], onDelete: Cascade)
   upgrades    WeaponUpgrade[]
