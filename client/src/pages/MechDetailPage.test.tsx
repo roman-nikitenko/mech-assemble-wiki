@@ -77,6 +77,7 @@ describe("MechDetailPage tabs are driven by data", () => {
         slug: "blade",
         name: "Blade",
         description: null,
+        linkedEffect: null,
         baseStats: null,
         tier: "S",
         rankUpPreview: [],

@@ -10,6 +10,7 @@ const weapon: WeaponSummary = {
   slug: "doom-cannon",
   name: "Doom Cannon",
   description: "Big boom.",
+  linkedEffect: null,
   tier: "S",
   rankUpPreview: [],
   imageUrl: null,

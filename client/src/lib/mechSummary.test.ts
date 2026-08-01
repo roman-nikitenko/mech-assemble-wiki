@@ -64,6 +64,7 @@ describe("mechSummary", () => {
         slug: "void-reaver",
         name: "Void Reaver",
         description: "cleaves swarms",
+        linkedEffect: null,
         baseStats: null,
         tier: "S",
         rankUpPreview: [],

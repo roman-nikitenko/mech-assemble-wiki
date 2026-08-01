@@ -11,6 +11,7 @@ const weapons: WeaponSummary[] = [
     slug: "ninja-spikes-gun",
     name: "Ninja Spikes Gun",
     description: null,
+    linkedEffect: null,
     tier: "S",
     rankUpPreview: [],
     imageUrl: null,
