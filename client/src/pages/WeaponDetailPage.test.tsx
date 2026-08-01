@@ -11,6 +11,7 @@ const weapon: WeaponDetail = {
   slug: "doom-cannon",
   name: "Doom Cannon",
   description: "Big boom.",
+  linkedEffect: null,
   baseStats: { ATK: 100 },
   tier: "S",
   rankUpPreview: ["DMG +30%"],

@@ -41,6 +41,7 @@ const weapon: WeaponSummary = {
   slug: "blade-of-dawn",
   name: "Blade of Dawn",
   description: null,
+  linkedEffect: null,
   tier: "S",
   rankUpPreview: [],
   imageUrl: null,
