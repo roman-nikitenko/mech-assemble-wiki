@@ -1,5 +1,6 @@
 import { lazy, Suspense, type ComponentType } from "react";
 import { Link, Route, Routes } from "react-router-dom";
+import { ScrollToTop } from "./components/ScrollToTop";
 import { PublicLayout } from "./pages/PublicLayout";
 import { BrowsePage } from "./pages/BrowsePage";
 import { MechDetailPage } from "./pages/MechDetailPage";
@@ -49,7 +50,8 @@ const TypeFormPage = lazyNamed(() => import("./admin/types/TypeFormPage"), "Type
 
 export default function App() {
   return (
-    // Suspense shows this fallback while a lazy route chunk is downloading.
+    <>
+    <ScrollToTop />
     <Suspense
       fallback={
         <div className="mx-auto max-w-6xl px-4 py-16 text-center text-ink-dim">Loading…</div>
@@ -113,5 +115,6 @@ export default function App() {
       />
     </Routes>
     </Suspense>
+    </>
   );
 }

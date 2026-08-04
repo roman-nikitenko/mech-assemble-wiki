@@ -69,7 +69,7 @@ export function WeaponDetailPage() {
         ← All weapons
       </Link>
 
-      <header className="mt-3 mb-5 flex gap-5">
+      <header className="mt-3 mb-5 flex flex-col gap-5 sm:flex-row">
         {weapon.imageUrl && (
           <img
             src={imageSrc(weapon.imageUrl)}
