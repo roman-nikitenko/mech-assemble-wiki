@@ -8,30 +8,20 @@ import { RankUpPreview } from "../../components/RankUpPreview";
 export function WeaponOverviewTab({ weapon }: { weapon: WeaponDetail }) {
   return (
     <div className="space-y-5">
-      {(weapon.mech || weapon.pilot) && (
+      {weapon.mech && (
+        // The linked pilot now lives in the page header (below the
+        // description), mirroring the mech detail page.
         <section>
           <h2 className="mb-2 text-sm font-bold uppercase tracking-wider text-ink-dim">
             Linked Mech
           </h2>
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-            {weapon.mech && (
-              <LinkedRow
-                to={`/mechs/${weapon.mech.slug ?? weapon.mech.id}`}
-                iconUrl={weapon.mech.iconUrl}
-                name={weapon.mech.name}
-                bonus={weapon.mech.specialBonus}
-              />
-            )}
-            {weapon.pilot && (
-              // No pilot detail page exists — the icon deep-links to the pilots
-              // list, which scrolls to and highlights this pilot's card.
-              <LinkedRow
-                to={`/pilots#pilot-${weapon.pilot.id}`}
-                iconUrl={weapon.pilot.iconUrl}
-                name={weapon.pilot.name}
-                bonus={weapon.pilot.relationshipBonus}
-              />
-            )}
+            <LinkedRow
+              to={`/mechs/${weapon.mech.slug ?? weapon.mech.id}`}
+              iconUrl={weapon.mech.iconUrl}
+              name={weapon.mech.name}
+              bonus={weapon.mech.specialBonus}
+            />
           </div>
         </section>
       )}

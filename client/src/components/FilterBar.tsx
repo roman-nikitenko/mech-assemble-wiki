@@ -55,64 +55,66 @@ export function FilterBar({
         placeholder={searchPlaceholder}
         className="min-h-11 rounded-lg border border-edge bg-surface px-3 text-sm"
       />
+      <div className="flex flex-col gap-4 md:gap-0 md:flex-row">
+        <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Filter by type">
+          {types.map((t) => {
+            const active = selectedTypeIds.includes(t.id);
+            return (
+              <button
+                key={t.id}
+                type="button"
+                aria-pressed={active}
+                onClick={() => onToggleType(t.id)}
+                className={chipCls(active)}
+              >
+                {t.iconUrl && (
+                  <img
+                    src={imageSrc(t.iconUrl)}
+                    srcSet={srcSet(t.iconUrl)}
+                    sizes="20px"
+                    alt=""
+                    className="h-5 w-5"
+                  />
+                )}
+                {t.name}
+              </button>
+            );
+          })}
+        </div>
+        <div
+          className="flex flex-wrap items-center gap-2 md:border-l md:pl-4 md:ml-4 border-edge"
+          role="group"
+          aria-label={`Filter by ${rankGroupLabel}`}
+        >
+          {RANKS.map((r) => {
+            const active = selectedRanks.includes(r);
+            return (
+              <button
+                key={r}
+                type="button"
+                aria-pressed={active}
+                onClick={() => onToggleRank(r)}
+                className={chipCls(active)}
+              >
+                {r === "S" ? <STierIcon size={20} className="inline align-middle" /> : r}
 
-      <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Filter by type">
-        {types.map((t) => {
-          const active = selectedTypeIds.includes(t.id);
-          return (
+              </button>
+            );
+          })}
+
+          {hasFilters && (
             <button
-              key={t.id}
               type="button"
-              aria-pressed={active}
-              onClick={() => onToggleType(t.id)}
-              className={chipCls(active)}
+              onClick={onClear}
+              className="min-h-11 cursor-pointer px-2 text-sm text-ink-dim underline hover:text-ink"
             >
-              {t.iconUrl && (
-                <img
-                  src={imageSrc(t.iconUrl)}
-                  srcSet={srcSet(t.iconUrl)}
-                  sizes="20px"
-                  alt=""
-                  className="h-5 w-5"
-                />
-              )}
-              {t.name}
+              Clear
             </button>
-          );
-        })}
+          )}
+        </div>
       </div>
 
-      <div
-        className="flex flex-wrap items-center gap-2"
-        role="group"
-        aria-label={`Filter by ${rankGroupLabel}`}
-      >
-        {RANKS.map((r) => {
-          const active = selectedRanks.includes(r);
-          return (
-            <button
-              key={r}
-              type="button"
-              aria-pressed={active}
-              onClick={() => onToggleRank(r)}
-              className={chipCls(active)}
-            >
-              {r === "S" ? <STierIcon size={20} className="inline align-middle" /> : r}
-         
-            </button>
-          );
-        })}
 
-        {hasFilters && (
-          <button
-            type="button"
-            onClick={onClear}
-            className="min-h-11 cursor-pointer px-2 text-sm text-ink-dim underline hover:text-ink"
-          >
-            Clear
-          </button>
-        )}
-      </div>
     </div>
   );
 }

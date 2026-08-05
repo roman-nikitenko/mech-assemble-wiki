@@ -5,6 +5,7 @@ import { Tabs } from "../components/Tabs";
 import { TypeBadge } from "../components/TypeBadge";
 import { RankBadge } from "../components/RankBadge";
 import { WeaponSkins, WeaponHelpers } from "../components/WeaponKit";
+import { LinkedRow } from "../components/LinkedRow";
 import { LoadingSkeleton } from "../components/LoadingSkeleton";
 import { ErrorPanel } from "../components/ErrorPanel";
 import { Seo } from "../components/Seo";
@@ -84,6 +85,19 @@ export function WeaponDetailPage() {
             {weapon.type && <TypeBadge type={weapon.type} />}
           </div>
           {weapon.description && <p className="mt-1 text-ink-dim">{weapon.description}</p>}
+          {weapon.pilot && (
+            // Pilot as a row below the description, mirroring the mech page.
+            // No pilot detail page exists — the icon deep-links to the pilots
+            // list, which scrolls to and highlights this pilot's card.
+            <div className="mt-3">
+              <LinkedRow
+                to={`/pilots#pilot-${weapon.pilot.id}`}
+                iconUrl={weapon.pilot.iconUrl}
+                name={weapon.pilot.name}
+                bonus={weapon.pilot.relationshipBonus}
+              />
+            </div>
+          )}
         </div>
       </header>
 
