@@ -9,14 +9,9 @@ import { LoadingSkeleton } from "../components/LoadingSkeleton";
 import { ErrorPanel } from "../components/ErrorPanel";
 import { Seo } from "../components/Seo";
 
-/** Public weapon list. Each card links to the weapon's detail page
-    (/weapons/:id), which shows its full kit. */
 export function WeaponsPage() {
   const { data, isPending, isError, refetch } = useWeapons();
   const types = useTypes();
-
-  // Same multi-select filtering as the mechs page — weapons carry a type and a
-  // tier (Standard/S). All client-side: the weapon list is small.
   const [typeIds, setTypeIds] = useState<string[]>([]);
   const [tiers, setTiers] = useState<MechRank[]>([]);
   const [search, setSearch] = useState("");
@@ -66,33 +61,36 @@ export function WeaponsPage() {
       ) : visible.length === 0 ? (
         <p className="mt-8 text-center text-ink-dim">No weapons match.</p>
       ) : (
-        <div className="mt-4 grid  gap-3 grid-cols-1 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+        <div className="mt-4 grid  gap-3 grid-cols-1 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4">
           {visible.map((w) => (
             <Link
               key={w.id}
               to={`/weapons/${w.slug ?? w.id}`}
-              className="block rounded-xl border border-edge bg-surface p-4 transition-colors hover:border-accent"
+              className="block rounded-xl relative overflow-hidden border border-edge bg-surface transition hover:border-accent/60 hover:bg-surface-2"
             >
-              {w.imageUrl && (
+              {w.imageUrl ? (
                 <img
                   src={imageSrc(w.imageUrl)}
                   srcSet={srcSet(w.imageUrl)}
                   sizes={CARD_SIZES}
                   alt={w.name}
                   loading="lazy"
-                  className="mb-2 h-32 w-full rounded-lg border border-edge object-cover"
+                  className="h-62 w-full rounded-lg object-cover"
                 />
+              ) : (
+                <div
+                  className="mb-3 flex h-32 w-full items-center justify-center rounded-lg bg-surface-2 text-3xl"
+                  aria-hidden
+                >
+                  ⚔️
+                </div>
               )}
-              <div className="flex items-start justify-between gap-2">
-                <p className="font-bold">{w.name}</p>
-                <RankBadge rank={w.tier} />
-              </div>
-              {w.description && <p className="mt-1 text-sm text-ink-dim">{w.description}</p>}
-              <div className="mt-2 flex flex-wrap items-center gap-2">
-                {w.type && <TypeBadge type={w.type} />}
-                {w.mech && (
-                  <span className="text-xs text-ink-dim">{w.mech.name}&rsquo;s weapon</span>
-                )}
+              <div className="flex items-center absolute min-w-full bottom-0 left-1/2 -translate-x-1/2 z-10 justify-center py-2 gap-2 backdrop-blur-sm bg-black/20">
+                {w.tier !== "Standard" && <RankBadge rank={w.tier} />}
+                <h2 className="font-bold">{w.name}</h2>
+                <div className="flex items-center gap-2">
+                  {w.type && <TypeBadge type={w.type} />}
+                </div>
               </div>
             </Link>
           ))}

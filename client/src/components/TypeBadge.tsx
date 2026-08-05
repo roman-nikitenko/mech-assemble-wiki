@@ -6,17 +6,17 @@ import { imageSrc, srcSet } from "../api/client";
     rendering when a mech/weapon has no type yet. */
 export function TypeBadge({ type }: { type: GameType }) {
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-full border border-edge bg-surface-2 px-2.5 py-0.5 text-xs font-semibold">
+    <span className="inline-flex">
       {type.iconUrl && (
         <img
           src={imageSrc(type.iconUrl)}
           srcSet={srcSet(type.iconUrl)}
-          sizes="16px"
+          sizes="24px"
           alt=""
-          className="h-4 w-4 rounded-full object-cover"
+          className="h-5 w-5 rounded-full object-cover"
         />
       )}
-      {type.name}
+      {/* {type.name} */}
     </span>
   );
 }
