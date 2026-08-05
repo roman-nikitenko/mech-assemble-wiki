@@ -23,7 +23,7 @@ interface FilterBarProps {
 // pressed filter is obvious at a glance; inactive chips stay muted.
 function chipCls(active: boolean): string {
   const base =
-    "inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-lg border px-3 text-sm font-semibold transition-colors";
+    "inline-flex cursor-pointer items-center gap-2 rounded-lg border p-1 text-sm font-semibold transition-colors";
   return active
     ? `${base} border-accent bg-accent/15 text-accent`
     : `${base} border-edge bg-surface text-ink-dim hover:text-ink`;
@@ -73,10 +73,13 @@ export function FilterBar({
                     srcSet={srcSet(t.iconUrl)}
                     sizes="20px"
                     alt=""
-                    className="h-5 w-5"
+                    className="h-6 w-6"
                   />
                 )}
-                {t.name}
+                <span className="hidden md:block">
+
+                  {t.name}
+                </span>
               </button>
             );
           })}
@@ -96,7 +99,7 @@ export function FilterBar({
                 onClick={() => onToggleRank(r)}
                 className={chipCls(active)}
               >
-                {r === "S" ? <STierIcon size={20} className="inline align-middle" /> : r}
+                {r === "S" ? <STierIcon size={28} className="inline align-middle" /> : r}
 
               </button>
             );
@@ -106,7 +109,7 @@ export function FilterBar({
             <button
               type="button"
               onClick={onClear}
-              className="min-h-11 cursor-pointer px-2 text-sm text-ink-dim underline hover:text-ink"
+              className="cursor-pointer px-2 text-sm text-ink-dim underline hover:text-ink"
             >
               Clear
             </button>
