@@ -7,7 +7,7 @@ const RANKS: MechRank[] = ["Standard", "S"];
 interface FilterBarProps {
   types: GameType[];
   selectedTypeIds: string[];
-  selectedRanks: MechRank[]; 
+  selectedRanks: MechRank[];
   search: string;
   onToggleType: (id: string) => void;
   onToggleRank: (r: MechRank) => void;
@@ -16,10 +16,12 @@ interface FilterBarProps {
   rankGroupLabel?: string;
   searchPlaceholder?: string;
   customClass?: string;
+  showAttributes?: boolean;
+  attributes?: string[];
+  selectedAttributes?: string[];
+  onToggleAttribute?: (name: string) => void;
 }
 
-// Shared look for a toggle chip. `active` gives it the accent fill + ring so a
-// pressed filter is obvious at a glance; inactive chips stay muted.
 function chipCls(active: boolean): string {
   const base =
     "inline-flex cursor-pointer items-center gap-2 rounded-lg border p-1 text-sm font-semibold transition-colors";
@@ -40,8 +42,13 @@ export function FilterBar({
   rankGroupLabel = "rank",
   searchPlaceholder = "Search mechs...",
   customClass = "",
+  showAttributes = false,
+  attributes = [],
+  selectedAttributes = [],
+  onToggleAttribute,
 }: FilterBarProps) {
-  const hasFilters = selectedTypeIds.length > 0 || selectedRanks.length > 0;
+  const hasFilters =
+    selectedTypeIds.length > 0 || selectedRanks.length > 0 || selectedAttributes.length > 0;
 
   return (
     <div className={`flex flex-col gap-3 ${customClass}`}>
@@ -52,37 +59,38 @@ export function FilterBar({
         placeholder={searchPlaceholder}
         className="min-h-11 rounded-lg border border-edge bg-surface px-3 text-sm"
       />
-      <div className="flex flex-col gap-4 md:gap-0 md:flex-row">
-        <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Filter by type">
-          {types.map((t) => {
-            const active = selectedTypeIds.includes(t.id);
-            return (
-              <button
-                key={t.id}
-                type="button"
-                aria-pressed={active}
-                onClick={() => onToggleType(t.id)}
-                className={chipCls(active)}
-              >
-                {t.iconUrl && (
-                  <img
-                    src={imageSrc(t.iconUrl)}
-                    srcSet={srcSet(t.iconUrl)}
-                    sizes="20px"
-                    alt=""
-                    className="h-6 w-6"
-                  />
-                )}
-                <span className="hidden md:block">
-
-                  {t.name}
-                </span>
-              </button>
-            );
-          })}
-        </div>
+      <div className="flex flex-col md:flex-row md:[&>div+div]:border-edge md:[&>div+div]:ml-4 md:[&>div+div]:border-l md:[&>div+div]:pl-4   ">
+        {types.length > 0 && (
+          <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Filter by type">
+            {types.map((t) => {
+              const active = selectedTypeIds.includes(t.id);
+              return (
+                <button
+                  key={t.id}
+                  type="button"
+                  aria-pressed={active}
+                  onClick={() => onToggleType(t.id)}
+                  className={chipCls(active)}
+                >
+                  {t.iconUrl && (
+                    <img
+                      src={imageSrc(t.iconUrl)}
+                      srcSet={srcSet(t.iconUrl)}
+                      sizes="20px"
+                      alt=""
+                      className="h-6 w-6"
+                    />
+                  )}
+                  <span className="hidden md:block">
+                    {t.name}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        )}
         <div
-          className="flex flex-wrap items-center gap-2 "
+          className="flex flex-wrap gap-2 "
           role="group"
           aria-label={`Filter by ${rankGroupLabel}`}
         >
@@ -102,19 +110,34 @@ export function FilterBar({
             );
           })}
 
-          {hasFilters && (
-            <button
-              type="button"
-              onClick={onClear}
-              className="cursor-pointer px-2 text-sm text-ink-dim underline hover:text-ink"
-            >
-              Clear
-            </button>
-          )}
+
         </div>
+
+        {showAttributes && attributes.length > 0 && (
+          <div className="flex flex-wrap gap-2" role="group" aria-label="Filter by attribute">
+            {attributes.map((name) => (
+              <button
+                key={name}
+                type="button"
+                aria-pressed={selectedAttributes.includes(name)}
+                onClick={() => onToggleAttribute?.(name)}
+                className={chipCls(selectedAttributes.includes(name))}
+              >
+                {name}
+              </button>
+            ))}
+          </div>
+        )}
+        {hasFilters && (
+          <button
+            type="button"
+            onClick={onClear}
+            className="cursor-pointer px-2 ml-2 text-sm text-ink-dim underline hover:text-ink"
+          >
+            Clear
+          </button>
+        )}
       </div>
-
-
     </div>
   );
 }

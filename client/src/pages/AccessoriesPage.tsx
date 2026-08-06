@@ -57,29 +57,11 @@ export function AccessoriesPage() {
         }}
         rankGroupLabel="tier"
         searchPlaceholder="Search accessories or mech..."
+        showAttributes
+        attributes={attrNames}
+        selectedAttributes={attrs}
+        onToggleAttribute={toggleAttr}
       />
-      {attrNames.length > 0 && (
-        <div className="mt-3 flex flex-wrap items-center gap-2" role="group" aria-label="Filter by attribute">
-          {attrNames.map((name) => {
-            const active = attrs.includes(name);
-            return (
-              <button
-                key={name}
-                type="button"
-                aria-pressed={active}
-                onClick={() => toggleAttr(name)}
-                className={`inline-flex cursor-pointer items-center rounded-lg border px-3 py-1 text-sm font-semibold transition-colors ${
-                  active
-                    ? "border-accent bg-accent/15 text-accent"
-                    : "border-edge bg-surface text-ink-dim hover:text-ink"
-                }`}
-              >
-                {name}
-              </button>
-            );
-          })}
-        </div>
-      )}
       {isPending ? (
         <LoadingSkeleton variant="cards" />
       ) : isError ? (
@@ -91,9 +73,9 @@ export function AccessoriesPage() {
       ) : (
         <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {visible.map((a) => (
-            <div key={a.id} className={`rounded-xl border border-edge p-4 `}>
+            <div key={a.id} className={`rounded-xl border border-edge`}>
               <div
-                className="aspect-2/1 rounded-lg mb-2 flex items-center justify-center bg-no-repeat bg-center bg-cover"
+                className="aspect-2/1 rounded-t-lg flex items-center justify-center bg-no-repeat bg-center bg-cover"
                 style={{ backgroundImage: `url(${cardBg})` }}
               >
                 {a.imageUrl && (
@@ -103,24 +85,28 @@ export function AccessoriesPage() {
                     sizes={CARD_SIZES}
                     alt={a.name}
                     loading="lazy"
-                    className="mb-2 h-24 object-cover"
+                    className="h-24 object-cover"
                   />
                 )}
               </div>
-              <div className="flex items-start justify-between gap-2">
-                <p className="font-bold">{a.name}</p>
+              <div className="p-4">
+
+              <div className="flex items-center justify-center gap-2">
                 <RankBadge rank={a.tier} />
+                <p className="font-bold">{a.name}</p>
               </div>
+
               {a.attributes.length > 0 && (
-                <ul className="mt-2 space-y-1 text-sm">
+                <ul className="mt-2 space-y-1 text-sm [&>li+li]:border-t [&>li+li]:pt-1  [&>li+li]:border-edge">
                   {a.attributes.map((attr, i) => (
-                    <li key={i} className="flex justify-between gap-2">
+                    <li key={i} className="flex justify-between gap-2 ">
                       <span className="text-ink-dim">{attr.name}</span>
-                      <span>{attr.value}</span>
+                      <span className="font-black">{attr.value}</span>
                     </li>
                   ))}
                 </ul>
               )}
+
               {a.exclusiveEffect && a.mech && (
                 <div className="mt-2 flex items-start gap-2">
                   <Link
@@ -148,6 +134,7 @@ export function AccessoriesPage() {
                   </p>
                 </div>
               )}
+              </div>
             </div>
           ))}
         </div>
