@@ -96,7 +96,7 @@ export function BuildDetailPage() {
         }
       />
       <Link to="/builds" className="text-sm text-ink-dim hover:text-accent">← All builds</Link>
-      <div className="grid grid-cols-[400px_1fr] gap-16">
+      <div className="grid grid-cols-1 md:grid-cols-[400px_1fr] gap-4 md:gap-8">
         <div className="relative mt-3 h-96 overflow-hidden rounded-xl border border-edge bg-surface">
           {bannerImage && (
             <img src={imageSrc(bannerImage)} alt="" className="absolute inset-0 h-full w-full object-cover" />
