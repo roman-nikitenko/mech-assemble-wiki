@@ -85,7 +85,7 @@ export function FilterBar({
           })}
         </div>
         <div
-          className="flex flex-wrap items-center gap-2 md:border-l md:pl-4 md:ml-4 border-edge"
+          className="flex flex-wrap items-center gap-2 "
           role="group"
           aria-label={`Filter by ${rankGroupLabel}`}
         >
