@@ -29,7 +29,6 @@ export function AccessoriesPage() {
   const visible = (data ?? []).filter((a) => {
     const tierOk = tiers.length === 0 || tiers.includes(a.tier);
     const attrOk = attrs.length === 0 || a.attributes.some((at) => attrs.includes(at.name));
-    // Search matches the accessory name OR its linked mech's name.
     const searchOk =
       !query ||
       a.name.toLowerCase().includes(query) ||
