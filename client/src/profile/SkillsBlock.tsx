@@ -26,7 +26,7 @@ export function PickedSlot({
   cardImageUrl?: string | null;
   onRemove?: () => void;
 }) {
-  const cls = `flex min-h-50 flex-col gap-4 rounded-xl border-2 p-2 text-center ${SKILL_CARD[skill.type].frame}`;
+  const cls = `flex min-h-50 flex-col gap-2 rounded-xl border-2 p-2 text-center ${SKILL_CARD[skill.type].frame}`;
   const content = (
     <>
       <span
@@ -37,7 +37,7 @@ export function PickedSlot({
         {skillDisplayName(skill)}
       </span>
       {cardImageUrl && (
-        <img src={imageSrc(cardImageUrl)} alt="" className="h-14 w-full object-contain" />
+        <img src={imageSrc(cardImageUrl)} alt="" className="h-20 object-contain" />
       )}
       {skill.description && (
         <span className="px-0.5 text-xs font-bold">{skill.description}</span>

@@ -330,7 +330,7 @@ export interface AccessorySummary {
   exclusiveEffect: string | null;
   imageUrl: string | null;
   iconUrl: string | null;
-  mech: { id: string; slug: string | null; name: string } | null;
+  mech: { id: string; slug: string | null; name: string; iconUrl: string | null } | null;
 }
 
 /** A build's publication state (mirrors the server BuildStatus enum). */

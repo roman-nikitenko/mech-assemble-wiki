@@ -8,8 +8,9 @@ import { UUID_RE } from "../lib/uuid";
 export const accessoriesRouter = Router();
 
 const ACCESSORY_INCLUDE = {
-  // slug lets the accessories page link to the pretty /mechs/<slug> URL.
-  mech: { select: { id: true, slug: true, name: true } },
+  // slug lets the accessories page link to the pretty /mechs/<slug> URL;
+  // iconUrl feeds the linked-mech icon on the card.
+  mech: { select: { id: true, slug: true, name: true, iconUrl: true } },
 } satisfies Prisma.AccessoryInclude;
 
 // The linked mech must exist and be S rank (the pair accessories are the

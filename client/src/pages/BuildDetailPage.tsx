@@ -96,39 +96,51 @@ export function BuildDetailPage() {
         }
       />
       <Link to="/builds" className="text-sm text-ink-dim hover:text-accent">← All builds</Link>
+      <div className="grid grid-cols-[400px_1fr] gap-16">
+        <div className="relative mt-3 h-96 overflow-hidden rounded-xl border border-edge bg-surface">
+          {bannerImage && (
+            <img src={imageSrc(bannerImage)} alt="" className="absolute inset-0 h-full w-full object-cover" />
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-bg via-bg/40 to-transparent" />
+          {!isWeaponBuild &&
+            equipped.map((w, i) => (
+              <div
+                key={w.id}
+                title={w.name}
+                className={`absolute ${WEAPON_SLOT_POS[i]} h-20 w-20 overflow-hidden rounded-xl border-2 border-accent/70 bg-surface/80 backdrop-blur`}
+              >
+                {(w.iconUrl ?? w.imageUrl) ? (
+                  <img src={imageSrc(w.iconUrl ?? w.imageUrl!)} alt={w.name} className="h-full w-full object-cover" />
+                ) : (
+                  <span className="flex h-full w-full items-center justify-center text-xl font-black text-ink-dim">
+                    {w.name.charAt(0)}
+                  </span>
+                )}
+              </div>
+            ))}
+          <p className="absolute bottom-3 left-4 text-lg font-bold text-ink-dim">{subjectName}</p>
+        </div>
 
-      <div className="relative mt-3 h-96 overflow-hidden rounded-xl border border-edge bg-surface">
-        {bannerImage && (
-          <img src={imageSrc(bannerImage)} alt="" className="absolute inset-0 h-full w-full object-cover" />
-        )}
-        <div className="absolute inset-0 bg-gradient-to-t from-bg via-bg/40 to-transparent" />
-        {!isWeaponBuild &&
-          equipped.map((w, i) => (
-            <div
-              key={w.id}
-              title={w.name}
-              className={`absolute ${WEAPON_SLOT_POS[i]} h-20 w-20 overflow-hidden rounded-xl border-2 border-accent/70 bg-surface/80 backdrop-blur`}
-            >
-              {(w.iconUrl ?? w.imageUrl) ? (
-                <img src={imageSrc(w.iconUrl ?? w.imageUrl!)} alt={w.name} className="h-full w-full object-cover" />
-              ) : (
-                <span className="flex h-full w-full items-center justify-center text-xl font-black text-ink-dim">
-                  {w.name.charAt(0)}
-                </span>
-              )}
+        <div className="">
+          <div className="mt-4 flex items-center justify-between gap-2">
+            <h1 className="text-3xl font-black tracking-tight">{b.name}</h1>
+            <ShareButton buildId={b.id} />
+          </div>
+          <p className="mt-1 text-sm text-ink-dim">
+            by <AuthorTag nickname={b.author.nickname} server={b.author.server} /> · updated{" "}
+            {formatDate(b.updatedAt)}
+          </p>
+          {b.description.trim() !== "" && (
+            <div className="mt-8 max-w-3xl">
+              <NotePreview text={b.description} mechs={mechs.data ?? []} weapons={allWeapons} />
             </div>
-          ))}
-        <p className="absolute bottom-3 left-4 text-lg font-bold text-ink-dim">{subjectName}</p>
+          )}
+        </div>
+
       </div>
 
-      <div className="mt-4 flex items-center justify-between gap-2">
-        <h1 className="text-3xl font-black tracking-tight">{b.name}</h1>
-        <ShareButton buildId={b.id} />
-      </div>
-      <p className="mt-1 text-sm text-ink-dim">
-        by <AuthorTag nickname={b.author.nickname} server={b.author.server} /> · updated{" "}
-        {formatDate(b.updatedAt)}
-      </p>
+
+
 
       {corePool.length > 0 && (
         <>
@@ -174,11 +186,7 @@ export function BuildDetailPage() {
         );
       })}
 
-      {b.description.trim() !== "" && (
-        <div className="mt-8 max-w-3xl rounded-xl border border-edge bg-surface p-5">
-          <NotePreview text={b.description} mechs={mechs.data ?? []} weapons={allWeapons} />
-        </div>
-      )}
+
     </main>
   );
 }
