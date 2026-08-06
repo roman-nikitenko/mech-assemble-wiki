@@ -24,7 +24,7 @@ interface FilterBarProps {
 
 function chipCls(active: boolean): string {
   const base =
-    "inline-flex cursor-pointer items-center gap-2 rounded-lg border p-1 text-sm font-semibold transition-colors";
+    "inline-flex cursor-pointer items-center gap-2 rounded-lg border px-2 py-1 text-sm font-semibold transition-colors";
   return active
     ? `${base} border-accent bg-accent/15 text-accent`
     : `${base} border-edge bg-surface text-ink-dim hover:text-ink`;
@@ -59,7 +59,7 @@ export function FilterBar({
         placeholder={searchPlaceholder}
         className="min-h-11 rounded-lg border border-edge bg-surface px-3 text-sm"
       />
-      <div className="flex flex-col md:flex-row md:[&>div+div]:border-edge md:[&>div+div]:ml-4 md:[&>div+div]:border-l md:[&>div+div]:pl-4   ">
+      <div className="flex flex-col justify-start md:flex-row md:[&>div+div]:border-edge md:[&>div+div]:ml-4 md:[&>div+div]:border-l md:[&>div+div]:pl-4   ">
         {types.length > 0 && (
           <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Filter by type">
             {types.map((t) => {
@@ -132,7 +132,7 @@ export function FilterBar({
           <button
             type="button"
             onClick={onClear}
-            className="cursor-pointer px-2 ml-2 text-sm text-ink-dim underline hover:text-ink"
+            className="cursor-pointer border border-edge rounded-lg w-fit px-2 py-1 md:ml-2 text-sm text-ink-dim underline hover:text-ink"
           >
             Clear
           </button>
