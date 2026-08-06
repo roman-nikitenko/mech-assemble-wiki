@@ -59,7 +59,7 @@ export function FilterBar({
         placeholder={searchPlaceholder}
         className="min-h-11 rounded-lg border border-edge bg-surface px-3 text-sm"
       />
-      <div className="flex flex-col justify-start md:flex-row md:[&>div+div]:border-edge md:[&>div+div]:ml-4 md:[&>div+div]:border-l md:[&>div+div]:pl-4   ">
+      <div className="flex flex-col gap-2 md:gap-0 justify-start md:flex-row md:[&>div+div]:border-edge md:[&>div+div]:ml-4 md:[&>div+div]:border-l md:[&>div+div]:pl-4   ">
         {types.length > 0 && (
           <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Filter by type">
             {types.map((t) => {
