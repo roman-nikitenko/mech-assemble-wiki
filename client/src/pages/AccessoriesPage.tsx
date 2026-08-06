@@ -9,28 +9,32 @@ import { ErrorPanel } from "../components/ErrorPanel";
 import { Seo } from "../components/Seo";
 import cardBg from "../assets/acessery-card-bg.jpeg";
 
-/** Public accessory list: base attributes for everyone, plus the exclusive
-    effect when the accessory is bound to a specific mech. */
 export function AccessoriesPage() {
   const { data, isPending, isError, refetch } = useAccessories();
 
-  // Accessories carry a tier (Standard/S) but no type, so we reuse FilterBar
-  // with an empty type catalog — only the tier chips + search box show.
   const [tiers, setTiers] = useState<MechRank[]>([]);
+  const [attrs, setAttrs] = useState<string[]>([]);
   const [search, setSearch] = useState("");
 
   const toggleTier = (t: MechRank) =>
     setTiers((list) => (list.includes(t) ? list.filter((v) => v !== t) : [...list, t]));
+  const toggleAttr = (name: string) =>
+    setAttrs((list) => (list.includes(name) ? list.filter((v) => v !== name) : [...list, name]));
+
+  const attrNames = [
+    ...new Set((data ?? []).flatMap((a) => a.attributes.map((at) => at.name))),
+  ].sort();
 
   const query = search.trim().toLowerCase();
   const visible = (data ?? []).filter((a) => {
     const tierOk = tiers.length === 0 || tiers.includes(a.tier);
+    const attrOk = attrs.length === 0 || a.attributes.some((at) => attrs.includes(at.name));
     // Search matches the accessory name OR its linked mech's name.
     const searchOk =
       !query ||
       a.name.toLowerCase().includes(query) ||
       (a.mech?.name ?? "").toLowerCase().includes(query);
-    return tierOk && searchOk;
+    return tierOk && attrOk && searchOk;
   });
 
   return (
@@ -48,10 +52,35 @@ export function AccessoriesPage() {
         onToggleType={() => {}}
         onToggleRank={toggleTier}
         onSearchChange={setSearch}
-        onClear={() => setTiers([])}
+        onClear={() => {
+          setTiers([]);
+          setAttrs([]);
+        }}
         rankGroupLabel="tier"
         searchPlaceholder="Search accessories or mech..."
       />
+      {attrNames.length > 0 && (
+        <div className="mt-3 flex flex-wrap items-center gap-2" role="group" aria-label="Filter by attribute">
+          {attrNames.map((name) => {
+            const active = attrs.includes(name);
+            return (
+              <button
+                key={name}
+                type="button"
+                aria-pressed={active}
+                onClick={() => toggleAttr(name)}
+                className={`inline-flex cursor-pointer items-center rounded-lg border px-3 py-1 text-sm font-semibold transition-colors ${
+                  active
+                    ? "border-accent bg-accent/15 text-accent"
+                    : "border-edge bg-surface text-ink-dim hover:text-ink"
+                }`}
+              >
+                {name}
+              </button>
+            );
+          })}
+        </div>
+      )}
       {isPending ? (
         <LoadingSkeleton variant="cards" />
       ) : isError ? (
@@ -94,8 +123,7 @@ export function AccessoriesPage() {
                 </ul>
               )}
               {a.exclusiveEffect && a.mech && (
-                <div className="mt-2 flex items-center gap-2">
-                  {/* Linked-mech icon: clicking it opens the mech's detail page. */}
+                <div className="mt-2 flex items-start gap-2">
                   <Link
                     to={`/mechs/${a.mech.slug ?? a.mech.id}`}
                     title={a.mech.name}

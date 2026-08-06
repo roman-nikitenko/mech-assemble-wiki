@@ -5,18 +5,17 @@ import { STierIcon } from "./STierIcon";
 const RANKS: MechRank[] = ["Standard", "S"];
 
 interface FilterBarProps {
-  types: GameType[]; // the catalog, loaded by the page
-  selectedTypeIds: string[]; // empty = no type filter (show all types)
-  selectedRanks: MechRank[]; // empty = no rank/tier filter (show all)
+  types: GameType[];
+  selectedTypeIds: string[];
+  selectedRanks: MechRank[]; 
   search: string;
   onToggleType: (id: string) => void;
   onToggleRank: (r: MechRank) => void;
   onSearchChange: (s: string) => void;
   onClear: () => void;
-  // The Standard/S group is a mech "rank" but a weapon "tier" — same values,
-  // different word. Only affects the group's accessible label and placeholder.
-  rankGroupLabel?: string; // default "rank"
-  searchPlaceholder?: string; // default "Search mechs..."
+  rankGroupLabel?: string;
+  searchPlaceholder?: string;
+  customClass?: string;
 }
 
 // Shared look for a toggle chip. `active` gives it the accent fill + ring so a
@@ -29,9 +28,6 @@ function chipCls(active: boolean): string {
     : `${base} border-edge bg-surface text-ink-dim hover:text-ink`;
 }
 
-/** Controlled component: filter state lives in BrowsePage, this just renders it.
-    Types and ranks are multi-select toggle buttons (OR within a group). An empty
-    selection in a group means "no filter" for that group. */
 export function FilterBar({
   types,
   selectedTypeIds,
@@ -43,11 +39,12 @@ export function FilterBar({
   onClear,
   rankGroupLabel = "rank",
   searchPlaceholder = "Search mechs...",
+  customClass = "",
 }: FilterBarProps) {
   const hasFilters = selectedTypeIds.length > 0 || selectedRanks.length > 0;
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className={`flex flex-col gap-3 ${customClass}`}>
       <input
         type="search"
         value={search}
