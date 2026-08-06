@@ -9,28 +9,31 @@ import { ErrorPanel } from "../components/ErrorPanel";
 import { Seo } from "../components/Seo";
 import cardBg from "../assets/acessery-card-bg.jpeg";
 
-/** Public accessory list: base attributes for everyone, plus the exclusive
-    effect when the accessory is bound to a specific mech. */
 export function AccessoriesPage() {
   const { data, isPending, isError, refetch } = useAccessories();
 
-  // Accessories carry a tier (Standard/S) but no type, so we reuse FilterBar
-  // with an empty type catalog — only the tier chips + search box show.
   const [tiers, setTiers] = useState<MechRank[]>([]);
+  const [attrs, setAttrs] = useState<string[]>([]);
   const [search, setSearch] = useState("");
 
   const toggleTier = (t: MechRank) =>
     setTiers((list) => (list.includes(t) ? list.filter((v) => v !== t) : [...list, t]));
+  const toggleAttr = (name: string) =>
+    setAttrs((list) => (list.includes(name) ? list.filter((v) => v !== name) : [...list, name]));
+
+  const attrNames = [
+    ...new Set((data ?? []).flatMap((a) => a.attributes.map((at) => at.name))),
+  ].sort();
 
   const query = search.trim().toLowerCase();
   const visible = (data ?? []).filter((a) => {
     const tierOk = tiers.length === 0 || tiers.includes(a.tier);
-    // Search matches the accessory name OR its linked mech's name.
+    const attrOk = attrs.length === 0 || a.attributes.some((at) => attrs.includes(at.name));
     const searchOk =
       !query ||
       a.name.toLowerCase().includes(query) ||
       (a.mech?.name ?? "").toLowerCase().includes(query);
-    return tierOk && searchOk;
+    return tierOk && attrOk && searchOk;
   });
 
   return (
@@ -48,9 +51,16 @@ export function AccessoriesPage() {
         onToggleType={() => {}}
         onToggleRank={toggleTier}
         onSearchChange={setSearch}
-        onClear={() => setTiers([])}
+        onClear={() => {
+          setTiers([]);
+          setAttrs([]);
+        }}
         rankGroupLabel="tier"
         searchPlaceholder="Search accessories or mech..."
+        showAttributes
+        attributes={attrNames}
+        selectedAttributes={attrs}
+        onToggleAttribute={toggleAttr}
       />
       {isPending ? (
         <LoadingSkeleton variant="cards" />
@@ -61,11 +71,11 @@ export function AccessoriesPage() {
       ) : visible.length === 0 ? (
         <p className="mt-8 text-center text-ink-dim">No accessories match.</p>
       ) : (
-        <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {visible.map((a) => (
-            <div key={a.id} className={`rounded-xl border border-edge p-4 `}>
+            <div key={a.id} className={`rounded-xl border border-edge`}>
               <div
-                className="aspect-2/1 rounded-lg mb-2 flex items-center justify-center bg-no-repeat bg-center bg-cover"
+                className="aspect-2/1 rounded-t-lg flex items-center justify-center bg-no-repeat bg-center bg-cover"
                 style={{ backgroundImage: `url(${cardBg})` }}
               >
                 {a.imageUrl && (
@@ -75,27 +85,30 @@ export function AccessoriesPage() {
                     sizes={CARD_SIZES}
                     alt={a.name}
                     loading="lazy"
-                    className="mb-2 h-24 object-cover"
+                    className="h-24 object-cover"
                   />
                 )}
               </div>
-              <div className="flex items-start justify-between gap-2">
-                <p className="font-bold">{a.name}</p>
+              <div className="p-4">
+
+              <div className="flex items-center justify-center gap-2">
                 <RankBadge rank={a.tier} />
+                <p className="font-bold">{a.name}</p>
               </div>
+
               {a.attributes.length > 0 && (
-                <ul className="mt-2 space-y-1 text-sm">
+                <ul className="mt-2 space-y-1 text-sm [&>li+li]:border-t [&>li+li]:pt-1  [&>li+li]:border-edge">
                   {a.attributes.map((attr, i) => (
-                    <li key={i} className="flex justify-between gap-2">
+                    <li key={i} className="flex justify-between gap-2 ">
                       <span className="text-ink-dim">{attr.name}</span>
-                      <span>{attr.value}</span>
+                      <span className="font-black">{attr.value}</span>
                     </li>
                   ))}
                 </ul>
               )}
+
               {a.exclusiveEffect && a.mech && (
-                <div className="mt-2 flex items-center gap-2">
-                  {/* Linked-mech icon: clicking it opens the mech's detail page. */}
+                <div className="mt-2 flex items-start gap-2">
                   <Link
                     to={`/mechs/${a.mech.slug ?? a.mech.id}`}
                     title={a.mech.name}
@@ -121,6 +134,7 @@ export function AccessoriesPage() {
                   </p>
                 </div>
               )}
+              </div>
             </div>
           ))}
         </div>
