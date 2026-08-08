@@ -10,10 +10,6 @@ import { absoluteUrl } from "../lib/site";
 
 export const pageMetaRouter = Router();
 
-// Where the built SPA index.html lives. Prod sets CLIENT_INDEX_HTML in .env
-// (see docs/social-link-previews.md); the fallback assumes the sibling client
-// build. Read PER REQUEST — cheap at this traffic and means a client redeploy
-// needs no API restart. In tests CLIENT_INDEX_HTML points at the fixture.
 function loadIndexHtml(): string {
   const file =
     process.env.CLIENT_INDEX_HTML ??
@@ -25,7 +21,6 @@ function sendHtml(res: Response, html: string) {
   res.type("html").send(html);
 }
 
-// Only the fields mechMeta/mechSummary need.
 const MECH_META_INCLUDE = {
   type: { select: { name: true } },
   pilot: { select: { name: true } },
@@ -34,30 +29,35 @@ const MECH_META_INCLUDE = {
   accessory: { select: { name: true, exclusiveEffect: true } },
 } satisfies Prisma.MechInclude;
 
-// GET /mechs/:idOrSlug — HTML with this mech's OG tags (falls back to the
-// generic page when the slug/uuid resolves to nothing).
 pageMetaRouter.get("/mechs/:idOrSlug", async (req, res) => {
-  const html = loadIndexHtml();
   const { idOrSlug } = req.params;
-  const where = UUID_RE.test(idOrSlug) ? { id: idOrSlug } : { slug: idOrSlug };
-  const mech = await prisma.mech.findUnique({ where, include: MECH_META_INCLUDE });
+  const byUuid = UUID_RE.test(idOrSlug);
+  const mech = await prisma.mech.findUnique({
+    where: byUuid ? { id: idOrSlug } : { slug: idOrSlug },
+    include: MECH_META_INCLUDE,
+  });
+  if (mech && byUuid && mech.slug) {
+    return res.redirect(301, absoluteUrl(`/mechs/${mech.slug}`));
+  }
+  const html = loadIndexHtml();
   if (!mech) return sendHtml(res, html);
   return sendHtml(res, injectMeta(html, mechMeta(mech)));
 });
 
-// GET /weapons/:idOrSlug — HTML with this weapon's OG tags (falls back to the
-// generic page when the slug/uuid resolves to nothing).
 pageMetaRouter.get("/weapons/:idOrSlug", async (req, res) => {
-  const html = loadIndexHtml();
   const { idOrSlug } = req.params;
-  const where = UUID_RE.test(idOrSlug) ? { id: idOrSlug } : { slug: idOrSlug };
-  const weapon = await prisma.weapon.findUnique({ where });
+  const byUuid = UUID_RE.test(idOrSlug);
+  const weapon = await prisma.weapon.findUnique({
+    where: byUuid ? { id: idOrSlug } : { slug: idOrSlug },
+  });
+  if (weapon && byUuid && weapon.slug) {
+    return res.redirect(301, absoluteUrl(`/weapons/${weapon.slug}`));
+  }
+  const html = loadIndexHtml();
   if (!weapon) return sendHtml(res, html);
   return sendHtml(res, injectMeta(html, weaponMeta(weapon)));
 });
 
-// GET /builds/:id — Published builds only (mirrors GET /api/builds/:id). The
-// preview image is the linked mech's OR weapon's full art.
 pageMetaRouter.get("/builds/:id", async (req, res) => {
   const html = loadIndexHtml();
   const build = await prisma.build.findFirst({
