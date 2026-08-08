@@ -82,16 +82,20 @@ afterAll(async () => {
 });
 
 describe("page meta injection", () => {
-  it("injects the mech's OG tags (by slug and by uuid)", async () => {
-    for (const key of [mechSlug, mechId]) {
-      const res = await request(app).get(`/mechs/${key}`);
-      expect(res.status).toBe(200);
-      expect(res.text).toContain("Iron Colossus");
-      expect(res.text).toContain('property="og:title"');
-      expect(res.text).toContain(
-        'content="https://mech-assemble-wiki.online/uploads/test-colossus.png"',
-      );
-    }
+  it("injects the mech's OG tags when fetched by slug", async () => {
+    const res = await request(app).get(`/mechs/${mechSlug}`);
+    expect(res.status).toBe(200);
+    expect(res.text).toContain("Iron Colossus");
+    expect(res.text).toContain('property="og:title"');
+    expect(res.text).toContain(
+      'content="https://mech-assemble-wiki.online/uploads/test-colossus.png"',
+    );
+  });
+
+  it("301-redirects a legacy UUID mech URL to its canonical slug", async () => {
+    const res = await request(app).get(`/mechs/${mechId}`);
+    expect(res.status).toBe(301);
+    expect(res.headers.location).toBe(`https://mech-assemble-wiki.online/mechs/${mechSlug}`);
   });
 
   it("returns the generic page for an unknown mech", async () => {
@@ -100,11 +104,10 @@ describe("page meta injection", () => {
     expect(res.text).not.toContain('property="og:title"');
   });
 
-  it("injects the weapon's OG tags", async () => {
+  it("301-redirects a legacy UUID weapon URL to its canonical slug", async () => {
     const res = await request(app).get(`/weapons/${weaponId}`);
-    expect(res.status).toBe(200);
-    expect(res.text).toContain('property="og:title"');
-    expect(res.text).toContain("Blade");
+    expect(res.status).toBe(301);
+    expect(res.headers.location).toBe(`https://mech-assemble-wiki.online/weapons/${weaponSlug}`);
   });
 
   it("injects a Published build's name, description and mech image", async () => {
