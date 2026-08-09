@@ -5,15 +5,19 @@ import { LoadingSkeleton } from "../components/LoadingSkeleton";
 import { ErrorPanel } from "../components/ErrorPanel";
 import { Gem } from "../components/Gem";
 import { Seo } from "../components/Seo";
+const STATS = ["ATK", "DEF", "HP"] as const;
 
 /** Public pilot list: portrait, boosts, and where the pilot serves
     (a mech's cockpit OR fronting a weapon — never both). */
 export function PilotsPage() {
   const { data, isPending, isError, refetch } = usePilots();
   const location = useLocation();
-  // Deep-link target from /pilots#pilot-<id> (e.g. a weapon's linked-pilot
-  // icon). We scroll to that card and flash its border in the accent color.
   const [highlightedId, setHighlightedId] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const [stats, setStats] = useState<string[]>([]);
+
+  const toggleStat = (s: string) =>
+    setStats((list) => (list.includes(s) ? list.filter((v) => v !== s) : [...list, s]));
 
   useEffect(() => {
     const match = location.hash.match(/^#pilot-(.+)$/);
@@ -29,6 +33,17 @@ export function PilotsPage() {
     return () => clearTimeout(timer);
   }, [location.hash, data]);
 
+  const query = search.trim().toLowerCase();
+  const visible = (data ?? []).filter((p) => {
+    const nameOk = !query || p.name.toLowerCase().includes(query);
+    const bonusText = [p.unlockBoost, p.relationshipBonus, ...p.bonusPerLevel]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase();
+    const statOk = stats.length === 0 || stats.some((s) => bonusText.includes(s.toLowerCase()));
+    return nameOk && statOk;
+  });
+
   return (
     <main className="mx-auto max-w-6xl px-4 py-6">
       <Seo
@@ -36,17 +51,46 @@ export function PilotsPage() {
         description="All pilots in Mech Assemble: Zombie Swarm — their boosts, relationship bonuses, and the mech or weapon they serve."
         path="/pilots"
       />
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
+        <input
+          type="search"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search pilots..."
+          className="min-h-11 rounded-lg border border-edge bg-surface px-3 text-sm sm:w-64"
+        />
+        <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Filter by stat">
+          {STATS.map((stat) => {
+            const active = stats.includes(stat);
+            return (
+              <button
+                key={stat}
+                type="button"
+                aria-pressed={active}
+                onClick={() => toggleStat(stat)}
+                className={`inline-flex cursor-pointer items-center rounded-lg border px-3 py-1 text-sm font-semibold transition-colors ${
+                  active
+                    ? "border-accent bg-accent/15 text-accent"
+                    : "border-edge bg-surface text-ink-dim hover:text-ink"
+                }`}
+              >
+                {stat}
+              </button>
+            );
+          })}
+        </div>
+      </div>
       {isPending ? (
         <LoadingSkeleton variant="cards" />
       ) : isError ? (
         <ErrorPanel onRetry={() => refetch()} />
       ) : (data ?? []).length === 0 ? (
         <p className="mt-8 text-center text-ink-dim">No pilots recorded yet.</p>
+      ) : visible.length === 0 ? (
+        <p className="mt-8 text-center text-ink-dim">No pilots match.</p>
       ) : (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3">
-          {(data ?? []).map((p) => {
-            // A pilot links to a mech OR a weapon (never both) — normalize the
-            // two shapes into one clickable target for the icon row.
+          {visible.map((p) => {
             const linked = p.mech
               ? { to: `/mechs/${p.mech.id}`, name: p.mech.name, iconUrl: p.mech.iconUrl }
               : p.weapon
@@ -57,13 +101,10 @@ export function PilotsPage() {
               <div
                 key={p.id}
                 id={`pilot-${p.id}`}
-                // scroll-mt keeps the card clear of the sticky header when the
-                // deep link scrolls it into view.
                 className={`scroll-mt-20 rounded-xl border bg-surface p-4 pb-0 overflow-hidden transition-colors duration-700 ${
                   highlightedId === p.id ? "border-accent" : "border-edge"
                 }`}
               >
-                {/* Header: portrait + name, then the unlock boost as plain text. */}
                 <div className="flex items-center gap-3">
                   {p.iconUrl && (
                     <img
@@ -83,7 +124,6 @@ export function PilotsPage() {
                   </div>
                 </div>
 
-                {/* Linked mech/weapon: clickable icon on the left, its bonus at right. */}
                 {(linked || p.relationshipBonus) && (
                   <div className="mt-3 flex items-center gap-2 border-t border-edge pt-3">
                     {linked && (
@@ -114,9 +154,6 @@ export function PilotsPage() {
                   </div>
                 )}
 
-                {/* Per-level bonuses (1-4): full-bleed bands (the -mx-4 cancels
-                    the card padding) with the gem in a recessed left cell, but
-                    the gem and text keep their own inner padding. */}
                 {p.bonusPerLevel.length > 0 && (
                   <ul className="-mx-4 mt-3 space-y-2 text-sm">
                     {p.bonusPerLevel.map((bonus, i) => (
