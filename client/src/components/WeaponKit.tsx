@@ -2,17 +2,14 @@ import type { Helper, SkillNodeRow, WeaponSkinRow } from "../api/types";
 import { imageSrc } from "../api/client";
 import { SkillNodeBranch } from "./SkillNodeBranch";
 import { HelperCard } from "./HelperCard";
+import { StarNumber } from "./StarNumber";
 
-/** The parts of a weapon this component renders. Both `Weapon` (mech tab) and
-    `WeaponDetail` (detail page) structurally satisfy it, so the kit renders
-    identically in both places. */
 interface WeaponKitData {
   skillNodes: SkillNodeRow[];
   weaponSkins: WeaponSkinRow[];
   helpers: Helper[];
 }
 
-/** Weapon skins grid. Null-safe: renders nothing when there are no skins. */
 export function WeaponSkins({ skins }: { skins: WeaponSkinRow[] }) {
   if (skins.length === 0) return null;
   return (
@@ -27,15 +24,15 @@ export function WeaponSkins({ skins }: { skins: WeaponSkinRow[] }) {
               <img
                 src={imageSrc(skin.imageUrl)}
                 alt={skin.name}
-                className="mb-3 h-28 w-full rounded-lg object-cover"
+                className="mb-3 aspect-2/1 rounded-lg object-contain"
               />
             )}
             <p className="font-semibold">{skin.name}</p>
             {skin.bonuses.length > 0 && (
               <ul className="mt-2 space-y-1">
                 {skin.bonuses.map((bonus, i) => (
-                  <li key={i} className="text-sm text-ink-dim">
-                    <span className="text-accent">{"★".repeat(i + 1)}</span> {bonus}
+                  <li key={i} className="flex items-center gap-2 text-white font-[600] text-sm">
+                    <StarNumber n={i + 1} /> {bonus}
                   </li>
                 ))}
               </ul>
@@ -47,7 +44,6 @@ export function WeaponSkins({ skins }: { skins: WeaponSkinRow[] }) {
   );
 }
 
-/** Weapon helpers grid. Null-safe: renders nothing when there are no helpers. */
 export function WeaponHelpers({ helpers }: { helpers: Helper[] }) {
   if (helpers.length === 0) return null;
   return (
@@ -64,8 +60,6 @@ export function WeaponHelpers({ helpers }: { helpers: Helper[] }) {
   );
 }
 
-/** Skills + Skins + Weapon helpers, shared by the mech's Weapon tab and the
-    standalone weapon detail page. */
 export function WeaponKit({ weapon }: { weapon: WeaponKitData }) {
   return (
     <>

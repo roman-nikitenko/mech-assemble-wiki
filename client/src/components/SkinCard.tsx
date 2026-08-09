@@ -1,8 +1,7 @@
 import type { Skin } from "../api/types";
 import { imageSrc } from "../api/client";
+import { StarNumber } from "./StarNumber";
 
-/** Mech-owned skin card (Skins & Helpers tab). Weapon skins moved to their
-    own table/render in Cycle G. */
 export function SkinCard({ skin }: { skin: Skin }) {
   return (
     <div className="rounded-xl border border-edge bg-surface p-4">
@@ -21,7 +20,7 @@ export function SkinCard({ skin }: { skin: Skin }) {
         <ul className="mt-2 space-y-1">
           {skin.stars.map((s) => (
             <li key={s.id} className="flex items-center gap-2 text-sm">
-              <span className="text-accent">{"★".repeat(s.star)}</span>
+              <StarNumber n={s.star} />
               <span className="text-ink-dim">{s.perk}</span>
             </li>
           ))}
