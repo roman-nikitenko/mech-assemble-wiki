@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -91,5 +91,53 @@ describe("MechFormPage (create mode)", () => {
     await screen.findByRole("button", { name: "Create mech" });
     expect(screen.getByText("Image")).toBeInTheDocument();
     expect(screen.getByText("Icon")).toBeInTheDocument();
+  });
+
+  it("adds a linked skill and submits it with its partner weapon", async () => {
+    const posted: string[] = [];
+    vi.spyOn(globalThis, "fetch").mockImplementation((input, init) => {
+      const url = String(input);
+      const method = (init as RequestInit | undefined)?.method ?? "GET";
+      if (url.includes("/api/weapons")) {
+        return Promise.resolve(
+          new Response(JSON.stringify([{ id: "w9", name: "Ice Drill" }]), {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          })
+        );
+      }
+      if (url.endsWith("/api/mechs") && method === "POST") {
+        posted.push(String((init as RequestInit).body));
+        return Promise.resolve(
+          new Response(JSON.stringify({ id: "newmech" }), {
+            status: 201,
+            headers: { "Content-Type": "application/json" },
+          })
+        );
+      }
+      return Promise.resolve(
+        new Response(JSON.stringify([]), { status: 200, headers: { "Content-Type": "application/json" } })
+      );
+    });
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={qc}>
+        <MemoryRouter initialEntries={["/admin/mechs/new"]}>
+          <Routes>
+            <Route path="/admin/mechs/new" element={<MechFormPage />} />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>
+    );
+    await userEvent.type(await screen.findByLabelText("Name *"), "Awakening");
+    await userEvent.click(screen.getByRole("button", { name: "+ Add linked skill" }));
+    await userEvent.type(screen.getByLabelText("Linked skill 1 name"), "Frost Synergy");
+    // Wait for the weapons query to populate this specific select.
+    const weaponSelect = screen.getByLabelText("Linked skill 1 weapon");
+    await within(weaponSelect).findByRole("option", { name: "Ice Drill" });
+    await userEvent.selectOptions(weaponSelect, "w9");
+    await userEvent.click(screen.getByRole("button", { name: "Create mech" }));
+    const body = JSON.parse(posted.at(-1)!);
+    expect(body.linkedSkills).toEqual([{ name: "Frost Synergy", description: null, partnerId: "w9" }]);
   });
 });

@@ -34,6 +34,8 @@ const weapon: WeaponDetail = {
       type: "Normal",
       sortOrder: 0,
       repeatable: false,
+      linkedWeaponId: null,
+      linkedMechId: null,
     },
   ],
 };

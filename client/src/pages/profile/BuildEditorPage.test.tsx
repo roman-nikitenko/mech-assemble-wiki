@@ -77,11 +77,13 @@ const detail: MechDetail = {
   skins: [],
   helpers: [],
   skillNodes: [
-    { id: "s1", parentId: null, name: "Zap", description: "Bolt", appearanceLevel: 1, type: "Normal", sortOrder: 0, repeatable: false },
-    { id: "s2", parentId: "s1", name: "Zap II", description: "Bigger bolt", appearanceLevel: 1, type: "Premium", sortOrder: 1, repeatable: false },
-    { id: "s3", parentId: null, name: "Overdrive", description: null, appearanceLevel: 3, type: "Normal", sortOrder: 2, repeatable: false },
-    { id: "s4", parentId: null, name: "Dash", description: null, appearanceLevel: 1, type: "Normal", sortOrder: 3, repeatable: false },
-    { id: "s5", parentId: null, name: null, description: "Core power", appearanceLevel: 1, type: "Core", sortOrder: 4, repeatable: false },
+    { id: "s1", parentId: null, name: "Zap", description: "Bolt", appearanceLevel: 1, type: "Normal", sortOrder: 0, repeatable: false, linkedWeaponId: null, linkedMechId: null },
+    { id: "s2", parentId: "s1", name: "Zap II", description: "Bigger bolt", appearanceLevel: 1, type: "Premium", sortOrder: 1, repeatable: false, linkedWeaponId: null, linkedMechId: null },
+    { id: "s3", parentId: null, name: "Overdrive", description: null, appearanceLevel: 3, type: "Normal", sortOrder: 2, repeatable: false, linkedWeaponId: null, linkedMechId: null },
+    { id: "s4", parentId: null, name: "Dash", description: null, appearanceLevel: 1, type: "Normal", sortOrder: 3, repeatable: false, linkedWeaponId: null, linkedMechId: null },
+    { id: "s5", parentId: null, name: null, description: "Core power", appearanceLevel: 1, type: "Core", sortOrder: 4, repeatable: false, linkedWeaponId: null, linkedMechId: null },
+    // Linked skill: only pickable once weapon w2 (Thunder Pike) is equipped.
+    { id: "ls1", parentId: null, name: "Frost Synergy", description: "combo bonus", appearanceLevel: 1, type: "Normal", sortOrder: 5, repeatable: false, linkedWeaponId: "w2", linkedMechId: null },
   ],
 };
 
@@ -112,7 +114,10 @@ const weaponsFixture: WeaponSummary[] = [
     tier: "S",
     type: fireType,
     skillNodes: [
-      { id: "ws1", parentId: null, name: "Slash", description: "Cuts", appearanceLevel: 1, type: "Normal", sortOrder: 0, repeatable: false },
+      { id: "ws1", parentId: null, name: "Slash", description: "Cuts", appearanceLevel: 1, type: "Normal", sortOrder: 0, repeatable: false, linkedWeaponId: null, linkedMechId: null },
+      // Weapon-owned linked skill gated on a mech partner (m2). Must stay hidden
+      // in a weapon-only build (no mech to pair with).
+      { id: "wls1", parentId: null, name: "Combo Strike", description: "pair bonus", appearanceLevel: 1, type: "Normal", sortOrder: 1, repeatable: false, linkedWeaponId: null, linkedMechId: "m2" },
     ],
   }),
   weaponFixture({ id: "w2", name: "Thunder Pike", tier: "Standard" }),
@@ -199,6 +204,15 @@ describe("BuildEditorPage (new build)", () => {
     meNickname = null;
     renderEditor();
     expect(await screen.findByText("profile list")).toBeInTheDocument();
+  });
+
+  it("shows a mech linked skill only after its partner weapon is equipped", async () => {
+    renderEditor();
+    await userEvent.click(await screen.findByRole("button", { name: /Iron Colossus/ }));
+    // Hidden until the gate partner (w2 = Thunder Pike) is equipped.
+    expect(screen.queryByRole("button", { name: /Frost Synergy/ })).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Thunder Pike" }));
+    expect(await screen.findByRole("button", { name: /Frost Synergy/ })).toBeInTheDocument();
   });
 
   it("starts with the mech picker, then shows 8 slots and the skill palette", async () => {
@@ -299,6 +313,16 @@ describe("BuildEditorPage (new build)", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("Slot 1")).toBeInTheDocument(); // the 8 regular slots stay empty
     expect(screen.queryByText("Core slot 1")).not.toBeInTheDocument();
+  });
+
+  it("weapon-only build hides the weapon's linked skills (no mech to pair)", async () => {
+    renderEditor();
+    await userEvent.click(await screen.findByRole("button", { name: /Blade of Dawn/ }));
+    await screen.findByRole("button", { name: /Blade of Dawn skills/ });
+    // The ordinary Slash skill shows; the linked Combo Strike (needs mech m2)
+    // must NOT appear in a weapon-only build.
+    expect(screen.getByRole("button", { name: /^Slash Cuts/ })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Combo Strike/ })).not.toBeInTheDocument();
   });
 
   it("creates a weapon-only build from the picker's weapon section", async () => {

@@ -11,6 +11,7 @@ import {
   skillDisplayName,
 } from "./buildRules";
 import { SKILL_CARD, SkillPickCard } from "./SkillPickCard";
+import { LinkedBadge, linkedPartnerIcon } from "../components/LinkedBadge";
 import { LoadingSkeleton } from "../components/LoadingSkeleton";
 
 /** One filled pick slot — a compact version of the palette card: same name
@@ -21,14 +22,19 @@ export function PickedSlot({
   skill,
   cardImageUrl,
   onRemove,
+  linkedIcons,
 }: {
   skill: SkillNodeRow;
   cardImageUrl?: string | null;
   onRemove?: () => void;
+  /** id→icon map for gate partners; a linked skill shows its partner's icon. */
+  linkedIcons?: Record<string, string | null>;
 }) {
-  const cls = `flex min-h-50 flex-col gap-2 rounded-xl border-2 p-2 text-center ${SKILL_CARD[skill.type].frame}`;
+  const cls = `relative flex min-h-50 flex-col gap-2 rounded-xl border-2 p-2 text-center ${SKILL_CARD[skill.type].frame}`;
+  const linked = skill.linkedWeaponId !== null || skill.linkedMechId !== null;
   const content = (
     <>
+      {linked && <LinkedBadge iconUrl={linkedPartnerIcon(skill, linkedIcons)} />}
       <span
         className={`text-xs pb-1 border-b border-b-white/30 font-black ${SKILL_CARD[skill.type].header} ${
           skill.type === "Core" ? "italic" : ""
@@ -71,6 +77,8 @@ interface SkillsBlockProps {
   /** Total Core picks across the WHOLE build (mech + all weapons) — the
       3-core cap is shared, not per block. */
   globalCoreCount: number;
+  /** id→icon map for gate partners; a linked skill shows its partner's icon. */
+  linkedIcons?: Record<string, string | null>;
 }
 
 /** One expandable "skills" block: header (click to open) → 8 pick slots →
@@ -85,6 +93,7 @@ export function SkillsBlock({
   defaultExpanded = false,
   loading = false,
   globalCoreCount,
+  linkedIcons,
 }: SkillsBlockProps) {
   const [expanded, setExpanded] = useState(defaultExpanded);
   const [removedNote, setRemovedNote] = useState<string | null>(null);
@@ -169,6 +178,7 @@ export function SkillsBlock({
                   skill={s}
                   cardImageUrl={cardImageUrl}
                   onRemove={() => removeSlot(i)}
+                  linkedIcons={linkedIcons}
                 />
               ) : (
                 <div
@@ -201,6 +211,7 @@ export function SkillsBlock({
                     state={picked ? "picked" : reason ? "locked" : "available"}
                     lockReason={reason}
                     count={skill.repeatable ? count : 0}
+                    linkedIcons={linkedIcons}
                     // Non-repeatable: second click un-picks. Repeatable: click
                     // adds another copy while a slot is free.
                     onClick={

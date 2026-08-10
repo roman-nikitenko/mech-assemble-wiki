@@ -3,7 +3,7 @@ import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../../auth/useAuth";
 import { imageSrc, srcSet, CARD_SIZES, useMech, useMechs, useTypes, useWeapons } from "../../api/client";
 import type { MechRank, PostedBuild, WeaponSummary } from "../../api/types";
-import { MAX_CORE_SLOTS, resolvePicks } from "../../profile/buildRules";
+import { MAX_CORE_SLOTS, availableSkills, resolvePicks } from "../../profile/buildRules";
 import { PickedSlot, SkillsBlock } from "../../profile/SkillsBlock";
 import { NotesField } from "../../profile/NotesField";
 import { useMe } from "../../auth/useMe";
@@ -225,7 +225,22 @@ function BuildEditorContent({ existing }: { existing: PostedBuild | undefined })
   const isWeaponBuild = buildWeaponId !== null;
   const buildWeapon = isWeaponBuild ? allWeapons.find((w) => w.id === buildWeaponId) : undefined;
   const mech = detail.data;
-  const skills = mech?.skillNodes ?? [];
+  // Skill pools filtered for THIS build: a LINKED skill only appears when its
+  // gate partner is present — the mech pool is gated by the equipped weapon
+  // ids; a weapon's pool is gated by the build's mech id.
+  const skills = availableSkills(mech?.skillNodes ?? [], weaponIds);
+  const buildWeaponSkills = availableSkills(
+    buildWeapon ? buildWeapon.skillNodes : [],
+    mechId ? [mechId] : []
+  );
+  const weaponPool = (wp: WeaponSummary) =>
+    availableSkills(wp.skillNodes, mechId ? [mechId] : []);
+
+  // A linked skill's corner badge shows its gate partner's icon; this maps any
+  // mech/weapon id in play to its icon (the partner is always in the build).
+  const linkedIcons: Record<string, string | null> = {};
+  for (const w of allWeapons) linkedIcons[w.id] = w.iconUrl;
+  if (mech) linkedIcons[mech.id] = mech.iconUrl;
 
   // Equipped weapons resolved against the live list; a stored id whose
   // weapon was deleted from the wiki simply doesn't render.
@@ -266,7 +281,7 @@ function BuildEditorContent({ existing }: { existing: PostedBuild | undefined })
   // block (mech skillIds / per-weapon weaponSkillIds), this just gathers
   // them for the shared section and the shared 3-cap.
   const corePool = isWeaponBuild
-    ? resolvePicks(buildWeapon?.skillNodes ?? [], pickedIds)
+    ? resolvePicks(buildWeaponSkills, pickedIds)
         .filter((s) => s.type === "Core")
         .map((s) => ({
           skill: s,
@@ -274,7 +289,7 @@ function BuildEditorContent({ existing }: { existing: PostedBuild | undefined })
           onRemove: () =>
             setPickedIds(
               resolvePicks(
-                buildWeapon?.skillNodes ?? [],
+                buildWeaponSkills,
                 pickedIds.filter((id) => id !== s.id)
               ).map((p) => p.id)
             ),
@@ -291,7 +306,7 @@ function BuildEditorContent({ existing }: { existing: PostedBuild | undefined })
               ),
           })),
         ...equipped.flatMap((w) =>
-          resolvePicks(w.skillNodes, weaponSkillIds[w.id] ?? [])
+          resolvePicks(weaponPool(w), weaponSkillIds[w.id] ?? [])
             .filter((s) => s.type === "Core")
             .map((s) => ({
               skill: s,
@@ -300,7 +315,7 @@ function BuildEditorContent({ existing }: { existing: PostedBuild | undefined })
                 setWeaponSkillIds((prev) => ({
                   ...prev,
                   [w.id]: resolvePicks(
-                    w.skillNodes,
+                    weaponPool(w),
                     (prev[w.id] ?? []).filter((id) => id !== s.id)
                   ).map((p) => p.id),
                 })),
@@ -327,6 +342,7 @@ function BuildEditorContent({ existing }: { existing: PostedBuild | undefined })
               skill={entry.skill}
               cardImageUrl={entry.art}
               onRemove={entry.onRemove}
+              linkedIcons={linkedIcons}
             />
           ) : (
             <div
@@ -351,7 +367,7 @@ function BuildEditorContent({ existing }: { existing: PostedBuild | undefined })
   function save() {
     // Only prune stale ids once the live lists have loaded — saving during
     // a fetch must not silently drop equipment or picks.
-    const subjectSkills = isWeaponBuild ? (buildWeapon?.skillNodes ?? []) : skills;
+    const subjectSkills = isWeaponBuild ? (buildWeaponSkills) : skills;
     const savedWeaponIds = isWeaponBuild ? [] : weapons.data ? equipped.map((w) => w.id) : weaponIds;
     const input = {
       name: name.trim(),
@@ -366,7 +382,7 @@ function BuildEditorContent({ existing }: { existing: PostedBuild | undefined })
             savedWeaponIds.map((id) => {
               const w = allWeapons.find((x) => x.id === id);
               const ids = weaponSkillIds[id] ?? [];
-              return [id, w ? resolvePicks(w.skillNodes, ids).map((s) => s.id) : ids];
+              return [id, w ? resolvePicks(weaponPool(w), ids).map((s) => s.id) : ids];
             })
           ),
     };
@@ -436,7 +452,7 @@ function BuildEditorContent({ existing }: { existing: PostedBuild | undefined })
             <button
               type="button"
               onClick={changeWeapon}
-              className="min-h-11 rounded-lg border border-edge bg-surface/80 px-4 text-sm hover:border-accent/60"
+              className="min-h-11 rounded-lg cursor-pointer border border-edge bg-surface/80 px-4 text-sm hover:border-accent/60"
             >
               Change weapon
             </button>
@@ -447,13 +463,14 @@ function BuildEditorContent({ existing }: { existing: PostedBuild | undefined })
 
         <SkillsBlock
           title={buildWeapon ? `${buildWeapon.name} skills` : "Weapon skills"}
-          skills={buildWeapon?.skillNodes ?? []}
+          skills={buildWeaponSkills}
           pickedIds={pickedIds}
           onPickedChange={setPickedIds}
           cardImageUrl={buildWeapon?.iconUrl ?? buildWeapon?.imageUrl}
           defaultExpanded
           loading={weapons.isPending}
           globalCoreCount={corePool.length}
+          linkedIcons={linkedIcons}
         />
 
         {metaForm}
@@ -519,7 +536,7 @@ function BuildEditorContent({ existing }: { existing: PostedBuild | undefined })
           <button
             type="button"
             onClick={changeMech}
-            className="min-h-11 rounded-lg border border-edge bg-surface/80 px-4 text-sm hover:border-accent/60"
+            className="min-h-11 rounded-lg cursor-pointer border border-edge bg-surface/80 px-4 text-sm hover:border-accent/60"
           >
             Change mech
           </button>
@@ -623,16 +640,18 @@ function BuildEditorContent({ existing }: { existing: PostedBuild | undefined })
         defaultExpanded
         loading={detail.isPending}
         globalCoreCount={corePool.length}
+        linkedIcons={linkedIcons}
       />
       {equipped.map((w) => (
         <SkillsBlock
           key={w.id}
           title={`${w.name} skills`}
-          skills={w.skillNodes}
+          skills={weaponPool(w)}
           pickedIds={weaponSkillIds[w.id] ?? []}
           onPickedChange={(ids) => setWeaponSkillIds((prev) => ({ ...prev, [w.id]: ids }))}
           cardImageUrl={w.iconUrl ?? w.imageUrl}
           globalCoreCount={corePool.length}
+          linkedIcons={linkedIcons}
         />
       ))}
 

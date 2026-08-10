@@ -3,7 +3,7 @@ import { imageSrc, useMech, useMechs, usePostedBuild, useWeapons } from "../api/
 import type { WeaponSummary } from "../api/types";
 import { Seo } from "../components/Seo";
 import { AuthorTag } from "../profile/AuthorTag";
-import { resolvePicks } from "../profile/buildRules";
+import { availableSkills, resolvePicks } from "../profile/buildRules";
 import { PickedSlot } from "../profile/SkillsBlock";
 import { NotePreview } from "../profile/NotePreview";
 import { formatDate } from "../lib/date";
@@ -50,7 +50,18 @@ export function BuildDetailPage() {
   const buildWeapon = isWeaponBuild ? allWeapons.find((w) => w.id === b.weaponId) : undefined;
   const mech = detail.data;
 
-  const subjectSkills = isWeaponBuild ? (buildWeapon?.skillNodes ?? []) : (mech?.skillNodes ?? []);
+  // A linked skill's corner badge shows its gate partner's icon; map any
+  // mech/weapon id in play to its icon.
+  const linkedIcons: Record<string, string | null> = {};
+  for (const w of allWeapons) linkedIcons[w.id] = w.iconUrl;
+  if (mech) linkedIcons[mech.id] = mech.iconUrl;
+
+  // Filter LINKED skills by whether their gate partner is in the build: the
+  // mech pool is gated by the equipped weapon ids, a weapon's pool by the mech.
+  const mechPool = availableSkills(mech?.skillNodes ?? [], b.weaponIds);
+  const subjectSkills = isWeaponBuild
+    ? availableSkills(buildWeapon?.skillNodes ?? [], b.mechId ? [b.mechId] : [])
+    : mechPool;
   const subjectArt = isWeaponBuild
     ? (buildWeapon?.iconUrl ?? buildWeapon?.imageUrl)
     : mech?.cardSkillIconUrl;
@@ -62,7 +73,10 @@ export function BuildDetailPage() {
     .filter((w): w is WeaponSummary => w !== undefined);
   const weaponPicks = equipped.map((w) => ({
     weapon: w,
-    picks: resolvePicks(w.skillNodes, b.weaponSkillIds[w.id] ?? []),
+    picks: resolvePicks(
+      availableSkills(w.skillNodes, b.mechId ? [b.mechId] : []),
+      b.weaponSkillIds[w.id] ?? []
+    ),
   }));
 
   const corePool = [
@@ -147,7 +161,7 @@ export function BuildDetailPage() {
           <h2 className="mt-6 mb-2 text-sm font-semibold">Core skills</h2>
           <SkillGrid>
             {corePool.map(({ skill, art }) => (
-              <PickedSlot key={skill.id} skill={skill} cardImageUrl={art} />
+              <PickedSlot key={skill.id} skill={skill} cardImageUrl={art} linkedIcons={linkedIcons} />
             ))}
           </SkillGrid>
         </>
@@ -160,7 +174,7 @@ export function BuildDetailPage() {
             {/* Keyed by position, not id — a repeatable skill can appear
                 more than once in the same list. */}
             {subjectRegular.map((skill, i) => (
-              <PickedSlot key={`subject-${i}`} skill={skill} cardImageUrl={subjectArt} />
+              <PickedSlot key={`subject-${i}`} skill={skill} cardImageUrl={subjectArt} linkedIcons={linkedIcons} />
             ))}
           </SkillGrid>
         </>
@@ -179,6 +193,7 @@ export function BuildDetailPage() {
                   key={`${weapon.id}-${i}`}
                   skill={skill}
                   cardImageUrl={weapon.iconUrl ?? weapon.imageUrl}
+                  linkedIcons={linkedIcons}
                 />
               ))}
             </SkillGrid>

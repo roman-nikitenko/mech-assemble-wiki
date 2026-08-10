@@ -13,6 +13,8 @@ const skill = (over: Partial<SkillNodeRow> = {}): SkillNodeRow => ({
   type: "Normal",
   sortOrder: 0,
   repeatable: false,
+  linkedWeaponId: null,
+  linkedMechId: null,
   ...over,
 });
 
@@ -55,5 +57,25 @@ describe("SkillPickCard", () => {
     expect(card).toHaveTextContent("✓");
     await userEvent.click(card);
     expect(onClick).toHaveBeenCalledOnce();
+  });
+
+  it("shows the linked badge for a linked skill and not for an ordinary one", () => {
+    const { rerender } = render(<SkillPickCard skill={skill()} state="available" />);
+    expect(screen.queryByLabelText("Linked skill")).not.toBeInTheDocument();
+    rerender(<SkillPickCard skill={skill({ linkedWeaponId: "w1" })} state="available" />);
+    expect(screen.getByLabelText("Linked skill")).toBeInTheDocument();
+  });
+
+  it("shows the gate partner's icon in the linked badge", () => {
+    render(
+      <SkillPickCard
+        skill={skill({ linkedWeaponId: "w1" })}
+        state="available"
+        linkedIcons={{ w1: "/uploads/ice-drill-icon.png" }}
+      />
+    );
+    const badge = screen.getByLabelText("Linked skill");
+    const img = badge.querySelector("img");
+    expect(img?.getAttribute("src")).toContain("/uploads/ice-drill-icon.png");
   });
 });

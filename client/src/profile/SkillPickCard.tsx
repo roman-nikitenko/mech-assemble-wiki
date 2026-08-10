@@ -1,5 +1,6 @@
 import type { SkillNodeRow } from "../api/types";
 import { imageSrc } from "../api/client";
+import { LinkedBadge, linkedPartnerIcon } from "../components/LinkedBadge";
 import { skillDisplayName } from "./buildRules";
 
 // Game-card palette, matching the in-game rank-up cards the user provided:
@@ -39,11 +40,13 @@ interface SkillPickCardProps {
   /** How many copies of this skill are in the build — shown as a ×N badge
       for repeatable skills. Omit / 0 to hide. */
   count?: number;
+  /** id→icon map for gate partners; a linked skill shows its partner's icon. */
+  linkedIcons?: Record<string, string | null>;
 }
 
 /** One game-style skill card in the build editor's palette. A real button:
     disabled (dimmed) when picked or locked. */
-export function SkillPickCard({ skill, state, lockReason, onClick, imageUrl, count }: SkillPickCardProps) {
+export function SkillPickCard({ skill, state, lockReason, onClick, imageUrl, count, linkedIcons }: SkillPickCardProps) {
   const card = SKILL_CARD[skill.type];
   return (
     // min-h-80 = the 320px card height the design asks for.
@@ -69,6 +72,8 @@ export function SkillPickCard({ skill, state, lockReason, onClick, imageUrl, cou
         <span className="absolute right-1 top-1 z-10 rounded-full bg-accent px-2 py-0.5 text-xs font-black text-bg">
           ×{count}
         </span>
+      ) : skill.linkedWeaponId !== null || skill.linkedMechId !== null ? (
+        <LinkedBadge iconUrl={linkedPartnerIcon(skill, linkedIcons)} />
       ) : null}
       <span
         className={`rounded-lg px-2 py-1 text-sm font-black tracking-tight ${card.header} ${

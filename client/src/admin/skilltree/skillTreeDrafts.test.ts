@@ -62,9 +62,9 @@ describe("skillTreeDrafts helpers", () => {
     expect(serialized[3].parentIndex).toBeNull();
 
     const rebuilt = draftsFromNodes([
-      { id: "a", parentId: null, name: "a", description: null, appearanceLevel: 1, type: "Normal", sortOrder: 0, repeatable: false },
-      { id: "b", parentId: null, name: "b", description: null, appearanceLevel: 1, type: "Normal", sortOrder: 1, repeatable: false },
-      { id: "a1", parentId: "a", name: "a1", description: null, appearanceLevel: 1, type: "Normal", sortOrder: 0, repeatable: false },
+      { id: "a", parentId: null, name: "a", description: null, appearanceLevel: 1, type: "Normal", sortOrder: 0, repeatable: false, linkedWeaponId: null, linkedMechId: null },
+      { id: "b", parentId: null, name: "b", description: null, appearanceLevel: 1, type: "Normal", sortOrder: 1, repeatable: false, linkedWeaponId: null, linkedMechId: null },
+      { id: "a1", parentId: "a", name: "a1", description: null, appearanceLevel: 1, type: "Normal", sortOrder: 0, repeatable: false, linkedWeaponId: null, linkedMechId: null },
     ]);
     expect(rebuilt.map((d) => d.key)).toEqual(["a", "a1", "b"]); // depth-first
   });
@@ -90,7 +90,7 @@ describe("repeatable serialization", () => {
 
   it("draftsFromNodes restores repeatable from the API node", () => {
     const drafts = draftsFromNodes([
-      { id: "n1", parentId: null, name: "Stack", description: null, appearanceLevel: 1, type: "Normal", sortOrder: 0, repeatable: true },
+      { id: "n1", parentId: null, name: "Stack", description: null, appearanceLevel: 1, type: "Normal", sortOrder: 0, repeatable: true, linkedWeaponId: null, linkedMechId: null },
     ]);
     expect(drafts[0].repeatable).toBe(true);
   });
