@@ -44,6 +44,10 @@ export function WeaponFormPage() {
   const [rankUp, setRankUp] = useState<string[]>(["", "", "", "", "", "", ""]);
   const [skins, setSkins] = useState<SkinDraft[]>([]);
   const [skillDrafts, setSkillDrafts] = useState<SkillDraft[]>([]);
+  // Linked skills: standalone bonus skills gated on a partner MECH.
+  const [linkedSkills, setLinkedSkills] = useState<
+    { name: string; description: string; partnerId: string }[]
+  >([]);
 
   useEffect(() => {
     if (isEdit && weapons.data) {
@@ -71,6 +75,16 @@ export function WeaponFormPage() {
           }))
         );
         setSkillDrafts(draftsFromNodes(weapon.skillNodes));
+        // Linked skills come back as gated nodes on the weapon (linkedMechId).
+        setLinkedSkills(
+          weapon.skillNodes
+            .filter((n) => n.linkedMechId)
+            .map((n) => ({
+              name: n.name ?? "",
+              description: n.description ?? "",
+              partnerId: n.linkedMechId!,
+            }))
+        );
       }
     }
   }, [isEdit, id, weapons.data]);
@@ -109,6 +123,13 @@ export function WeaponFormPage() {
           imageUrl: s.imageUrl,
         })),
         skills: serializeDrafts(skillDrafts),
+        linkedSkills: linkedSkills
+          .filter((l) => l.name.trim() !== "" && l.partnerId !== "")
+          .map((l) => ({
+            name: l.name.trim(),
+            description: l.description.trim() || null,
+            partnerId: l.partnerId,
+          })),
       },
       { onSuccess: () => navigate("/admin/weapons") }
     );
@@ -340,6 +361,74 @@ export function WeaponFormPage() {
             skill above. Core skills have no name — only a description.
           </p>
           <SkillTreeEditor drafts={skillDrafts} onChange={setSkillDrafts} />
+        </fieldset>
+
+        <fieldset>
+          <legend className="mb-1 text-sm font-semibold">Linked skills</legend>
+          <p className="mb-2 text-xs text-ink-dim">
+            Bonus skills that only become pickable in a build when this weapon is
+            paired with the chosen mech.
+          </p>
+          <div className="space-y-2">
+            {linkedSkills.map((row, i) => (
+              <div key={i} className="flex flex-wrap items-center gap-2">
+                <input
+                  aria-label={`Linked skill ${i + 1} name`}
+                  value={row.name}
+                  onChange={(e) =>
+                    setLinkedSkills((list) =>
+                      list.map((r, j) => (j === i ? { ...r, name: e.target.value } : r))
+                    )
+                  }
+                  placeholder="Name"
+                  className="min-h-11 flex-1 rounded-lg border border-edge bg-surface px-3 text-sm"
+                />
+                <input
+                  aria-label={`Linked skill ${i + 1} description`}
+                  value={row.description}
+                  onChange={(e) =>
+                    setLinkedSkills((list) =>
+                      list.map((r, j) => (j === i ? { ...r, description: e.target.value } : r))
+                    )
+                  }
+                  placeholder="Description"
+                  className="min-h-11 flex-1 rounded-lg border border-edge bg-surface px-3 text-sm"
+                />
+                <select
+                  aria-label={`Linked skill ${i + 1} mech`}
+                  value={row.partnerId}
+                  onChange={(e) =>
+                    setLinkedSkills((list) =>
+                      list.map((r, j) => (j === i ? { ...r, partnerId: e.target.value } : r))
+                    )
+                  }
+                  className="min-h-11 rounded-lg border border-edge bg-surface px-3 text-sm"
+                >
+                  <option value="">— partner mech —</option>
+                  {(ownerMechs.data ?? []).map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.name}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  onClick={() => setLinkedSkills((list) => list.filter((_, j) => j !== i))}
+                  aria-label={`Remove linked skill ${i + 1}`}
+                  className="min-h-11 rounded-lg border border-edge px-3 text-sm hover:border-fire/60"
+                >
+                  −
+                </button>
+              </div>
+            ))}
+          </div>
+          <button
+            type="button"
+            onClick={() => setLinkedSkills((list) => [...list, { name: "", description: "", partnerId: "" }])}
+            className="mt-2 min-h-11 rounded-lg border border-edge px-4 text-sm hover:border-accent/60"
+          >
+            + Add linked skill
+          </button>
         </fieldset>
 
         {mutation.isError && (

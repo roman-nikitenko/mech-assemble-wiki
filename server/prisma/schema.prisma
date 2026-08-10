@@ -86,7 +86,9 @@ model Mech {
   skins           Skin[]
   helpers         Helper[]
   pilot           Pilot?
-  skillNodes      SkillNode[]
+  skillNodes       SkillNode[] @relation("SkillNodeMechOwner")
+  // Linked skills on OTHER owners that require this mech as their gate partner.
+  gatingSkillNodes SkillNode[] @relation("SkillNodeMechGate")
 
   @@map("mechs")
 }
@@ -143,6 +145,11 @@ model SkillNode {
   // not by the DB.
   weaponId String? @map("weapon_id") @db.Uuid
   mechId   String? @map("mech_id") @db.Uuid
+  // Gate partner for a LINKED skill (only one is ever set, and only opposite
+  // the owner): a mech-owned linked skill requires linkedWeaponId; a
+  // weapon-owned one requires linkedMechId. Both null = an ordinary skill.
+  linkedWeaponId String? @map("linked_weapon_id") @db.Uuid
+  linkedMechId   String? @map("linked_mech_id") @db.Uuid
   // Any-depth inheritance: parent points at a node in the SAME tree.
   // Named self-relation, like the older upgrade trees.
   parentId String? @map("parent_id") @db.Uuid
@@ -159,10 +166,12 @@ model SkillNode {
   // Premium/Core (they are never repeatable).
   repeatable Boolean @default(false)
 
-  weapon   Weapon?     @relation(fields: [weaponId], references: [id], onDelete: Cascade)
-  mech     Mech?       @relation(fields: [mechId], references: [id], onDelete: Cascade)
-  parent   SkillNode?  @relation("SkillNodeTree", fields: [parentId], references: [id])
-  children SkillNode[] @relation("SkillNodeTree")
+  weapon       Weapon?     @relation("SkillNodeWeaponOwner", fields: [weaponId], references: [id], onDelete: Cascade)
+  mech         Mech?       @relation("SkillNodeMechOwner", fields: [mechId], references: [id], onDelete: Cascade)
+  linkedWeapon Weapon?     @relation("SkillNodeWeaponGate", fields: [linkedWeaponId], references: [id], onDelete: Cascade)
+  linkedMech   Mech?       @relation("SkillNodeMechGate", fields: [linkedMechId], references: [id], onDelete: Cascade)
+  parent       SkillNode?  @relation("SkillNodeTree", fields: [parentId], references: [id])
+  children     SkillNode[] @relation("SkillNodeTree")
 
   @@map("skill_nodes")
 }
@@ -325,7 +334,9 @@ model Weapon {
   weaponSkins WeaponSkin[]
   helpers     Helper[]
   pilot       Pilot?
-  skillNodes  SkillNode[]
+  skillNodes       SkillNode[] @relation("SkillNodeWeaponOwner")
+  // Linked skills on OTHER owners that require this weapon as their gate partner.
+  gatingSkillNodes SkillNode[] @relation("SkillNodeWeaponGate")
 
   @@map("weapons")
 }

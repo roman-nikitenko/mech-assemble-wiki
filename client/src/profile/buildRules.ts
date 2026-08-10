@@ -11,6 +11,17 @@ export function skillDisplayName(skill: SkillNodeRow): string {
   return skill.name ?? "Core skill";
 }
 
+/** Filters an owner's skill pool for a build: ordinary skills always pass; a
+    LINKED skill (gated on a partner) passes only when its gate partner is in
+    the build. `partnerIds` = the ids that satisfy gates for THIS owner — for a
+    mech pool, the equipped weapon ids; for a weapon pool, [the build's mech id]. */
+export function availableSkills(pool: SkillNodeRow[], partnerIds: string[]): SkillNodeRow[] {
+  return pool.filter((n) => {
+    const gate = n.linkedWeaponId ?? n.linkedMechId;
+    return gate === null || partnerIds.includes(gate);
+  });
+}
+
 // The game's unlock gate ("Level = picks", user-confirmed): appearance
 // level N needs N picks already made; level 1 is always open.
 function levelSatisfied(level: number, priorCount: number): boolean {

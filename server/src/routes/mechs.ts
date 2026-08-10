@@ -4,7 +4,7 @@ import { prisma } from "../lib/prisma";
 import { requireAdmin } from "../lib/auth";
 import { buildTree } from "../lib/build-tree";
 import { parseMechInput } from "../lib/mech-input";
-import { createSkillNodes } from "../lib/skill-nodes";
+import { createSkillNodes, createLinkedSkills } from "../lib/skill-nodes";
 import { slugify } from "../lib/slug";
 import { UUID_RE } from "../lib/uuid";
 
@@ -198,7 +198,7 @@ mechsRouter.get("/:idOrSlug", async (req, res) => {
 mechsRouter.post("/", requireAdmin, async (req, res) => {
   const input = parseMechInput(req.body);
   if (!input.ok) return res.status(400).json({ error: input.message });
-  const { traitNames, pilotId, weaponId, accessoryId, skills, skins, slug, ...fields } = input.value;
+  const { traitNames, pilotId, weaponId, accessoryId, skills, linkedSkills, skins, slug, ...fields } = input.value;
 
   const pilotError = await validateMechPilotLink(pilotId, fields.rank);
   if (pilotError) return res.status(400).json({ error: pilotError });
@@ -261,6 +261,7 @@ mechsRouter.post("/", requireAdmin, async (req, res) => {
         await tx.accessory.update({ where: { id: accessoryId }, data: { mechId: created.id } });
       }
       await createSkillNodes(tx, { mechId: created.id }, skills);
+      await createLinkedSkills(tx, { mechId: created.id }, linkedSkills);
       return created;
     });
     res.status(201).json(mech);
@@ -283,7 +284,7 @@ mechsRouter.put("/:id", requireAdmin, async (req, res) => {
 
   const input = parseMechInput(req.body);
   if (!input.ok) return res.status(400).json({ error: input.message });
-  const { traitNames, pilotId, weaponId, accessoryId, skills, skins, slug, ...fields } = input.value;
+  const { traitNames, pilotId, weaponId, accessoryId, skills, linkedSkills, skins, slug, ...fields } = input.value;
 
   const pilotError = await validateMechPilotLink(pilotId, fields.rank);
   if (pilotError) return res.status(400).json({ error: pilotError });
@@ -360,6 +361,7 @@ mechsRouter.put("/:id", requireAdmin, async (req, res) => {
       // Replace the mech's whole skill tree — same set semantics as weapons.
       await tx.skillNode.deleteMany({ where: { mechId: id } });
       await createSkillNodes(tx, { mechId: id }, skills);
+      await createLinkedSkills(tx, { mechId: id }, linkedSkills);
       return updated;
     });
     res.json(mech);

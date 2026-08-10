@@ -61,14 +61,18 @@ export function WeaponHelpers({ helpers }: { helpers: Helper[] }) {
 }
 
 export function WeaponKit({ weapon }: { weapon: WeaponKitData }) {
+  // Linked skills (gated on a partner) never show on the public detail page.
+  const visibleSkills = weapon.skillNodes.filter(
+    (n) => n.linkedWeaponId === null && n.linkedMechId === null
+  );
   return (
     <>
-      {weapon.skillNodes.length > 0 && (
+      {visibleSkills.length > 0 && (
         <section>
           <h3 className="mb-2 text-sm font-bold uppercase tracking-wider text-ink-dim">
             Skills
           </h3>
-          <SkillNodeBranch nodes={weapon.skillNodes} parentId={null} />
+          <SkillNodeBranch nodes={visibleSkills} parentId={null} />
         </section>
       )}
       <WeaponSkins skins={weapon.weaponSkins} />

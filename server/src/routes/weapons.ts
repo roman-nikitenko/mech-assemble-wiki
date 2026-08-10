@@ -3,7 +3,7 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma";
 import { requireAdmin } from "../lib/auth";
 import { parseWeaponInput } from "../lib/weapon-input";
-import { createSkillNodes } from "../lib/skill-nodes";
+import { createSkillNodes, createLinkedSkills } from "../lib/skill-nodes";
 import { UUID_RE } from "../lib/uuid";
 import { slugify } from "../lib/slug";
 
@@ -110,7 +110,7 @@ weaponsRouter.get("/:idOrSlug", async (req, res) => {
 weaponsRouter.post("/", requireAdmin, async (req, res) => {
   const input = parseWeaponInput(req.body);
   if (!input.ok) return res.status(400).json({ error: input.message });
-  const { pilotId, skins, skills, slug, ...fields } = input.value;
+  const { pilotId, skins, skills, linkedSkills, slug, ...fields } = input.value;
 
   const linkError = await validateWeaponLinks(input.value);
   if (linkError) return res.status(400).json({ error: linkError });
@@ -128,6 +128,7 @@ weaponsRouter.post("/", requireAdmin, async (req, res) => {
         select: { id: true },
       });
       await createSkillNodes(tx, { weaponId: created.id }, skills);
+      await createLinkedSkills(tx, { weaponId: created.id }, linkedSkills);
       if (pilotId !== undefined && pilotId !== null) {
         // One update covers the whole either/or rule: it overwrites any
         // previous weapon link and clears any mech link.
@@ -167,7 +168,7 @@ weaponsRouter.put("/:id", requireAdmin, async (req, res) => {
 
   const input = parseWeaponInput(req.body);
   if (!input.ok) return res.status(400).json({ error: input.message });
-  const { pilotId, skins, skills, slug, ...fields } = input.value;
+  const { pilotId, skins, skills, linkedSkills, slug, ...fields } = input.value;
 
   const linkError = await validateWeaponLinks(input.value);
   if (linkError) return res.status(400).json({ error: linkError });
@@ -190,6 +191,7 @@ weaponsRouter.put("/:id", requireAdmin, async (req, res) => {
       // Replace the whole skill tree — same set semantics as the skins.
       await tx.skillNode.deleteMany({ where: { weaponId: id } });
       await createSkillNodes(tx, { weaponId: id }, skills);
+      await createLinkedSkills(tx, { weaponId: id }, linkedSkills);
       // Tri-state: undefined = leave the pilot link as-is; null = vacate;
       // string = vacate then seat (clearing the pilot's mech — either/or).
       if (pilotId !== undefined) {

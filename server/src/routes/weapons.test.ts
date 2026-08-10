@@ -477,4 +477,19 @@ describe("GET /api/weapons/:id", () => {
     expect(byId.status).toBe(200);
     expect(byId.body.id).toBe(id);
   });
+
+  it("creates a weapon-owned linked skill gated on a mech", async () => {
+    const mech = await prisma.mech.create({ data: { name: "[test:weapons] Pilot Mech", rank: "S" } });
+    const res = await request(app).post("/api/weapons").set(ADMIN).send({
+      name: "[test:weapons] Linked Ice Drill",
+      linkedSkills: [{ name: "Pilot Bond", description: "combo bonus", partnerId: mech.id }],
+    });
+    expect(res.status).toBe(201);
+    const node = await prisma.skillNode.findFirst({
+      where: { weaponId: res.body.id, linkedMechId: mech.id },
+    });
+    expect(node?.name).toBe("Pilot Bond");
+    expect(node?.linkedWeaponId).toBeNull();
+    expect(node?.type).toBe("Normal");
+  });
 });

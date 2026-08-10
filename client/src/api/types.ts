@@ -106,6 +106,12 @@ export interface SkillNodeRow {
   sortOrder: number;
   // Normal-only: this skill may be picked multiple times in a build.
   repeatable: boolean;
+  // Gate partner for a LINKED skill (see linked-skills): a mech-owned linked
+  // skill sets linkedWeaponId, a weapon-owned one sets linkedMechId. Both null
+  // = an ordinary skill. Linked skills are hidden on the public detail page and
+  // only pickable in a build when the gate partner is present.
+  linkedWeaponId: string | null;
+  linkedMechId: string | null;
 }
 
 export interface Weapon {
@@ -192,6 +198,8 @@ export interface WeaponInput {
     parentIndex: number | null;
     repeatable: boolean;
   }[];
+  // Linked skills gated on a partner MECH (partnerId = a mech id).
+  linkedSkills?: { name: string; description: string | null; partnerId: string }[];
 }
 
 export interface AwakeningNode {
@@ -288,6 +296,8 @@ export interface MechInput {
     parentIndex: number | null;
     repeatable: boolean;
   }[];
+  // Linked skills gated on a partner WEAPON (partnerId = a weapon id).
+  linkedSkills?: { name: string; description: string | null; partnerId: string }[];
 }
 
 /** A pilot, as served by /api/pilots (always carries its linked mech or null). */

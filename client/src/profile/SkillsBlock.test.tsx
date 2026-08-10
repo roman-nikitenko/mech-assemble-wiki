@@ -6,8 +6,8 @@ import { SkillsBlock } from "./SkillsBlock";
 import type { SkillNodeRow } from "../api/types";
 
 const rows: SkillNodeRow[] = [
-  { id: "r", parentId: null, name: "Stackable", description: "buff", appearanceLevel: 1, type: "Normal", sortOrder: 0, repeatable: true },
-  { id: "n", parentId: null, name: "Single", description: "once", appearanceLevel: 1, type: "Normal", sortOrder: 1, repeatable: false },
+  { id: "r", parentId: null, name: "Stackable", description: "buff", appearanceLevel: 1, type: "Normal", sortOrder: 0, repeatable: true, linkedWeaponId: null, linkedMechId: null },
+  { id: "n", parentId: null, name: "Single", description: "once", appearanceLevel: 1, type: "Normal", sortOrder: 1, repeatable: false, linkedWeaponId: null, linkedMechId: null },
 ];
 
 function Harness() {

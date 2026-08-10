@@ -515,4 +515,21 @@ describe("mech skill tree", () => {
     expect(res.status).toBe(204);
     expect(await prisma.skillNode.findMany({ where: { mechId: id } })).toEqual([]);
   });
+
+  it("creates a mech-owned linked skill gated on a weapon", async () => {
+    const mech = await prisma.mech.create({ data: { name: "[test:mechs] Awakening", rank: "S" } });
+    const weapon = await prisma.weapon.create({ data: { name: "[test:mechs] Ice Drill", tier: "S" } });
+    const res = await request(app).put(`/api/mechs/${mech.id}`).set(ADMIN).send({
+      name: mech.name,
+      rank: "S",
+      linkedSkills: [{ name: "Frost Synergy", description: "+30% freeze", partnerId: weapon.id }],
+    });
+    expect(res.status).toBe(200);
+    const node = await prisma.skillNode.findFirst({
+      where: { mechId: mech.id, linkedWeaponId: weapon.id },
+    });
+    expect(node?.name).toBe("Frost Synergy");
+    expect(node?.linkedMechId).toBeNull();
+    expect(node?.type).toBe("Normal");
+  });
 });

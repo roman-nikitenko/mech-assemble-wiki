@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { SkillNodeRow } from "../api/types";
-import { MAX_CORE_SLOTS, MAX_SLOTS, canPick, familyOrder, lockReason, normalizePicks, skillDisplayName } from "./buildRules";
+import { MAX_CORE_SLOTS, MAX_SLOTS, availableSkills, canPick, familyOrder, lockReason, normalizePicks, skillDisplayName } from "./buildRules";
 
 let seq = 0;
 const node = (over: Partial<SkillNodeRow> = {}): SkillNodeRow => ({
@@ -12,6 +12,8 @@ const node = (over: Partial<SkillNodeRow> = {}): SkillNodeRow => ({
   type: "Normal",
   sortOrder: 0,
   repeatable: false,
+  linkedWeaponId: null,
+  linkedMechId: null,
   ...over,
 });
 
@@ -154,5 +156,23 @@ describe("repeatable skills", () => {
     const full = Array.from({ length: MAX_SLOTS }, () => node());
     expect(canPick(r, full, [...full, r])).toBe(false);
     expect(lockReason(r, full, [...full, r])).toBe(`Build is full (${MAX_SLOTS}/${MAX_SLOTS})`);
+  });
+});
+
+describe("availableSkills", () => {
+  it("keeps ordinary skills and gated skills whose partner is present", () => {
+    const pool = [
+      node({ id: "normal" }),
+      node({ id: "gatedIn", linkedWeaponId: "w1" }),
+      node({ id: "gatedOut", linkedWeaponId: "w2" }),
+      node({ id: "gatedMech", linkedMechId: "m1" }),
+    ];
+    const out = availableSkills(pool, ["w1", "m1"]).map((n) => n.id);
+    expect(out).toEqual(["normal", "gatedIn", "gatedMech"]);
+  });
+
+  it("drops all gated skills when no partners are present", () => {
+    const pool = [node({ id: "normal" }), node({ id: "gated", linkedWeaponId: "w1" })];
+    expect(availableSkills(pool, []).map((n) => n.id)).toEqual(["normal"]);
   });
 });
