@@ -1,5 +1,6 @@
 import { MechRank } from "@prisma/client";
 import { parseSkillNodes, type SkillNodeInput } from "./skill-node-input";
+import { parseLinkedSkills, type LinkedSkillInput } from "./linked-skill-input";
 
 // Shared validation for POST and PUT /api/mechs. Returns either a clean,
 // typed payload or a user-facing error message. Kept out of the router so
@@ -44,6 +45,8 @@ export interface MechInput {
   weaponId: string | null | undefined;
   accessoryId: string | null | undefined;
   skills: SkillNodeInput[];
+  // Standalone bonus skills gated on a partner weapon (see linked-skills spec).
+  linkedSkills: LinkedSkillInput[];
   skins: MechSkinInput[];
 }
 
@@ -167,6 +170,9 @@ export function parseMechInput(body: unknown): ParseResult {
   const skillsResult = parseSkillNodes(b.skills);
   if (!skillsResult.ok) return skillsResult;
 
+  const linkedResult = parseLinkedSkills(b.linkedSkills);
+  if (!linkedResult.ok) return linkedResult;
+
   return {
     ok: true,
     value: {
@@ -186,6 +192,7 @@ export function parseMechInput(body: unknown): ParseResult {
       iconUrl: parsed.iconUrl,
       cardSkillIconUrl: parsed.cardSkillIconUrl,
       skills: skillsResult.value,
+      linkedSkills: linkedResult.value,
       skins,
     },
   };

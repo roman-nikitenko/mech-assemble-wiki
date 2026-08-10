@@ -1,5 +1,6 @@
 import { Prisma } from "@prisma/client";
 import type { SkillNodeInput } from "./skill-node-input";
+import type { LinkedSkillInput } from "./linked-skill-input";
 
 // Creates a skill tree parent-first for EITHER owner kind (weapon or mech):
 // parentIndex always points at an EARLIER entry, so by the time a child is
@@ -28,5 +29,33 @@ export async function createSkillNodes(
       },
     });
     createdIds.push(node.id);
+  }
+}
+
+// Creates flat LINKED skill nodes for an owner. Each is a standalone Normal
+// skill (level 1, no parent) plus a gate: a mech-owned linked skill sets
+// linkedWeaponId; a weapon-owned one sets linkedMechId.
+export async function createLinkedSkills(
+  tx: Prisma.TransactionClient,
+  owner: { mechId: string } | { weaponId: string },
+  linked: LinkedSkillInput[]
+): Promise<void> {
+  for (let i = 0; i < linked.length; i++) {
+    const { name, description, partnerId } = linked[i];
+    const gate =
+      "mechId" in owner ? { linkedWeaponId: partnerId } : { linkedMechId: partnerId };
+    await tx.skillNode.create({
+      data: {
+        ...owner,
+        ...gate,
+        name,
+        description,
+        type: "Normal",
+        appearanceLevel: 1,
+        parentId: null,
+        repeatable: false,
+        sortOrder: i,
+      },
+    });
   }
 }
