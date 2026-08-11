@@ -11,7 +11,6 @@ import { ErrorPanel } from "../components/ErrorPanel";
 import { mechSummary } from "../lib/mechSummary";
 import { OverviewTab } from "./sections/OverviewTab";
 import { SkillsTab } from "./sections/SkillsTab";
-import { WeaponTab } from "./sections/WeaponTab";
 import { AwakenTab } from "./sections/AwakenTab";
 import { SkinsHelpersTab } from "./sections/SkinsHelpersTab";
 
@@ -54,7 +53,6 @@ export function MechDetailPage() {
   const tabs = [
     "Overview",
     "Skills",
-    ...(mech.weapon ? ["Weapon"] : []),
     ...(mech.awakeningLevels.length > 0 ? ["Awaken"] : []),
     ...(mech.skins.length + mech.helpers.length > 0 ? ["Skin"] : []),
   ];
@@ -119,7 +117,6 @@ export function MechDetailPage() {
       <div className="py-4">
         {activeTab === "Overview" && <OverviewTab mech={mech} />}
         {activeTab === "Skills" && <SkillsTab nodes={mech.skillNodes} />}
-        {activeTab === "Weapon" && mech.weapon && <WeaponTab weapon={mech.weapon} />}
         {activeTab === "Awaken" && <AwakenTab levels={mech.awakeningLevels} />}
         {activeTab === "Skin" && (
           <SkinsHelpersTab skins={mech.skins} helpers={mech.helpers} />

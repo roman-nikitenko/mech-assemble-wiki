@@ -103,8 +103,9 @@ describe("MechDetailPage tabs are driven by data", () => {
       ],
       skins: [{ id: "s1", name: "Skin", description: null, imageUrl: null, stars: [] }],
     });
-    expect(await screen.findByRole("tab", { name: "Weapon" })).toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: "Awaken" })).toBeInTheDocument();
+    expect(await screen.findByRole("tab", { name: "Awaken" })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: "Skin" })).toBeInTheDocument();
+    // The Weapon tab was removed from the mech detail page.
+    expect(screen.queryByRole("tab", { name: "Weapon" })).not.toBeInTheDocument();
   });
 });

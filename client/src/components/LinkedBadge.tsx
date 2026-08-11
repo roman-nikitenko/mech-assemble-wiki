@@ -1,9 +1,5 @@
 import { imageSrc } from "../api/client";
 
-/** Top-right corner badge marking a LINKED skill (only active in a specific
-    mech + weapon combo). Shows the gate PARTNER's icon — the paired weapon (for
-    a mech-owned linked skill) or the paired mech (for a weapon-owned one). Falls
-    back to a chain glyph when the partner has no icon. */
 export function LinkedBadge({ iconUrl }: { iconUrl?: string | null }) {
   return (
     <span
@@ -24,8 +20,6 @@ export function LinkedBadge({ iconUrl }: { iconUrl?: string | null }) {
   );
 }
 
-/** Resolves the gate-partner icon for a linked skill from a shared id→icon map,
-    or null when the node isn't a linked skill / the partner has no icon. */
 export function linkedPartnerIcon(
   skill: { linkedWeaponId: string | null; linkedMechId: string | null },
   icons: Record<string, string | null> | undefined
