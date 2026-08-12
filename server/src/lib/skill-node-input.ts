@@ -1,4 +1,4 @@
-import { SkillNodeType } from "@prisma/client";
+import { SkillNodeType, QualityTier } from "@prisma/client";
 
 // Shared skill-tree payload parsing — used by BOTH weapon-input (Cycle I)
 // and mech-input (Cycle J). One entry of the FLAT list; parentIndex points
@@ -12,6 +12,9 @@ export interface SkillNodeInput {
   type: SkillNodeType;
   parentIndex: number | null;
   repeatable: boolean;
+  // Quality tier at which this node is pre-granted as an initial skill; null =
+  // an ordinary node.
+  initialAtTier: QualityTier | null;
 }
 
 type ParseSkillsResult =
@@ -71,12 +74,23 @@ export function parseSkillNodes(raw: unknown): ParseSkillsResult {
         return { ok: false, message: "skill parentIndex must reference an earlier entry." };
       }
     }
+    let initialAtTier: QualityTier | null = null;
+    if (s.initialAtTier !== undefined && s.initialAtTier !== null) {
+      if (
+        typeof s.initialAtTier !== "string" ||
+        !(Object.values(QualityTier) as string[]).includes(s.initialAtTier)
+      ) {
+        return { ok: false, message: "skill initialAtTier must be a valid quality tier." };
+      }
+      initialAtTier = s.initialAtTier as QualityTier;
+    }
     skills.push({
       name,
       description,
       appearanceLevel: s.appearanceLevel,
       type,
       parentIndex: (s.parentIndex as number | null | undefined) ?? null,
+      initialAtTier,
       // Repeatable is a Normal-only flag — forced false for Premium/Core,
       // the same "forced, not trusted" pattern used for Core names above.
       repeatable: type === "Normal" && s.repeatable === true,

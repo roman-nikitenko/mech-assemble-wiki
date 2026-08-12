@@ -32,8 +32,8 @@ describe("SkillTreeEditor", () => {
     render(
       <Harness
         initial={[
-          { key: "a", parentKey: null, name: "Alpha", description: "", appearanceLevel: 1, type: "Normal", expanded: false, repeatable: false },
-          { key: "b", parentKey: null, name: "Beta", description: "", appearanceLevel: 1, type: "Normal", expanded: false, repeatable: false },
+          { key: "a", parentKey: null, name: "Alpha", description: "", appearanceLevel: 1, type: "Normal", expanded: false, repeatable: false, initialAtTier: null },
+          { key: "b", parentKey: null, name: "Beta", description: "", appearanceLevel: 1, type: "Normal", expanded: false, repeatable: false, initialAtTier: null },
         ]}
       />
     );

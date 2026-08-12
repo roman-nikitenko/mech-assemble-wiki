@@ -18,7 +18,7 @@ const BUILD: PostedBuild = {
   skillIds: [],
   weaponIds: [],
   weaponSkillIds: {},
-  hearts: 5,
+  hearts: 5, quality: "Blue", weaponQualities: {},
   status: "Published",
   createdAt: "2026-07-20T00:00:00.000Z",
   updatedAt: new Date().toISOString(),

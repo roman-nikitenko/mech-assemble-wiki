@@ -12,7 +12,8 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import type { SkillNodeType } from "../../api/types";
+import type { SkillNodeType, QualityTier } from "../../api/types";
+import { QUALITY_TIERS } from "../../api/types";
 import {
   indentRow,
   moveRow,
@@ -53,6 +54,7 @@ export function SkillTreeEditor({ drafts, onChange }: SkillTreeEditorProps) {
         type: "Normal",
         expanded: true,
         repeatable: false,
+        initialAtTier: null,
       },
     ]);
   }
@@ -265,6 +267,24 @@ function SkillRow({
               >
                 {TYPES.map((t) => (
                   <option key={t}>{t}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-semibold">Initial at tier</label>
+              <select
+                aria-label="Initial at tier"
+                value={draft.initialAtTier ?? ""}
+                onChange={(e) =>
+                  onPatch({ initialAtTier: (e.target.value || null) as QualityTier | null })
+                }
+                className={fieldCls}
+              >
+                <option value="">— not initial —</option>
+                {QUALITY_TIERS.map((t) => (
+                  <option key={t} value={t}>
+                    Initial at {t}
+                  </option>
                 ))}
               </select>
             </div>

@@ -1,4 +1,4 @@
-import type { SkillNodeRow, SkillNodeType } from "../../api/types";
+import type { SkillNodeRow, SkillNodeType, QualityTier } from "../../api/types";
 
 // One editor row. The drafts array is ALWAYS in depth-first display order —
 // every helper below preserves that invariant, which is what makes "a row's
@@ -14,6 +14,9 @@ export interface SkillDraft {
   // Normal-only flag (mirrors SkillNode.repeatable). Forced false for
   // Premium/Core in serializeDrafts, matching the server.
   repeatable: boolean;
+  // Quality tier at which this node is pre-granted as an initial skill; null =
+  // ordinary node.
+  initialAtTier: QualityTier | null;
 }
 
 export function rowDepth(drafts: SkillDraft[], row: SkillDraft): number {
@@ -124,6 +127,7 @@ export function serializeDrafts(drafts: SkillDraft[]) {
     type: d.type,
     parentIndex: d.parentKey === null ? null : drafts.findIndex((p) => p.key === d.parentKey),
     repeatable: d.type === "Normal" ? d.repeatable : false,
+    initialAtTier: d.initialAtTier,
   }));
 }
 
@@ -149,6 +153,7 @@ export function draftsFromNodes(nodes: SkillNodeRow[]): SkillDraft[] {
         type: node.type,
         expanded: false,
         repeatable: node.repeatable,
+        initialAtTier: node.initialAtTier,
       });
       walk(node.id, node.id);
     }

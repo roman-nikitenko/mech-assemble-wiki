@@ -31,9 +31,9 @@ const mechDetail: MechDetail = {
   skins: [],
   helpers: [],
   skillNodes: [
-    { id: "s1", parentId: null, name: "Zap", description: "Bolt", appearanceLevel: 1, type: "Normal", sortOrder: 0, repeatable: false, linkedWeaponId: null, linkedMechId: null },
-    { id: "s5", parentId: null, name: null, description: "Core power", appearanceLevel: 1, type: "Core", sortOrder: 1, repeatable: false, linkedWeaponId: null, linkedMechId: null },
-    { id: "ls1", parentId: null, name: "Frost Synergy", description: "combo", appearanceLevel: 1, type: "Normal", sortOrder: 2, repeatable: false, linkedWeaponId: "w1", linkedMechId: null },
+    { id: "s1", parentId: null, name: "Zap", description: "Bolt", appearanceLevel: 1, type: "Normal", sortOrder: 0, repeatable: false, linkedWeaponId: null, linkedMechId: null, initialAtTier: null },
+    { id: "s5", parentId: null, name: null, description: "Core power", appearanceLevel: 1, type: "Core", sortOrder: 1, repeatable: false, linkedWeaponId: null, linkedMechId: null, initialAtTier: null },
+    { id: "ls1", parentId: null, name: "Frost Synergy", description: "combo", appearanceLevel: 1, type: "Normal", sortOrder: 2, repeatable: false, linkedWeaponId: "w1", linkedMechId: null, initialAtTier: null },
   ],
 };
 
@@ -41,7 +41,7 @@ const mechDetail: MechDetail = {
 // equips w1, the other doesn't — so only the first should show Frost Synergy.
 const LINKED_ON: PostedBuild = {
   id: "bon", name: "Combo", description: "", mechId: "m1", weaponId: null,
-  skillIds: ["s1", "ls1"], weaponIds: ["w1"], weaponSkillIds: {}, hearts: 0,
+  skillIds: ["s1", "ls1"], weaponIds: ["w1"], weaponSkillIds: {}, hearts: 0, quality: "Blue", weaponQualities: {},
   status: "Published", createdAt: "2026-07-20T00:00:00.000Z",
   updatedAt: "2026-07-20T00:00:00.000Z", author: { nickname: null, server: null },
 };
@@ -62,17 +62,17 @@ const weapon: WeaponSummary = {
   pilot: null,
   weaponSkins: [],
   skillNodes: [
-    { id: "ws1", parentId: null, name: "Slash", description: "Cuts", appearanceLevel: 1, type: "Normal", sortOrder: 0, repeatable: false, linkedWeaponId: null, linkedMechId: null },
+    { id: "ws1", parentId: null, name: "Slash", description: "Cuts", appearanceLevel: 1, type: "Normal", sortOrder: 0, repeatable: false, linkedWeaponId: null, linkedMechId: null, initialAtTier: null },
     // Weapon-owned linked skill gated on a mech — must stay hidden in a
     // weapon-only build even if it's in the saved skillIds.
-    { id: "wls1", parentId: null, name: "Combo Strike", description: "pair bonus", appearanceLevel: 1, type: "Normal", sortOrder: 1, repeatable: false, linkedWeaponId: null, linkedMechId: "m1" },
+    { id: "wls1", parentId: null, name: "Combo Strike", description: "pair bonus", appearanceLevel: 1, type: "Normal", sortOrder: 1, repeatable: false, linkedWeaponId: null, linkedMechId: "m1", initialAtTier: null },
   ],
 };
 
 // A weapon-only build (no mech) that PICKED the weapon's linked skill.
 const WEAPON_ONLY: PostedBuild = {
   id: "bwo", name: "Weapon only", description: "", mechId: null, weaponId: "w1",
-  skillIds: ["ws1", "wls1"], weaponIds: [], weaponSkillIds: {}, hearts: 0,
+  skillIds: ["ws1", "wls1"], weaponIds: [], weaponSkillIds: {}, hearts: 0, quality: "Blue", weaponQualities: {},
   status: "Published", createdAt: "2026-08-10T00:00:00.000Z",
   updatedAt: "2026-08-10T00:00:00.000Z", author: { nickname: null, server: null },
 };
@@ -86,7 +86,7 @@ const BUILD: PostedBuild = {
   skillIds: ["s1", "s5"],
   weaponIds: ["w1"],
   weaponSkillIds: { w1: ["ws1"] },
-  hearts: 0,
+  hearts: 0, quality: "Blue", weaponQualities: {},
   status: "Published",
   createdAt: "2026-07-20T00:00:00.000Z",
   updatedAt: "2026-07-20T00:00:00.000Z",

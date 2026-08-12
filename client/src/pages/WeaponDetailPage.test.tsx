@@ -36,6 +36,7 @@ const weapon: WeaponDetail = {
       repeatable: false,
       linkedWeaponId: null,
       linkedMechId: null,
+      initialAtTier: null,
     },
   ],
 };

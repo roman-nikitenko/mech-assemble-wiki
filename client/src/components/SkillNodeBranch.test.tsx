@@ -12,6 +12,7 @@ const base: Omit<SkillNodeRow, "id" | "name"> = {
   repeatable: false,
   linkedWeaponId: null,
   linkedMechId: null,
+  initialAtTier: null,
 };
 
 describe("SkillsTab", () => {

@@ -10,6 +10,8 @@ import {
   useWeapons,
 } from "../../api/client";
 import type { MechInput, MechRank } from "../../api/types";
+import { QUALITY_TIERS } from "../../api/types";
+import { QualityIcon } from "../../components/QualityIcon";
 import { slugify } from "../../lib/slug";
 import { ImageUploadField } from "../ImageUploadField";
 import { SavedToast } from "../SavedToast";
@@ -353,6 +355,8 @@ export function MechFormPage() {
           <div className="space-y-2">
             {rankUp.map((line, i) => (
               <div key={i} className="flex items-center gap-2">
+                <QualityIcon tier={QUALITY_TIERS[i]} />
+                <span className="w-16 shrink-0 text-xs text-ink-dim">{QUALITY_TIERS[i]}</span>
                 <input
                   aria-label={`Rank ${i + 1} preview`}
                   value={line}
@@ -360,7 +364,7 @@ export function MechFormPage() {
                     setRankUp((list) => list.map((l, j) => (j === i ? e.target.value : l)))
                   }
                   className={fieldCls}
-                  placeholder={`Rank ${i + 1}`}
+                  placeholder={QUALITY_TIERS[i]}
                 />
               </div>
             ))}

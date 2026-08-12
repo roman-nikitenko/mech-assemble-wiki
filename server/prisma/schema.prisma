@@ -29,6 +29,18 @@ enum SkillNodeType {
   Core
 }
 
+// Mech/weapon quality ladder (7 steps, lowest→highest). Ordering is by
+// declaration order, compared app-side via an index array.
+enum QualityTier {
+  Blue
+  Purple
+  Orange
+  Red
+  Turquoise
+  Gold
+  Mythic
+}
+
 // A build's publication state, WordPress-style. Draft = private working copy
 // (created by the editor); Published = visible in the public feed; Unposted =
 // pulled from the feed but kept (its hearts + share link survive a republish).
@@ -165,6 +177,9 @@ model SkillNode {
   // times, each copy taking one of the 8 shared slots. Forced false for
   // Premium/Core (they are never repeatable).
   repeatable Boolean @default(false)
+  // When the owning mech/weapon's quality tier ≥ this, the node is pre-granted
+  // as an initial skill in a build (active, unlocks its children, no slot).
+  initialAtTier QualityTier? @map("initial_at_tier")
 
   weapon       Weapon?     @relation("SkillNodeWeaponOwner", fields: [weaponId], references: [id], onDelete: Cascade)
   mech         Mech?       @relation("SkillNodeMechOwner", fields: [mechId], references: [id], onDelete: Cascade)
@@ -490,6 +505,10 @@ model Build {
   weaponIds      String[] @map("weapon_ids")
   // Per-weapon skill picks: {"<weaponId>": ["<skillId>", ...]}
   weaponSkillIds Json     @default("{}") @map("weapon_skill_ids")
+  // The SUBJECT's quality tier (the mech, or a single-weapon build's weapon).
+  quality         QualityTier @default(Blue)
+  // Per equipped weapon: {"<weaponId>": "Gold", ...}
+  weaponQualities Json        @default("{}") @map("weapon_qualities")
   // Publication state. New builds start as Draft (private); the public feed
   // and share pages only surface Published rows.
   status    BuildStatus @default(Draft)

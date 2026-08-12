@@ -15,6 +15,7 @@ const skill = (over: Partial<SkillNodeRow> = {}): SkillNodeRow => ({
   repeatable: false,
   linkedWeaponId: null,
   linkedMechId: null,
+  initialAtTier: null,
   ...over,
 });
 

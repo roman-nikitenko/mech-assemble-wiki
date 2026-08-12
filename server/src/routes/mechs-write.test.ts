@@ -532,4 +532,15 @@ describe("mech skill tree", () => {
     expect(node?.linkedMechId).toBeNull();
     expect(node?.type).toBe("Normal");
   });
+
+  it("stores a skill's initialAtTier", async () => {
+    const res = await request(app).post("/api/mechs").set(ADMIN).send({
+      name: "[test:mechs] Tiered",
+      rank: "S",
+      skills: [{ name: "Freeze", description: null, appearanceLevel: 1, type: "Normal", parentIndex: null, initialAtTier: "Gold" }],
+    });
+    expect(res.status).toBe(201);
+    const node = await prisma.skillNode.findFirst({ where: { mechId: res.body.id, name: "Freeze" } });
+    expect(node?.initialAtTier).toBe("Gold");
+  });
 });

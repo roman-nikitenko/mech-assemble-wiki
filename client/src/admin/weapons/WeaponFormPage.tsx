@@ -9,6 +9,8 @@ import {
   useWeapons,
 } from "../../api/client";
 import type { MechRank, WeaponInput } from "../../api/types";
+import { QUALITY_TIERS } from "../../api/types";
+import { QualityIcon } from "../../components/QualityIcon";
 import { slugify } from "../../lib/slug";
 import { ImageUploadField } from "../ImageUploadField";
 import { SkillTreeEditor } from "../skilltree/SkillTreeEditor";
@@ -219,14 +221,17 @@ export function WeaponFormPage() {
           <legend className="mb-1 text-sm font-semibold">Rank-up preview</legend>
           <div className="grid gap-2 sm:grid-cols-2">
             {rankUp.map((line, i) => (
-              <input
-                key={i}
-                aria-label={`Rank ${i + 1} preview`}
-                value={line}
-                onChange={(e) => setRankUp((list) => list.map((l, j) => (j === i ? e.target.value : l)))}
-                className={fieldCls}
-                placeholder={`Lv.${i + 1}`}
-              />
+              <div key={i} className="flex items-center gap-2">
+                <QualityIcon tier={QUALITY_TIERS[i]} />
+                <span className="w-16 shrink-0 text-xs text-ink-dim">{QUALITY_TIERS[i]}</span>
+                <input
+                  aria-label={`Rank ${i + 1} preview`}
+                  value={line}
+                  onChange={(e) => setRankUp((list) => list.map((l, j) => (j === i ? e.target.value : l)))}
+                  className={fieldCls}
+                  placeholder={QUALITY_TIERS[i]}
+                />
+              </div>
             ))}
           </div>
         </fieldset>
