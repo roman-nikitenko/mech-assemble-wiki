@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { render, screen, within } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -56,15 +56,13 @@ describe("PilotFormPage (create mode)", () => {
 
   it("offers S-tier mechs and a no-mech option in the dropdown", async () => {
     renderForm();
-    const select = await screen.findByLabelText("Linked S-tier mech");
-    expect(
-      within(select).getByRole("option", { name: "— no mech —" })
-    ).toBeInTheDocument();
+    // open the searchable dropdown — its options only mount while open
+    await userEvent.click(await screen.findByLabelText("Linked S-tier mech"));
+    expect(screen.getByRole("option", { name: "— no mech —" })).toBeInTheDocument();
     // findByRole (async) because the option appears after React Query loads the
-    // S-tier mechs — findByLabelText resolves on the static label before the
-    // fetch state update has re-rendered.
+    // S-tier mechs.
     expect(
-      await within(select).findByRole("option", { name: "Shadow Warrior" })
+      await screen.findByRole("option", { name: "Shadow Warrior" })
     ).toBeInTheDocument();
   });
 });

@@ -55,7 +55,8 @@ describe("AccessoryFormPage (create mode)", () => {
 
   it("S tier: two attribute rows and the mech dropdown appear", async () => {
     renderForm();
-    await userEvent.selectOptions(await screen.findByLabelText("Tier"), "S");
+    await screen.findByLabelText("Attribute 1 name");
+    await userEvent.click(screen.getByRole("button", { name: "Tier S" }));
     expect(screen.getByLabelText("Attribute 2 name")).toBeInTheDocument();
     expect(screen.getByLabelText("Linked S-tier mech")).toBeInTheDocument();
     expect(screen.queryByLabelText("Exclusive effect")).not.toBeInTheDocument();
@@ -63,9 +64,11 @@ describe("AccessoryFormPage (create mode)", () => {
 
   it("picking a mech reveals the exclusive-effect textarea", async () => {
     renderForm();
-    await userEvent.selectOptions(await screen.findByLabelText("Tier"), "S");
-    const mechSelect = screen.getByLabelText("Linked S-tier mech");
-    await userEvent.selectOptions(mechSelect, "m1");
+    await screen.findByLabelText("Attribute 1 name");
+    await userEvent.click(screen.getByRole("button", { name: "Tier S" }));
+    // open the searchable dropdown, then pick the mech option by name
+    await userEvent.click(screen.getByLabelText("Linked S-tier mech"));
+    await userEvent.click(screen.getByRole("option", { name: "Shadow Warrior" }));
     expect(screen.getByLabelText("Exclusive effect")).toBeInTheDocument();
   });
 });

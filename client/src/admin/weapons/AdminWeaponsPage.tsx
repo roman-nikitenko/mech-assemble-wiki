@@ -6,16 +6,37 @@ import { LoadingSkeleton } from "../../components/LoadingSkeleton";
 import { ErrorPanel } from "../../components/ErrorPanel";
 import { RankBadge } from "../../components/RankBadge";
 import { TypeBadge } from "../../components/TypeBadge";
+import { AdminTableFilters } from "../AdminTableFilters";
 
 export function AdminWeaponsPage() {
   const { data, isPending, isError, refetch } = useWeapons();
   const deleteWeapon = useDeleteWeapon();
   const [confirming, setConfirming] = useState<WeaponSummary | null>(null);
+  // Client-side filters ("" = no filter).
+  const [search, setSearch] = useState("");
+  const [typeId, setTypeId] = useState("");
+  const [tier, setTier] = useState("");
+
+  const filtered = (data ?? []).filter(
+    (weapon) =>
+      weapon.name.toLowerCase().includes(search.trim().toLowerCase()) &&
+      (typeId === "" || weapon.type?.id === typeId) &&
+      (tier === "" || weapon.tier === tier)
+  );
 
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-black tracking-tight">Weapons</h1>
+        <AdminTableFilters
+          search={search}
+          onSearch={setSearch}
+          typeId={typeId}
+          onTypeId={setTypeId}
+          tier={tier}
+          onTier={setTier}
+          tierLabel="Tier"
+        />
         <Link
           to="/admin/weapons/new"
           className="rounded-lg bg-accent px-4 py-2 font-semibold text-bg hover:brightness-110"
@@ -43,7 +64,14 @@ export function AdminWeaponsPage() {
               </tr>
             </thead>
             <tbody>
-              {data.map((weapon) => (
+              {filtered.length === 0 && (
+                <tr className="border-t border-edge">
+                  <td colSpan={7} className="px-4 py-6 text-center text-ink-dim">
+                    No weapons match your filters.
+                  </td>
+                </tr>
+              )}
+              {filtered.map((weapon) => (
                 <tr key={weapon.id} className="border-t border-edge">
                   <td className="px-4 py-2">
                     {weapon.imageUrl ? (
@@ -56,7 +84,14 @@ export function AdminWeaponsPage() {
                       <div className="h-10 w-10 rounded bg-surface-2" aria-hidden />
                     )}
                   </td>
-                  <td className="px-4 py-2 font-semibold">{weapon.name}</td>
+                  <td className="px-4 py-2 font-semibold">
+                    <Link
+                      to={`/admin/weapons/${weapon.id}/edit`}
+                      className="hover:text-accent hover:underline"
+                    >
+                      {weapon.name}
+                    </Link>
+                  </td>
                   <td className="px-4 py-2">
                     <RankBadge rank={weapon.tier} />
                   </td>

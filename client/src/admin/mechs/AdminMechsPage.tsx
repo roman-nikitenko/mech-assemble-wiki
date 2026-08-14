@@ -6,17 +6,38 @@ import { LoadingSkeleton } from "../../components/LoadingSkeleton";
 import { ErrorPanel } from "../../components/ErrorPanel";
 import { TypeBadge } from "../../components/TypeBadge";
 import { RankBadge } from "../../components/RankBadge";
+import { AdminTableFilters } from "../AdminTableFilters";
 
 export function AdminMechsPage() {
   const { data, isPending, isError, refetch } = useMechs({});
   const deleteMech = useDeleteMech();
   // The mech awaiting delete confirmation, or null when the dialog is closed.
   const [confirming, setConfirming] = useState<MechSummary | null>(null);
+  // Client-side filters ("" = no filter).
+  const [search, setSearch] = useState("");
+  const [typeId, setTypeId] = useState("");
+  const [rank, setRank] = useState("");
+
+  const filtered = (data ?? []).filter(
+    (mech) =>
+      mech.name.toLowerCase().includes(search.trim().toLowerCase()) &&
+      (typeId === "" || mech.type?.id === typeId) &&
+      (rank === "" || mech.rank === rank)
+  );
 
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-black tracking-tight">Mechs</h1>
+        <AdminTableFilters
+          search={search}
+          onSearch={setSearch}
+          typeId={typeId}
+          onTypeId={setTypeId}
+          tier={rank}
+          onTier={setRank}
+          tierLabel="Rank"
+        />
         <Link
           to="/admin/mechs/new"
           className="rounded-lg bg-accent px-4 py-2 font-semibold text-bg hover:brightness-110"
@@ -42,7 +63,14 @@ export function AdminMechsPage() {
               </tr>
             </thead>
             <tbody>
-              {data.map((mech) => (
+              {filtered.length === 0 && (
+                <tr className="border-t border-edge">
+                  <td colSpan={5} className="px-4 py-6 text-center text-ink-dim">
+                    No mechs match your filters.
+                  </td>
+                </tr>
+              )}
+              {filtered.map((mech) => (
                 <tr key={mech.id} className="border-t border-edge">
                   <td className="px-4 py-2">
                     {mech.imageUrl ? (
@@ -55,7 +83,14 @@ export function AdminMechsPage() {
                       <div className="h-10 w-10 rounded bg-surface-2" aria-hidden />
                     )}
                   </td>
-                  <td className="px-4 py-2 font-semibold">{mech.name}</td>
+                  <td className="px-4 py-2 font-semibold">
+                    <Link
+                      to={`/admin/mechs/${mech.id}/edit`}
+                      className="hover:text-accent hover:underline"
+                    >
+                      {mech.name}
+                    </Link>
+                  </td>
                   <td className="px-4 py-2">
                     {mech.type ? <TypeBadge type={mech.type} /> : <span className="text-ink-dim">—</span>}
                   </td>

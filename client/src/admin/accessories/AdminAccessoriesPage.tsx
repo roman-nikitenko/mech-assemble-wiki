@@ -5,16 +5,34 @@ import type { AccessorySummary } from "../../api/types";
 import { LoadingSkeleton } from "../../components/LoadingSkeleton";
 import { ErrorPanel } from "../../components/ErrorPanel";
 import { RankBadge } from "../../components/RankBadge";
+import { AdminTableFilters } from "../AdminTableFilters";
 
 export function AdminAccessoriesPage() {
   const { data, isPending, isError, refetch } = useAccessories();
   const deleteAccessory = useDeleteAccessory();
   const [confirming, setConfirming] = useState<AccessorySummary | null>(null);
+  // Client-side filters ("" = no filter). Accessories have no type.
+  const [search, setSearch] = useState("");
+  const [tier, setTier] = useState("");
+
+  const filtered = (data ?? []).filter(
+    (accessory) =>
+      accessory.name.toLowerCase().includes(search.trim().toLowerCase()) &&
+      (tier === "" || accessory.tier === tier)
+  );
 
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-black tracking-tight">Accessories</h1>
+        <AdminTableFilters
+          search={search}
+          onSearch={setSearch}
+          showType={false}
+          tier={tier}
+          onTier={setTier}
+          tierLabel="Tier"
+        />
         <Link
           to="/admin/accessories/new"
           className="rounded-lg bg-accent px-4 py-2 font-semibold text-bg hover:brightness-110"
@@ -40,7 +58,14 @@ export function AdminAccessoriesPage() {
               </tr>
             </thead>
             <tbody>
-              {data.map((accessory) => (
+              {filtered.length === 0 && (
+                <tr className="border-t border-edge">
+                  <td colSpan={5} className="px-4 py-6 text-center text-ink-dim">
+                    No accessories match your filters.
+                  </td>
+                </tr>
+              )}
+              {filtered.map((accessory) => (
                 <tr key={accessory.id} className="border-t border-edge">
                   <td className="px-4 py-2">
                     {accessory.imageUrl ? (
@@ -53,7 +78,14 @@ export function AdminAccessoriesPage() {
                       <div className="h-10 w-10 rounded bg-surface-2" aria-hidden />
                     )}
                   </td>
-                  <td className="px-4 py-2 font-semibold">{accessory.name}</td>
+                  <td className="px-4 py-2 font-semibold">
+                    <Link
+                      to={`/admin/accessories/${accessory.id}/edit`}
+                      className="hover:text-accent hover:underline"
+                    >
+                      {accessory.name}
+                    </Link>
+                  </td>
                   <td className="px-4 py-2">
                     <RankBadge rank={accessory.tier} />
                   </td>

@@ -7,6 +7,8 @@ import {
   useUpdateAccessory,
 } from "../../api/client";
 import type { AccessoryAttribute, AccessoryInput, MechRank } from "../../api/types";
+import { Dropdown } from "../../components/Dropdown";
+import { STierIcon } from "../../components/STierIcon";
 import { ImageUploadField } from "../ImageUploadField";
 
 const TIERS: MechRank[] = ["Standard", "S"];
@@ -98,55 +100,65 @@ export function AccessoryFormPage() {
           <input id="name" value={form.name} onChange={(e) => set("name", e.target.value)} className={fieldCls} />
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-4 sm:grid-cols-1">
           <div>
-            <label htmlFor="tier" className="mb-1 block text-sm font-semibold">Tier</label>
-            <select
-              id="tier"
-              value={form.tier}
-              onChange={(e) => {
-                const tier = e.target.value as MechRank;
-                // dropping to Standard un-links the mech and clears the
-                // effect — mirrors the API rules
-                setForm((f) => ({
-                  ...f,
-                  tier,
-                  mechId: tier === "S" ? f.mechId : null,
-                  exclusiveEffect: tier === "S" ? f.exclusiveEffect : null,
-                }));
-              }}
-              className={fieldCls}
-            >
-              {TIERS.map((t) => (
-                <option key={t}>{t}</option>
-              ))}
-            </select>
+            <label className="mb-1 block text-sm font-semibold">Tier</label>
+            <div className="flex gap-2" role="group" aria-label="Tier">
+              {TIERS.map((t) => {
+                const active = form.tier === t;
+                return (
+                  <button
+                    key={t}
+                    type="button"
+                    aria-label={`Tier ${t}`}
+                    aria-pressed={active}
+                    // dropping to Standard un-links the mech and clears the
+                    // effect — mirrors the API rules
+                    onClick={() =>
+                      setForm((f) => ({
+                        ...f,
+                        tier: t,
+                        mechId: t === "S" ? f.mechId : null,
+                        exclusiveEffect: t === "S" ? f.exclusiveEffect : null,
+                      }))
+                    }
+                    className={`flex min-h-11 flex-1 cursor-pointer items-center justify-center gap-2 rounded-lg border px-3 text-sm font-semibold transition-colors ${
+                      active
+                        ? "border-accent bg-accent/15 text-accent"
+                        : "border-edge text-ink-dim hover:border-accent/50"
+                    }`}
+                  >
+                    {/* S-tier gets the drawn gold badge; Standard is label-only,
+                        mirroring how RankBadge renders the two ranks. */}
+                    {t === "S" && <STierIcon size={18} />}
+                    {t}
+                  </button>
+                );
+              })}
+            </div>
           </div>
           {form.tier === "S" && (
             <div>
-              <label htmlFor="mech" className="mb-1 block text-sm font-semibold">
+              <label className="mb-1 block text-sm font-semibold">
                 Linked S-tier mech
               </label>
-              <select
-                id="mech"
+              <Dropdown
+                ariaLabel="Linked S-tier mech"
+                searchable
                 value={form.mechId ?? ""}
-                onChange={(e) => {
-                  const mechId = e.target.value || null;
+                onChange={(v) => {
+                  const mechId = v || null;
                   setForm((f) => ({
                     ...f,
                     mechId,
                     exclusiveEffect: mechId ? f.exclusiveEffect : null,
                   }));
                 }}
-                className={fieldCls}
-              >
-                <option value="">— no mech —</option>
-                {(sMechs.data ?? []).map((m) => (
-                  <option key={m.id} value={m.id}>
-                    {m.name}
-                  </option>
-                ))}
-              </select>
+                options={[
+                  { value: "", label: "— no mech —" },
+                  ...(sMechs.data ?? []).map((m) => ({ value: m.id, label: m.name })),
+                ]}
+              />
             </div>
           )}
         </div>
@@ -190,7 +202,7 @@ export function AccessoryFormPage() {
           </div>
         )}
 
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-4 sm:grid-cols-1">
           <ImageUploadField
             label="Image"
             value={form.imageUrl ?? null}

@@ -190,6 +190,8 @@ function SkillRow({
         <button
           type="button"
           aria-label={`Drag ${displayName}`}
+          // Stop the click bubbling to the header's expand/collapse toggle.
+          onClick={(e) => e.stopPropagation()}
           className={`cursor-grab ${headerMuted}`}
           {...attributes}
           {...listeners}
@@ -208,7 +210,10 @@ function SkillRow({
         <button
           type="button"
           aria-label={`Outdent ${displayName}`}
-          onClick={onOutdent}
+          onClick={(e) => {
+            e.stopPropagation();
+            onOutdent();
+          }}
           className={`rounded border border-edge px-1.5 text-xs ${headerMuted} hover:text-ink`}
         >
           ◀
@@ -216,7 +221,10 @@ function SkillRow({
         <button
           type="button"
           aria-label={`Indent ${displayName}`}
-          onClick={onIndent}
+          onClick={(e) => {
+            e.stopPropagation();
+            onIndent();
+          }}
           className={`rounded border border-edge px-1.5 text-xs ${headerMuted} hover:text-ink`}
         >
           ▶
@@ -224,7 +232,12 @@ function SkillRow({
         <button
           type="button"
           aria-label={`Toggle ${displayName}`}
-          onClick={() => onPatch({ expanded: !draft.expanded })}
+          // Header already toggles on click; stop propagation so the chevron
+          // toggles exactly once instead of double-firing back to closed.
+          onClick={(e) => {
+            e.stopPropagation();
+            onPatch({ expanded: !draft.expanded });
+          }}
           className={`rounded border border-edge px-1.5 text-xs ${headerMuted} hover:text-ink`}
         >
           {draft.expanded ? "▲" : "▼"}
@@ -232,7 +245,10 @@ function SkillRow({
         <button
           type="button"
           aria-label={`Remove ${displayName}`}
-          onClick={onRemove}
+          onClick={(e) => {
+            e.stopPropagation();
+            onRemove();
+          }}
           className="rounded border border-fire/40 px-1.5 text-xs text-fire hover:bg-fire/10"
         >
           ✕
