@@ -14,6 +14,8 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import type { SkillNodeType, QualityTier } from "../../api/types";
 import { QUALITY_TIERS } from "../../api/types";
+import { Dropdown } from "../../components/Dropdown";
+import { QualityIcon } from "../../components/QualityIcon";
 import {
   indentRow,
   moveRow,
@@ -27,6 +29,23 @@ import {
 const INDENT_PX = 28; // horizontal drag distance that equals one depth level
 const LEVELS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 const TYPES: SkillNodeType[] = ["Normal", "Premium", "Core"];
+
+// Per-type button colors, matching the skill cards: Normal = blue (thunder),
+// Premium = gold, Core = purple. Active = filled tint; idle = muted.
+const TYPE_STYLE: Record<SkillNodeType, { active: string; idle: string }> = {
+  Normal: {
+    active: "border-thunder bg-thunder/20 text-thunder",
+    idle: "border-edge text-ink-dim hover:border-thunder/50",
+  },
+  Premium: {
+    active: "border-skill-premium bg-skill-premium/20 text-skill-premium",
+    idle: "border-edge text-ink-dim hover:border-skill-premium/50",
+  },
+  Core: {
+    active: "border-skill-core bg-skill-core/20 text-skill-core",
+    idle: "border-edge text-ink-dim hover:border-skill-core/50",
+  },
+};
 
 interface SkillTreeEditorProps {
   drafts: SkillDraft[];
@@ -160,10 +179,14 @@ function SkillRow({
     <div
       ref={setNodeRef}
       style={{ ...style, marginLeft: depth * INDENT_PX }}
-      className="overflow-hidden rounded-xl border border-edge bg-surface"
+      className="rounded-xl border border-edge bg-surface"
     >
-      <div className={`flex min-h-11 items-center gap-2 px-3 py-2 ${headerColor}`}>
-        {/* drag handle — the ONLY part that starts a drag */}
+      <div
+        className={`flex min-h-11 items-center gap-2 px-3 py-2 cursor-pointer ${headerColor} ${
+          draft.expanded ? "rounded-t-xl" : "rounded-xl"
+        }`}
+        onClick={() => onPatch({ expanded: !draft.expanded })}
+      >
         <button
           type="button"
           aria-label={`Drag ${displayName}`}
@@ -259,34 +282,42 @@ function SkillRow({
             </div>
             <div>
               <label className="mb-1 block text-sm font-semibold">Type</label>
-              <select
-                aria-label="Skill type"
-                value={draft.type}
-                onChange={(e) => onPatch({ type: e.target.value as SkillNodeType })}
-                className={fieldCls}
-              >
-                {TYPES.map((t) => (
-                  <option key={t}>{t}</option>
-                ))}
-              </select>
+              <div className="flex gap-2" role="group" aria-label="Skill type">
+                {TYPES.map((t) => {
+                  const active = draft.type === t;
+                  const s = TYPE_STYLE[t];
+                  return (
+                    <button
+                      key={t}
+                      type="button"
+                      aria-label={`Type ${t}`}
+                      aria-pressed={active}
+                      onClick={() => onPatch({ type: t })}
+                      className={`min-h-11 flex-1 cursor-pointer rounded-lg border px-3 text-sm font-semibold transition-colors ${
+                        active ? s.active : s.idle
+                      }`}
+                    >
+                      {t}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
             <div>
               <label className="mb-1 block text-sm font-semibold">Initial at tier</label>
-              <select
-                aria-label="Initial at tier"
+              <Dropdown
+                ariaLabel="Initial at tier"
                 value={draft.initialAtTier ?? ""}
-                onChange={(e) =>
-                  onPatch({ initialAtTier: (e.target.value || null) as QualityTier | null })
-                }
-                className={fieldCls}
-              >
-                <option value="">— not initial —</option>
-                {QUALITY_TIERS.map((t) => (
-                  <option key={t} value={t}>
-                    Initial at {t}
-                  </option>
-                ))}
-              </select>
+                onChange={(v) => onPatch({ initialAtTier: (v || null) as QualityTier | null })}
+                options={[
+                  { value: "", label: "— not initial —" },
+                  ...QUALITY_TIERS.map((t) => ({
+                    value: t,
+                    label: `Initial at ${t}`,
+                    icon: <QualityIcon tier={t} size={16} />,
+                  })),
+                ]}
+              />
             </div>
           </div>
           {/* Repeatable is only meaningful for Normal skills — Premium/Core

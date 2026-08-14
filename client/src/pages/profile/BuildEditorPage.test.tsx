@@ -224,7 +224,8 @@ describe("BuildEditorPage (new build)", () => {
     // At Blue (default), Icicle is locked — its parent Freeze isn't taken.
     expect(screen.getByRole("button", { name: /Icicle/ })).toBeDisabled();
     // Raise the mech quality to Gold → Freeze is pre-granted → Icicle unlocks.
-    await userEvent.selectOptions(screen.getByLabelText("Mech quality"), "Gold");
+    await userEvent.click(screen.getByRole("button", { name: "Mech quality" }));
+    await userEvent.click(screen.getByRole("option", { name: "Gold" }));
     expect(await screen.findByRole("button", { name: /Icicle/ })).toBeEnabled();
   });
 

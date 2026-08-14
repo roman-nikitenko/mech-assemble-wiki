@@ -17,13 +17,13 @@ describe("SkillTreeEditor", () => {
     expect(screen.getByLabelText("Skill name")).toBeInTheDocument();
     expect(screen.getByLabelText("Skill description")).toBeInTheDocument();
     expect(screen.getByLabelText("Appearance level")).toBeInTheDocument();
-    expect(screen.getByLabelText("Skill type")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Type Normal" })).toBeInTheDocument();
   });
 
   it("switching type to Core hides the name field", async () => {
     render(<Harness />);
     await userEvent.click(screen.getByRole("button", { name: "+ Add skill" }));
-    await userEvent.selectOptions(screen.getByLabelText("Skill type"), "Core");
+    await userEvent.click(screen.getByRole("button", { name: "Type Core" }));
     expect(screen.queryByLabelText("Skill name")).not.toBeInTheDocument();
     expect(screen.getByText("Core skill")).toBeInTheDocument();
   });
@@ -54,7 +54,7 @@ describe("SkillTreeEditor", () => {
   it("hides the Repeatable checkbox for non-Normal skills", async () => {
     render(<Harness />);
     await userEvent.click(screen.getByRole("button", { name: "+ Add skill" }));
-    await userEvent.selectOptions(screen.getByLabelText("Skill type"), "Premium");
+    await userEvent.click(screen.getByRole("button", { name: "Type Premium" }));
     expect(screen.queryByLabelText("Repeatable")).not.toBeInTheDocument();
   });
 });

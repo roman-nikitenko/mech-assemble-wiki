@@ -6,6 +6,7 @@ import type { MechRank, PostedBuild, QualityTier, SkillNodeRow, WeaponSummary } 
 import { QUALITY_TIERS } from "../../api/types";
 import { MAX_CORE_SLOTS, availableSkills, grantedSkills, resolvePicks } from "../../profile/buildRules";
 import { QualityIcon } from "../../components/QualityIcon";
+import { Dropdown } from "../../components/Dropdown";
 import { PickedSlot, SkillsBlock } from "../../profile/SkillsBlock";
 import { NotesField } from "../../profile/NotesField";
 import { useMe } from "../../auth/useMe";
@@ -16,7 +17,8 @@ import { LoadingSkeleton } from "../../components/LoadingSkeleton";
 
 export const MAX_WEAPONS = 4;
 
-/** Quality tier picker for a build subject/weapon — an icon + a labelled select. */
+/** Quality tier picker for a build subject/weapon — the reusable Dropdown with
+    a colored hexagon icon per tier. */
 function QualitySelect({
   label,
   value,
@@ -27,22 +29,19 @@ function QualitySelect({
   onChange: (tier: QualityTier) => void;
 }) {
   return (
-    <label className="mt-5 flex items-center gap-2 text-sm font-semibold">
-      <QualityIcon tier={value} />
-      <span className="text-ink-dim">{label}:</span>
-      <select
-        aria-label={label}
+    <div className="mt-5 max-w-[220px]">
+      <span className="mb-1 block text-sm font-semibold text-ink-dim">{label}</span>
+      <Dropdown
+        ariaLabel={label}
         value={value}
-        onChange={(e) => onChange(e.target.value as QualityTier)}
-        className="min-h-9 rounded-lg cursor-pointer border border-edge bg-surface px-2 text-sm"
-      >
-        {QUALITY_TIERS.map((t) => (
-          <option key={t} value={t}>
-            {t}
-          </option>
-        ))}
-      </select>
-    </label>
+        onChange={(v) => onChange(v as QualityTier)}
+        options={QUALITY_TIERS.map((t) => ({
+          value: t,
+          label: t,
+          icon: <QualityIcon tier={t} size={16} />,
+        }))}
+      />
+    </div>
   );
 }
 
