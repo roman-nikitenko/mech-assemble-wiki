@@ -15,7 +15,6 @@ import { AwakenTab } from "./sections/AwakenTab";
 import { SkinsHelpersTab } from "./sections/SkinsHelpersTab";
 
 export function MechDetailPage() {
-  // The route is /mechs/:id, so id is always present; "!" tells TS that.
   const { id } = useParams<{ id: string }>();
   const { data: mech, isPending, isError, error, refetch } = useMech(id!);
   const [activeTab, setActiveTab] = useState("Overview");
@@ -86,8 +85,6 @@ export function MechDetailPage() {
             {mech.type && <TypeBadge type={mech.type} />}
           </div>
           {mech.epithet && <p className="mt-1 text-ink-dim">{mech.epithet}</p>}
-          {/* Factual auto-summary — real per-mech text for search engines to
-              index, sitting right under the name (see lib/mechSummary). */}
           <p className="mt-3 text-sm leading-relaxed text-ink-dim">{mechSummary(mech)}</p>
           <div className="mt-3 flex flex-col flex-wrap gap-x-4 gap-y-1 text-sm text-ink-dim">
             {mech.specialBonus && (
@@ -97,9 +94,6 @@ export function MechDetailPage() {
             )}
           </div>
           {mech.pilot && (
-            // Pilot as a row: icon + name + its bonus. No pilot detail page
-            // exists — the icon deep-links to the pilots list, which scrolls to
-            // and highlights this pilot's card.
             <div className="mt-3">
               <LinkedRow
                 to={`/pilots#pilot-${mech.pilot.id}`}

@@ -2,8 +2,10 @@ import { useState } from "react";
 import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../../auth/useAuth";
 import { imageSrc, srcSet, CARD_SIZES, useMech, useMechs, useTypes, useWeapons } from "../../api/client";
-import type { MechRank, PostedBuild, WeaponSummary } from "../../api/types";
-import { MAX_CORE_SLOTS, availableSkills, resolvePicks } from "../../profile/buildRules";
+import type { MechRank, PostedBuild, QualityTier, SkillNodeRow, WeaponSummary } from "../../api/types";
+import { QUALITY_TIERS } from "../../api/types";
+import { MAX_CORE_SLOTS, availableSkills, grantedSkills, resolvePicks } from "../../profile/buildRules";
+import { QualityIcon } from "../../components/QualityIcon";
 import { PickedSlot, SkillsBlock } from "../../profile/SkillsBlock";
 import { NotesField } from "../../profile/NotesField";
 import { useMe } from "../../auth/useMe";
@@ -13,6 +15,36 @@ import { FilterBar } from "../../components/FilterBar";
 import { LoadingSkeleton } from "../../components/LoadingSkeleton";
 
 export const MAX_WEAPONS = 4;
+
+/** Quality tier picker for a build subject/weapon — an icon + a labelled select. */
+function QualitySelect({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: QualityTier;
+  onChange: (tier: QualityTier) => void;
+}) {
+  return (
+    <label className="mt-5 flex items-center gap-2 text-sm font-semibold">
+      <QualityIcon tier={value} />
+      <span className="text-ink-dim">{label}:</span>
+      <select
+        aria-label={label}
+        value={value}
+        onChange={(e) => onChange(e.target.value as QualityTier)}
+        className="min-h-9 rounded-lg cursor-pointer border border-edge bg-surface px-2 text-sm"
+      >
+        {QUALITY_TIERS.map((t) => (
+          <option key={t} value={t}>
+            {t}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
 
 // The 4 weapon squares sit at the corners of an invisible square centered
 // on the mech art (layout chosen by the user from mockups).
@@ -67,6 +99,11 @@ function BuildEditorContent({ existing }: { existing: PostedBuild | undefined })
   // Per-weapon skill picks, keyed by weapon id — each block edits its slice.
   const [weaponSkillIds, setWeaponSkillIds] = useState<Record<string, string[]>>(
     existing?.weaponSkillIds ?? {}
+  );
+  // Quality tier of the SUBJECT (mech, or single weapon) + per equipped weapon.
+  const [quality, setQuality] = useState<QualityTier>(existing?.quality ?? "Blue");
+  const [weaponQualities, setWeaponQualities] = useState<Record<string, QualityTier>>(
+    existing?.weaponQualities ?? {}
   );
   // Weapon strip filters — each one narrows the strip; blank = show all.
   const [weaponName, setWeaponName] = useState("");
@@ -236,6 +273,19 @@ function BuildEditorContent({ existing }: { existing: PostedBuild | undefined })
   const weaponPool = (wp: WeaponSummary) =>
     availableSkills(wp.skillNodes, mechId ? [mechId] : []);
 
+  // Quality grants: nodes pre-granted at the owner's tier are removed from the
+  // pickable pool and shown as "Initial". The subject uses `quality`; each
+  // equipped weapon uses its own tier (default Blue).
+  const withoutGranted = (pool: SkillNodeRow[], granted: SkillNodeRow[]) =>
+    pool.filter((n) => !granted.some((g) => g.id === n.id));
+  const mechGranted = grantedSkills(skills, quality);
+  const mechPickable = withoutGranted(skills, mechGranted);
+  const buildWeaponGranted = grantedSkills(buildWeaponSkills, quality);
+  const buildWeaponPickable = withoutGranted(buildWeaponSkills, buildWeaponGranted);
+  const weaponGranted = (wp: WeaponSummary) =>
+    grantedSkills(weaponPool(wp), weaponQualities[wp.id] ?? "Blue");
+  const weaponPickable = (wp: WeaponSummary) => withoutGranted(weaponPool(wp), weaponGranted(wp));
+
   // A linked skill's corner badge shows its gate partner's icon; this maps any
   // mech/weapon id in play to its icon (the partner is always in the build).
   const linkedIcons: Record<string, string | null> = {};
@@ -281,7 +331,7 @@ function BuildEditorContent({ existing }: { existing: PostedBuild | undefined })
   // block (mech skillIds / per-weapon weaponSkillIds), this just gathers
   // them for the shared section and the shared 3-cap.
   const corePool = isWeaponBuild
-    ? resolvePicks(buildWeaponSkills, pickedIds)
+    ? resolvePicks(buildWeaponPickable, pickedIds, buildWeaponGranted)
         .filter((s) => s.type === "Core")
         .map((s) => ({
           skill: s,
@@ -289,24 +339,27 @@ function BuildEditorContent({ existing }: { existing: PostedBuild | undefined })
           onRemove: () =>
             setPickedIds(
               resolvePicks(
-                buildWeaponSkills,
-                pickedIds.filter((id) => id !== s.id)
+                buildWeaponPickable,
+                pickedIds.filter((id) => id !== s.id),
+                buildWeaponGranted
               ).map((p) => p.id)
             ),
         }))
     : [
-        ...resolvePicks(skills, pickedIds)
+        ...resolvePicks(mechPickable, pickedIds, mechGranted)
           .filter((s) => s.type === "Core")
           .map((s) => ({
             skill: s,
             art: mech?.cardSkillIconUrl,
             onRemove: () =>
               setPickedIds(
-                resolvePicks(skills, pickedIds.filter((id) => id !== s.id)).map((p) => p.id)
+                resolvePicks(mechPickable, pickedIds.filter((id) => id !== s.id), mechGranted).map(
+                  (p) => p.id
+                )
               ),
           })),
         ...equipped.flatMap((w) =>
-          resolvePicks(weaponPool(w), weaponSkillIds[w.id] ?? [])
+          resolvePicks(weaponPickable(w), weaponSkillIds[w.id] ?? [], weaponGranted(w))
             .filter((s) => s.type === "Core")
             .map((s) => ({
               skill: s,
@@ -315,8 +368,9 @@ function BuildEditorContent({ existing }: { existing: PostedBuild | undefined })
                 setWeaponSkillIds((prev) => ({
                   ...prev,
                   [w.id]: resolvePicks(
-                    weaponPool(w),
-                    (prev[w.id] ?? []).filter((id) => id !== s.id)
+                    weaponPickable(w),
+                    (prev[w.id] ?? []).filter((id) => id !== s.id),
+                    weaponGranted(w)
                   ).map((p) => p.id),
                 })),
             }))
@@ -367,22 +421,27 @@ function BuildEditorContent({ existing }: { existing: PostedBuild | undefined })
   function save() {
     // Only prune stale ids once the live lists have loaded — saving during
     // a fetch must not silently drop equipment or picks.
-    const subjectSkills = isWeaponBuild ? (buildWeaponSkills) : skills;
+    const subjectPickable = isWeaponBuild ? buildWeaponPickable : mechPickable;
+    const subjectGranted = isWeaponBuild ? buildWeaponGranted : mechGranted;
     const savedWeaponIds = isWeaponBuild ? [] : weapons.data ? equipped.map((w) => w.id) : weaponIds;
     const input = {
       name: name.trim(),
       description: description.trim(),
       mechId: isWeaponBuild ? null : mechId,
       weaponId: buildWeaponId,
-      skillIds: resolvePicks(subjectSkills, pickedIds).map((p) => p.id),
+      skillIds: resolvePicks(subjectPickable, pickedIds, subjectGranted).map((p) => p.id),
       weaponIds: savedWeaponIds,
+      quality,
+      weaponQualities: isWeaponBuild
+        ? {}
+        : Object.fromEntries(savedWeaponIds.map((id) => [id, weaponQualities[id] ?? "Blue"])),
       weaponSkillIds: isWeaponBuild
         ? {}
         : Object.fromEntries(
             savedWeaponIds.map((id) => {
               const w = allWeapons.find((x) => x.id === id);
               const ids = weaponSkillIds[id] ?? [];
-              return [id, w ? resolvePicks(weaponPool(w), ids).map((s) => s.id) : ids];
+              return [id, w ? resolvePicks(weaponPickable(w), ids, weaponGranted(w)).map((s) => s.id) : ids];
             })
           ),
     };
@@ -461,9 +520,12 @@ function BuildEditorContent({ existing }: { existing: PostedBuild | undefined })
 
         {coreSection}
 
+        <QualitySelect label="Weapon quality" value={quality} onChange={setQuality} />
+
         <SkillsBlock
           title={buildWeapon ? `${buildWeapon.name} skills` : "Weapon skills"}
-          skills={buildWeaponSkills}
+          skills={buildWeaponPickable}
+          granted={buildWeaponGranted}
           pickedIds={pickedIds}
           onPickedChange={setPickedIds}
           cardImageUrl={buildWeapon?.iconUrl ?? buildWeapon?.imageUrl}
@@ -631,9 +693,11 @@ function BuildEditorContent({ existing }: { existing: PostedBuild | undefined })
       {coreSection}
 
       {/* one expandable skills block for the mech, one per equipped weapon */}
+      <QualitySelect label="Mech quality" value={quality} onChange={setQuality} />
       <SkillsBlock
         title={mech ? `${mech.name} skills` : "Mech skills"}
-        skills={skills}
+        skills={mechPickable}
+        granted={mechGranted}
         pickedIds={pickedIds}
         onPickedChange={setPickedIds}
         cardImageUrl={mech?.cardSkillIconUrl}
@@ -643,16 +707,23 @@ function BuildEditorContent({ existing }: { existing: PostedBuild | undefined })
         linkedIcons={linkedIcons}
       />
       {equipped.map((w) => (
-        <SkillsBlock
-          key={w.id}
-          title={`${w.name} skills`}
-          skills={weaponPool(w)}
-          pickedIds={weaponSkillIds[w.id] ?? []}
-          onPickedChange={(ids) => setWeaponSkillIds((prev) => ({ ...prev, [w.id]: ids }))}
-          cardImageUrl={w.iconUrl ?? w.imageUrl}
-          globalCoreCount={corePool.length}
-          linkedIcons={linkedIcons}
-        />
+        <div key={w.id}>
+          <QualitySelect
+            label={`${w.name} quality`}
+            value={weaponQualities[w.id] ?? "Blue"}
+            onChange={(t) => setWeaponQualities((prev) => ({ ...prev, [w.id]: t }))}
+          />
+          <SkillsBlock
+            title={`${w.name} skills`}
+            skills={weaponPickable(w)}
+            granted={weaponGranted(w)}
+            pickedIds={weaponSkillIds[w.id] ?? []}
+            onPickedChange={(ids) => setWeaponSkillIds((prev) => ({ ...prev, [w.id]: ids }))}
+            cardImageUrl={w.iconUrl ?? w.imageUrl}
+            globalCoreCount={corePool.length}
+            linkedIcons={linkedIcons}
+          />
+        </div>
       ))}
 
       {metaForm}

@@ -280,12 +280,6 @@ export function MechFormPage() {
             </p>
           </div>
         )}
-
-        {/* Linked weapon + accessory. The FK lives on the weapon/accessory row
-            (one per mech), so picking one here MOVES it off any mech it's
-            already on — the same relationship the weapon/accessory forms edit
-            from their side. Shown for every mech (the game only pairs these
-            with S-tier mechs, but we don't gate the UI). */}
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <label htmlFor="weapon" className="mb-1 block text-sm font-semibold">
@@ -356,7 +350,7 @@ export function MechFormPage() {
             {rankUp.map((line, i) => (
               <div key={i} className="flex items-center gap-2">
                 <QualityIcon tier={QUALITY_TIERS[i]} />
-                <span className="w-16 shrink-0 text-xs text-ink-dim">{QUALITY_TIERS[i]}</span>
+                
                 <input
                   aria-label={`Rank ${i + 1} preview`}
                   value={line}
@@ -375,8 +369,6 @@ export function MechFormPage() {
           <legend className="mb-1 text-sm font-semibold">Traits</legend>
           <div className="space-y-2">
             {(form.traitNames ?? []).map((trait, i) => (
-              // Index keys are fine here: rows are plain values with no
-              // internal state, and rows are only added/removed at known spots.
               <div key={i} className="flex gap-2">
                 <input
                   aria-label={`Trait ${i + 1}`}

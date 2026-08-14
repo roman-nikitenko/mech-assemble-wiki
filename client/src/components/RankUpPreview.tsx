@@ -18,9 +18,8 @@ export function RankUpPreview({ steps }: { steps: string[] }) {
               key={i}
               className="flex items-stretch overflow-hidden rounded-lg border border-edge bg-surface-2"
             >
-              <span className="flex items-center gap-2 border-r border-edge bg-bg px-3">
+              <span className="flex items-center gap-2 [clip-path:polygon(0%_0%,100%_0%,80%_100%,0%_100%)] bg-bg px-2">
                 <QualityIcon tier={QUALITY_TIERS[i]} />
-                <span className="text-xs font-semibold text-ink-dim">{QUALITY_TIERS[i]}</span>
               </span>
               <span className="px-3 py-2 font-[600]">{step}</span>
             </li>

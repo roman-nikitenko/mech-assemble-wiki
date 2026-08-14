@@ -84,6 +84,9 @@ const detail: MechDetail = {
     { id: "s5", parentId: null, name: null, description: "Core power", appearanceLevel: 1, type: "Core", sortOrder: 4, repeatable: false, linkedWeaponId: null, linkedMechId: null, initialAtTier: null },
     // Linked skill: only pickable once weapon w2 (Thunder Pike) is equipped.
     { id: "ls1", parentId: null, name: "Frost Synergy", description: "combo bonus", appearanceLevel: 1, type: "Normal", sortOrder: 5, repeatable: false, linkedWeaponId: "w2", linkedMechId: null, initialAtTier: null },
+    // Quality grant: Freeze is pre-granted at Gold; its child Icicle needs it.
+    { id: "q1", parentId: null, name: "Freeze", description: "freeze", appearanceLevel: 1, type: "Normal", sortOrder: 6, repeatable: false, linkedWeaponId: null, linkedMechId: null, initialAtTier: "Gold" },
+    { id: "q2", parentId: "q1", name: "Icicle", description: "spike", appearanceLevel: 1, type: "Normal", sortOrder: 7, repeatable: false, linkedWeaponId: null, linkedMechId: null, initialAtTier: null },
   ],
 };
 
@@ -213,6 +216,16 @@ describe("BuildEditorPage (new build)", () => {
     expect(screen.queryByRole("button", { name: /Frost Synergy/ })).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "Thunder Pike" }));
     expect(await screen.findByRole("button", { name: /Frost Synergy/ })).toBeInTheDocument();
+  });
+
+  it("pre-grants a node once the mech quality reaches its tier, unlocking its child", async () => {
+    renderEditor();
+    await userEvent.click(await screen.findByRole("button", { name: /Iron Colossus/ }));
+    // At Blue (default), Icicle is locked — its parent Freeze isn't taken.
+    expect(screen.getByRole("button", { name: /Icicle/ })).toBeDisabled();
+    // Raise the mech quality to Gold → Freeze is pre-granted → Icicle unlocks.
+    await userEvent.selectOptions(screen.getByLabelText("Mech quality"), "Gold");
+    expect(await screen.findByRole("button", { name: /Icicle/ })).toBeEnabled();
   });
 
   it("starts with the mech picker, then shows 8 slots and the skill palette", async () => {

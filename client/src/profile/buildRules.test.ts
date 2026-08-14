@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { SkillNodeRow } from "../api/types";
-import { MAX_CORE_SLOTS, MAX_SLOTS, availableSkills, canPick, familyOrder, lockReason, normalizePicks, skillDisplayName } from "./buildRules";
+import { MAX_CORE_SLOTS, MAX_SLOTS, availableSkills, canPick, familyOrder, grantedSkills, lockReason, normalizePicks, skillDisplayName, tierAtLeast } from "./buildRules";
 
 let seq = 0;
 const node = (over: Partial<SkillNodeRow> = {}): SkillNodeRow => ({
@@ -175,5 +175,29 @@ describe("availableSkills", () => {
   it("drops all gated skills when no partners are present", () => {
     const pool = [node({ id: "normal" }), node({ id: "gated", linkedWeaponId: "w1" })];
     expect(availableSkills(pool, []).map((n) => n.id)).toEqual(["normal"]);
+  });
+});
+
+describe("quality grants", () => {
+  it("tierAtLeast compares tiers by ladder order", () => {
+    expect(tierAtLeast("Gold", "Blue")).toBe(true);
+    expect(tierAtLeast("Blue", "Gold")).toBe(false);
+    expect(tierAtLeast("Gold", "Gold")).toBe(true);
+  });
+
+  it("grantedSkills returns nodes whose initialAtTier ≤ the chosen tier", () => {
+    const pool = [
+      node({ id: "freeze", initialAtTier: "Gold" }),
+      node({ id: "late", initialAtTier: "Mythic" }),
+      node({ id: "plain" }),
+    ];
+    expect(grantedSkills(pool, "Gold").map((n) => n.id)).toEqual(["freeze"]);
+  });
+
+  it("a granted parent lets its child be picked (parent gate satisfied by grant)", () => {
+    const parent = node({ id: "p", initialAtTier: "Gold" });
+    const child = node({ id: "c", parentId: "p", appearanceLevel: 1 });
+    // No manual picks, but the granted parent satisfies the parent gate.
+    expect(canPick(child, [], [parent, child], undefined, [parent])).toBe(true);
   });
 });

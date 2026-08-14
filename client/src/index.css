@@ -1,4 +1,7 @@
 @import "tailwindcss";
+/* Your custom rules live here — see src/custom.css. Imported after Tailwind so
+   @apply / @utility / theme tokens are available inside it. */
+@import "./custom.css";
 
 /* Local display font (Nasalization, Regular only). Served as woff2 from
    public/fonts/ at a stable, unhashed URL so index.html can <link rel=preload>
@@ -105,8 +108,7 @@ html {
 
 body {
   @apply bg-bg text-ink antialiased font-sans;
-  /* Site-wide letter spacing: 0.03em == 3% of each element's font size.
-     Set on body so it inherits into all text; elements using a `tracking-*`
-     utility (e.g. headings with tracking-tight) still override locally. */
   letter-spacing: 0.02em;
 }
+
+

@@ -3,7 +3,7 @@ import { imageSrc, useMech, useMechs, usePostedBuild, useWeapons } from "../api/
 import type { WeaponSummary } from "../api/types";
 import { Seo } from "../components/Seo";
 import { AuthorTag } from "../profile/AuthorTag";
-import { availableSkills, resolvePicks } from "../profile/buildRules";
+import { availableSkills, grantedSkills, resolvePicks } from "../profile/buildRules";
 import { PickedSlot } from "../profile/SkillsBlock";
 import { NotePreview } from "../profile/NotePreview";
 import { formatDate } from "../lib/date";
@@ -65,19 +65,23 @@ export function BuildDetailPage() {
   const subjectArt = isWeaponBuild
     ? (buildWeapon?.iconUrl ?? buildWeapon?.imageUrl)
     : mech?.cardSkillIconUrl;
-  const subjectPicks = resolvePicks(subjectSkills, b.skillIds);
+  // Nodes pre-granted by the subject's quality tier (active from the start).
+  const subjectGranted = grantedSkills(subjectSkills, b.quality);
+  const subjectPicks = resolvePicks(subjectSkills, b.skillIds, subjectGranted);
   const subjectRegular = subjectPicks.filter((s) => s.type !== "Core");
 
   const equipped = b.weaponIds
     .map((id) => allWeapons.find((w) => w.id === id))
     .filter((w): w is WeaponSummary => w !== undefined);
-  const weaponPicks = equipped.map((w) => ({
-    weapon: w,
-    picks: resolvePicks(
-      availableSkills(w.skillNodes, b.mechId ? [b.mechId] : []),
-      b.weaponSkillIds[w.id] ?? []
-    ),
-  }));
+  const weaponPicks = equipped.map((w) => {
+    const pool = availableSkills(w.skillNodes, b.mechId ? [b.mechId] : []);
+    const granted = grantedSkills(pool, b.weaponQualities[w.id] ?? "Blue");
+    return {
+      weapon: w,
+      granted,
+      picks: resolvePicks(pool, b.weaponSkillIds[w.id] ?? [], granted),
+    };
+  });
 
   const corePool = [
     ...subjectPicks
@@ -167,6 +171,19 @@ export function BuildDetailPage() {
         </>
       )}
 
+      {subjectGranted.length > 0 && (
+        <>
+          <h2 className="mt-6 mb-2 text-sm font-semibold">
+            {subjectName} initial <span className="text-ink-dim">(from quality)</span>
+          </h2>
+          <SkillGrid>
+            {subjectGranted.map((skill) => (
+              <PickedSlot key={`sgrant-${skill.id}`} skill={skill} cardImageUrl={subjectArt} linkedIcons={linkedIcons} />
+            ))}
+          </SkillGrid>
+        </>
+      )}
+
       {subjectRegular.length > 0 && (
         <>
           <h2 className="mt-6 mb-2 text-sm font-semibold">{subjectName} skills</h2>
@@ -180,12 +197,24 @@ export function BuildDetailPage() {
         </>
       )}
 
-      {weaponPicks.map(({ weapon, picks }) => {
+      {weaponPicks.map(({ weapon, picks, granted }) => {
         const regular = picks.filter((s) => s.type !== "Core");
-        if (regular.length === 0) return null;
+        if (regular.length === 0 && granted.length === 0) return null;
         return (
           <div key={weapon.id}>
             <h2 className="mt-6 mb-2 text-sm font-semibold">{weapon.name} skills</h2>
+            {granted.length > 0 && (
+              <SkillGrid>
+                {granted.map((skill) => (
+                  <PickedSlot
+                    key={`${weapon.id}-grant-${skill.id}`}
+                    skill={skill}
+                    cardImageUrl={weapon.iconUrl ?? weapon.imageUrl}
+                    linkedIcons={linkedIcons}
+                  />
+                ))}
+              </SkillGrid>
+            )}
             <SkillGrid>
               {/* Positional keys — a repeatable skill may occupy two slots. */}
               {regular.map((skill, i) => (

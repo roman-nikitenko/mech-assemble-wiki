@@ -34,8 +34,18 @@ const mechDetail: MechDetail = {
     { id: "s1", parentId: null, name: "Zap", description: "Bolt", appearanceLevel: 1, type: "Normal", sortOrder: 0, repeatable: false, linkedWeaponId: null, linkedMechId: null, initialAtTier: null },
     { id: "s5", parentId: null, name: null, description: "Core power", appearanceLevel: 1, type: "Core", sortOrder: 1, repeatable: false, linkedWeaponId: null, linkedMechId: null, initialAtTier: null },
     { id: "ls1", parentId: null, name: "Frost Synergy", description: "combo", appearanceLevel: 1, type: "Normal", sortOrder: 2, repeatable: false, linkedWeaponId: "w1", linkedMechId: null, initialAtTier: null },
+    { id: "qg1", parentId: null, name: "Freeze", description: "freeze", appearanceLevel: 1, type: "Normal", sortOrder: 3, repeatable: false, linkedWeaponId: null, linkedMechId: null, initialAtTier: "Gold" },
   ],
 };
+
+// Builds that reach (or don't) the Gold tier that pre-grants the "Freeze" node.
+const GRANT_ON: PostedBuild = {
+  id: "bgon", name: "Golden", description: "", mechId: "m1", weaponId: null,
+  skillIds: [], weaponIds: [], weaponSkillIds: {}, hearts: 0, quality: "Gold", weaponQualities: {},
+  status: "Published", createdAt: "2026-08-12T00:00:00.000Z",
+  updatedAt: "2026-08-12T00:00:00.000Z", author: { nickname: null, server: null },
+};
+const GRANT_OFF: PostedBuild = { ...GRANT_ON, id: "bgoff", quality: "Blue" };
 
 // Two builds that both PICK the linked skill "ls1" (gated on weapon w1); one
 // equips w1, the other doesn't — so only the first should show Frost Synergy.
@@ -101,6 +111,8 @@ function renderPage(path: string) {
     else if (url.match(/\/api\/builds\/bon$/)) body = LINKED_ON;
     else if (url.match(/\/api\/builds\/boff$/)) body = LINKED_OFF;
     else if (url.match(/\/api\/builds\/bwo$/)) body = WEAPON_ONLY;
+    else if (url.match(/\/api\/builds\/bgon$/)) body = GRANT_ON;
+    else if (url.match(/\/api\/builds\/bgoff$/)) body = GRANT_OFF;
     else if (url.match(/\/api\/builds\/nope$/)) {
       return new Response(JSON.stringify({ error: "Build not found" }), {
         status: 404,
@@ -171,5 +183,16 @@ describe("BuildDetailPage", () => {
     // The ordinary Slash skill renders; the linked Combo Strike must not.
     expect(await screen.findByText("Slash", { selector: "span" })).toBeInTheDocument();
     expect(screen.queryByText("Combo Strike")).not.toBeInTheDocument();
+  });
+
+  it("shows a quality-granted skill when the build reaches its tier", async () => {
+    renderPage("/builds/bgon");
+    expect(await screen.findByText("Freeze", { selector: "span" })).toBeInTheDocument();
+  });
+
+  it("hides a quality-granted skill below its tier", async () => {
+    renderPage("/builds/bgoff");
+    await screen.findByRole("heading", { level: 1, name: "Golden" });
+    expect(screen.queryByText("Freeze")).not.toBeInTheDocument();
   });
 });

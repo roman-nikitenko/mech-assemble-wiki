@@ -1,34 +1,28 @@
 import type { QualityTier } from "../api/types";
+import { QUALITY_TIERS } from "../api/types";
+import quality1 from "../assets/qualities/quality-1.png";
+import quality2 from "../assets/qualities/quality-2.png";
+import quality3 from "../assets/qualities/quality-3.png";
+import quality4 from "../assets/qualities/quality-4.png";
+import quality5 from "../assets/qualities/quality-5.png";
+import quality6 from "../assets/qualities/quality-6.png";
+import quality7 from "../assets/qualities/quality-7.png";
 
-/** Per-tier colors for the quality ladder. Tunable / swappable for game assets. */
-export const QUALITY_COLORS: Record<QualityTier, string> = {
-  Blue: "#3b82f6",
-  Purple: "#a855f7",
-  Orange: "#f97316",
-  Red: "#ef4444",
-  Turquoise: "#2dd4bf",
-  Gold: "#eab308",
-  Mythic: "#e11d48",
-};
+const QUALITY_IMAGES = Object.fromEntries(
+  QUALITY_TIERS.map((tier, i) => [tier, [quality1, quality2, quality3, quality4, quality5, quality6, quality7][i]]),
+) as Record<QualityTier, string>;
 
-/** Colored hexagon marking a quality tier. Swap the SVG for a game asset later
-    (like skin-start.svg) if desired. */
+/** Game asset for a quality tier (Blue → Mythic). */
 export function QualityIcon({ tier, size = 20 }: { tier: QualityTier; size?: number }) {
   return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
+    <img
+      src={QUALITY_IMAGES[tier]}
+      alt=""
       role="img"
       aria-label={tier}
-      className="shrink-0"
-    >
-      <path
-        d="M12 2l8.66 5v10L12 22l-8.66-5V7z"
-        fill={QUALITY_COLORS[tier]}
-        stroke="rgba(255,255,255,0.35)"
-        strokeWidth="1"
-      />
-    </svg>
+      width={size}
+      height={size}
+      className="shrink-0 object-contain"
+    />
   );
 }
