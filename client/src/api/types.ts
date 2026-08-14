@@ -95,6 +95,12 @@ export interface WeaponSkinRow {
 
 export type SkillNodeType = "Normal" | "Premium" | "Core";
 
+/** Mech/weapon quality ladder, lowest→highest. */
+export type QualityTier = "Blue" | "Purple" | "Orange" | "Red" | "Turquoise" | "Gold" | "Mythic";
+export const QUALITY_TIERS: QualityTier[] = [
+  "Blue", "Purple", "Orange", "Red", "Turquoise", "Gold", "Mythic",
+];
+
 /** One skill-tree node as served by the API (flat; assemble by parentId). */
 export interface SkillNodeRow {
   id: string;
@@ -112,6 +118,9 @@ export interface SkillNodeRow {
   // only pickable in a build when the gate partner is present.
   linkedWeaponId: string | null;
   linkedMechId: string | null;
+  // Quality tier at which this node is pre-granted as an initial skill; null =
+  // ordinary node.
+  initialAtTier: QualityTier | null;
 }
 
 export interface Weapon {
@@ -197,6 +206,7 @@ export interface WeaponInput {
     type: SkillNodeType;
     parentIndex: number | null;
     repeatable: boolean;
+    initialAtTier?: QualityTier | null;
   }[];
   // Linked skills gated on a partner MECH (partnerId = a mech id).
   linkedSkills?: { name: string; description: string | null; partnerId: string }[];
@@ -295,6 +305,7 @@ export interface MechInput {
     type: SkillNodeType;
     parentIndex: number | null;
     repeatable: boolean;
+    initialAtTier?: QualityTier | null;
   }[];
   // Linked skills gated on a partner WEAPON (partnerId = a weapon id).
   linkedSkills?: { name: string; description: string | null; partnerId: string }[];
@@ -359,6 +370,9 @@ export interface PostedBuild {
   weaponSkillIds: Record<string, string[]>;
   status: BuildStatus;
   hearts: number;
+  // The subject's quality tier + per-equipped-weapon tiers.
+  quality: QualityTier;
+  weaponQualities: Record<string, QualityTier>;
   // Set by the client after a heart toggle — not included in GET responses.
   userHearted?: boolean;
   createdAt: string;
@@ -386,6 +400,9 @@ export interface BuildPostInput {
   skillIds: string[];
   weaponIds: string[];
   weaponSkillIds: Record<string, string[]>;
+  // Optional on input — the server defaults quality to Blue / {} when absent.
+  quality?: QualityTier;
+  weaponQualities?: Record<string, QualityTier>;
 }
 
 /** Payload for POST/PUT /api/accessories. */

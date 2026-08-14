@@ -26,7 +26,7 @@ const postedBuild = (over: Partial<PostedBuild> = {}): PostedBuild => ({
   weaponIds: [],
   weaponSkillIds: {},
   status: "Draft" as BuildStatus,
-  hearts: 0,
+  hearts: 0, quality: "Blue", weaponQualities: {},
   createdAt: "2026-07-15T00:00:00.000Z",
   updatedAt: "2026-07-15T00:00:00.000Z",
   author: { nickname: "Tester", server: "" },
@@ -77,13 +77,16 @@ const detail: MechDetail = {
   skins: [],
   helpers: [],
   skillNodes: [
-    { id: "s1", parentId: null, name: "Zap", description: "Bolt", appearanceLevel: 1, type: "Normal", sortOrder: 0, repeatable: false, linkedWeaponId: null, linkedMechId: null },
-    { id: "s2", parentId: "s1", name: "Zap II", description: "Bigger bolt", appearanceLevel: 1, type: "Premium", sortOrder: 1, repeatable: false, linkedWeaponId: null, linkedMechId: null },
-    { id: "s3", parentId: null, name: "Overdrive", description: null, appearanceLevel: 3, type: "Normal", sortOrder: 2, repeatable: false, linkedWeaponId: null, linkedMechId: null },
-    { id: "s4", parentId: null, name: "Dash", description: null, appearanceLevel: 1, type: "Normal", sortOrder: 3, repeatable: false, linkedWeaponId: null, linkedMechId: null },
-    { id: "s5", parentId: null, name: null, description: "Core power", appearanceLevel: 1, type: "Core", sortOrder: 4, repeatable: false, linkedWeaponId: null, linkedMechId: null },
+    { id: "s1", parentId: null, name: "Zap", description: "Bolt", appearanceLevel: 1, type: "Normal", sortOrder: 0, repeatable: false, linkedWeaponId: null, linkedMechId: null, initialAtTier: null },
+    { id: "s2", parentId: "s1", name: "Zap II", description: "Bigger bolt", appearanceLevel: 1, type: "Premium", sortOrder: 1, repeatable: false, linkedWeaponId: null, linkedMechId: null, initialAtTier: null },
+    { id: "s3", parentId: null, name: "Overdrive", description: null, appearanceLevel: 3, type: "Normal", sortOrder: 2, repeatable: false, linkedWeaponId: null, linkedMechId: null, initialAtTier: null },
+    { id: "s4", parentId: null, name: "Dash", description: null, appearanceLevel: 1, type: "Normal", sortOrder: 3, repeatable: false, linkedWeaponId: null, linkedMechId: null, initialAtTier: null },
+    { id: "s5", parentId: null, name: null, description: "Core power", appearanceLevel: 1, type: "Core", sortOrder: 4, repeatable: false, linkedWeaponId: null, linkedMechId: null, initialAtTier: null },
     // Linked skill: only pickable once weapon w2 (Thunder Pike) is equipped.
-    { id: "ls1", parentId: null, name: "Frost Synergy", description: "combo bonus", appearanceLevel: 1, type: "Normal", sortOrder: 5, repeatable: false, linkedWeaponId: "w2", linkedMechId: null },
+    { id: "ls1", parentId: null, name: "Frost Synergy", description: "combo bonus", appearanceLevel: 1, type: "Normal", sortOrder: 5, repeatable: false, linkedWeaponId: "w2", linkedMechId: null, initialAtTier: null },
+    // Quality grant: Freeze is pre-granted at Gold; its child Icicle needs it.
+    { id: "q1", parentId: null, name: "Freeze", description: "freeze", appearanceLevel: 1, type: "Normal", sortOrder: 6, repeatable: false, linkedWeaponId: null, linkedMechId: null, initialAtTier: "Gold" },
+    { id: "q2", parentId: "q1", name: "Icicle", description: "spike", appearanceLevel: 1, type: "Normal", sortOrder: 7, repeatable: false, linkedWeaponId: null, linkedMechId: null, initialAtTier: null },
   ],
 };
 
@@ -114,10 +117,10 @@ const weaponsFixture: WeaponSummary[] = [
     tier: "S",
     type: fireType,
     skillNodes: [
-      { id: "ws1", parentId: null, name: "Slash", description: "Cuts", appearanceLevel: 1, type: "Normal", sortOrder: 0, repeatable: false, linkedWeaponId: null, linkedMechId: null },
+      { id: "ws1", parentId: null, name: "Slash", description: "Cuts", appearanceLevel: 1, type: "Normal", sortOrder: 0, repeatable: false, linkedWeaponId: null, linkedMechId: null, initialAtTier: null },
       // Weapon-owned linked skill gated on a mech partner (m2). Must stay hidden
       // in a weapon-only build (no mech to pair with).
-      { id: "wls1", parentId: null, name: "Combo Strike", description: "pair bonus", appearanceLevel: 1, type: "Normal", sortOrder: 1, repeatable: false, linkedWeaponId: null, linkedMechId: "m2" },
+      { id: "wls1", parentId: null, name: "Combo Strike", description: "pair bonus", appearanceLevel: 1, type: "Normal", sortOrder: 1, repeatable: false, linkedWeaponId: null, linkedMechId: "m2", initialAtTier: null },
     ],
   }),
   weaponFixture({ id: "w2", name: "Thunder Pike", tier: "Standard" }),
@@ -213,6 +216,17 @@ describe("BuildEditorPage (new build)", () => {
     expect(screen.queryByRole("button", { name: /Frost Synergy/ })).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "Thunder Pike" }));
     expect(await screen.findByRole("button", { name: /Frost Synergy/ })).toBeInTheDocument();
+  });
+
+  it("pre-grants a node once the mech quality reaches its tier, unlocking its child", async () => {
+    renderEditor();
+    await userEvent.click(await screen.findByRole("button", { name: /Iron Colossus/ }));
+    // At Blue (default), Icicle is locked — its parent Freeze isn't taken.
+    expect(screen.getByRole("button", { name: /Icicle/ })).toBeDisabled();
+    // Raise the mech quality to Gold → Freeze is pre-granted → Icicle unlocks.
+    await userEvent.click(screen.getByRole("button", { name: "Mech quality" }));
+    await userEvent.click(screen.getByRole("option", { name: "Gold" }));
+    expect(await screen.findByRole("button", { name: /Icicle/ })).toBeEnabled();
   });
 
   it("starts with the mech picker, then shows 8 slots and the skill palette", async () => {

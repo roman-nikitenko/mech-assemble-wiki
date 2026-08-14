@@ -8,6 +8,7 @@ import {
   useWeapons,
 } from "../../api/client";
 import type { PilotInput } from "../../api/types";
+import { Dropdown } from "../../components/Dropdown";
 import { ImageUploadField } from "../ImageUploadField";
 
 const EMPTY: PilotInput = { name: "", mechId: null };
@@ -104,46 +105,40 @@ export function PilotFormPage() {
 
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <label htmlFor="mech" className="mb-1 block text-sm font-semibold">
+            <label className="mb-1 block text-sm font-semibold">
               Linked S-tier mech
             </label>
-            <select
-              id="mech"
+            <Dropdown
+              ariaLabel="Linked S-tier mech"
+              searchable
               value={form.mechId ?? ""}
-              onChange={(e) =>
-                // either/or: picking a mech clears the weapon link
-                setForm((f) => ({ ...f, mechId: e.target.value || null, weaponId: null }))
+              // either/or: picking a mech clears the weapon link
+              onChange={(v) =>
+                setForm((f) => ({ ...f, mechId: v || null, weaponId: null }))
               }
-              className={fieldCls}
-            >
-              <option value="">— no mech —</option>
-              {(sMechs.data ?? []).map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.name}
-                </option>
-              ))}
-            </select>
+              options={[
+                { value: "", label: "— no mech —" },
+                ...(sMechs.data ?? []).map((m) => ({ value: m.id, label: m.name })),
+              ]}
+            />
           </div>
           <div>
-            <label htmlFor="weapon" className="mb-1 block text-sm font-semibold">
+            <label className="mb-1 block text-sm font-semibold">
               Linked weapon
             </label>
-            <select
-              id="weapon"
+            <Dropdown
+              ariaLabel="Linked weapon"
+              searchable
               value={form.weaponId ?? ""}
-              onChange={(e) =>
-                // either/or: picking a weapon clears the mech link
-                setForm((f) => ({ ...f, weaponId: e.target.value || null, mechId: null }))
+              // either/or: picking a weapon clears the mech link
+              onChange={(v) =>
+                setForm((f) => ({ ...f, weaponId: v || null, mechId: null }))
               }
-              className={fieldCls}
-            >
-              <option value="">— no weapon —</option>
-              {(weapons.data ?? []).map((w) => (
-                <option key={w.id} value={w.id}>
-                  {w.name}
-                </option>
-              ))}
-            </select>
+              options={[
+                { value: "", label: "— no weapon —" },
+                ...(weapons.data ?? []).map((w) => ({ value: w.id, label: w.name })),
+              ]}
+            />
             <p className="mt-1 text-xs text-ink-dim">
               A pilot links to a mech OR a weapon, never both.
             </p>

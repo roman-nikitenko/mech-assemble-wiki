@@ -275,4 +275,14 @@ describe("POST /api/builds/:id/heart", () => {
     const res = await request(app).post("/api/builds/00000000-0000-0000-0000-000000000000/heart");
     expect(res.status).toBe(404);
   });
+
+  it("persists quality and weaponQualities on a build", async () => {
+    authState.sub = "test|builds-a";
+    const res = await request(app)
+      .post("/api/builds")
+      .send({ ...BUILD, quality: "Gold", weaponQualities: { w1: "Purple" } });
+    expect(res.status).toBe(201);
+    expect(res.body.quality).toBe("Gold");
+    expect(res.body.weaponQualities).toEqual({ w1: "Purple" });
+  });
 });

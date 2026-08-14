@@ -10,6 +10,10 @@ import {
   useWeapons,
 } from "../../api/client";
 import type { MechInput, MechRank } from "../../api/types";
+import { QUALITY_TIERS } from "../../api/types";
+import { Dropdown } from "../../components/Dropdown";
+import { QualityIcon } from "../../components/QualityIcon";
+import { STierIcon } from "../../components/STierIcon";
 import { slugify } from "../../lib/slug";
 import { ImageUploadField } from "../ImageUploadField";
 import { SavedToast } from "../SavedToast";
@@ -227,101 +231,134 @@ export function MechFormPage() {
         </div>
 
         <div>
-          <label htmlFor="type" className="mb-1 block text-sm font-semibold">Type</label>
-          <select
-            id="type"
-            value={form.typeId ?? ""}
-            onChange={(e) => set("typeId", e.target.value || null)}
-            className={fieldCls}
-          >
-            <option value="">— no type —</option>
-            {(types.data ?? []).map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.name}
-              </option>
-            ))}
-          </select>
+          <label className="mb-1 block text-sm font-semibold">Type</label>
+          <div className="flex flex-wrap gap-2" role="group" aria-label="Type">
+            {/* "None" first, then one icon+name button per catalog type. */}
+            <button
+              type="button"
+              aria-label="Type none"
+              aria-pressed={form.typeId === null}
+              onClick={() => set("typeId", null)}
+              className={`min-h-11 cursor-pointer rounded-lg border px-3 text-sm font-semibold transition-colors ${
+                form.typeId === null
+                  ? "border-accent bg-accent/15 text-accent"
+                  : "border-edge text-ink-dim hover:border-accent/50"
+              }`}
+            >
+              — none —
+            </button>
+            {(types.data ?? []).map((t) => {
+              const active = form.typeId === t.id;
+              return (
+                <button
+                  key={t.id}
+                  type="button"
+                  aria-label={`Type ${t.name}`}
+                  aria-pressed={active}
+                  onClick={() => set("typeId", t.id)}
+                  className={`flex min-h-11 cursor-pointer items-center gap-2 rounded-lg border px-3 text-sm font-semibold transition-colors ${
+                    active
+                      ? "border-accent bg-accent/15 text-accent"
+                      : "border-edge text-ink-dim hover:border-accent/50"
+                  }`}
+                >
+                  {t.iconUrl && (
+                    <img src={t.iconUrl} alt="" className="h-5 w-5 object-contain" />
+                  )}
+                  
+                </button>
+              );
+            })}
+          </div>
           <p className="mt-1 text-xs text-ink-dim">
             Every mech in the game has a type — assign one when you can.
           </p>
         </div>
 
         <div>
-          <label htmlFor="rank" className="mb-1 block text-sm font-semibold">Rank</label>
-          <select id="rank" value={form.rank} onChange={(e) => set("rank", e.target.value as MechRank)} className={fieldCls}>
-            {RANKS.map((r) => (
-              <option key={r}>{r}</option>
-            ))}
-          </select>
+          <label className="mb-1 block text-sm font-semibold">Rank</label>
+          <div className="flex gap-2" role="group" aria-label="Rank">
+            {RANKS.map((r) => {
+              const active = form.rank === r;
+              return (
+                <button
+                  key={r}
+                  type="button"
+                  aria-label={`Rank ${r}`}
+                  aria-pressed={active}
+                  onClick={() => set("rank", r)}
+                  className={`flex min-h-11 flex-1 cursor-pointer items-center justify-center gap-2 rounded-lg border px-3 text-sm font-semibold transition-colors ${
+                    active
+                      ? "border-accent bg-accent/15 text-accent"
+                      : "border-edge text-ink-dim hover:border-accent/50"
+                  }`}
+                >
+                  {/* S-tier gets the drawn gold badge; Standard is label-only,
+                      mirroring how RankBadge renders the two ranks. */}
+                  {r === "S" && <STierIcon size={18} />}
+                  {r}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         {form.rank === "S" && (
           <div>
-            <label htmlFor="pilot" className="mb-1 block text-sm font-semibold">
+            <label className="mb-1 block text-sm font-semibold">
               Pilot
             </label>
-            <select
-              id="pilot"
+            <Dropdown
+              ariaLabel="Pilot"
+              searchable
               value={form.pilotId ?? ""}
-              onChange={(e) => set("pilotId", e.target.value || null)}
-              className={fieldCls}
-            >
-              <option value="">— no pilot —</option>
-              {(pilots.data ?? []).map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
+              onChange={(v) => set("pilotId", v || null)}
+              options={[
+                { value: "", label: "— no pilot —" },
+                ...(pilots.data ?? []).map((p) => ({ value: p.id, label: p.name })),
+              ]}
+            />
             <p className="mt-1 text-xs text-ink-dim">
               Assigning a pilot moves them from any other mech.
             </p>
           </div>
         )}
-
-        {/* Linked weapon + accessory. The FK lives on the weapon/accessory row
-            (one per mech), so picking one here MOVES it off any mech it's
-            already on — the same relationship the weapon/accessory forms edit
-            from their side. Shown for every mech (the game only pairs these
-            with S-tier mechs, but we don't gate the UI). */}
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <label htmlFor="weapon" className="mb-1 block text-sm font-semibold">
+            <label className="mb-1 block text-sm font-semibold">
               Linked weapon
             </label>
-            <select
-              id="weapon"
+            <Dropdown
+              ariaLabel="Linked weapon"
+              searchable
               value={form.weaponId ?? ""}
-              onChange={(e) => set("weaponId", e.target.value || null)}
-              className={fieldCls}
-            >
-              <option value="">— no weapon —</option>
-              {(weapons.data ?? []).map((w) => (
-                <option key={w.id} value={w.id}>
-                  {w.name}
-                  {w.mech && w.mech.id !== id ? ` (on ${w.mech.name})` : ""}
-                </option>
-              ))}
-            </select>
+              onChange={(v) => set("weaponId", v || null)}
+              options={[
+                { value: "", label: "— no weapon —" },
+                ...(weapons.data ?? []).map((w) => ({
+                  value: w.id,
+                  label: `${w.name}${w.mech && w.mech.id !== id ? ` (on ${w.mech.name})` : ""}`,
+                })),
+              ]}
+            />
           </div>
           <div>
-            <label htmlFor="accessory" className="mb-1 block text-sm font-semibold">
+            <label className="mb-1 block text-sm font-semibold">
               Linked accessory
             </label>
-            <select
-              id="accessory"
+            <Dropdown
+              ariaLabel="Linked accessory"
+              searchable
               value={form.accessoryId ?? ""}
-              onChange={(e) => set("accessoryId", e.target.value || null)}
-              className={fieldCls}
-            >
-              <option value="">— no accessory —</option>
-              {(accessories.data ?? []).map((acc) => (
-                <option key={acc.id} value={acc.id}>
-                  {acc.name}
-                  {acc.mech && acc.mech.id !== id ? ` (on ${acc.mech.name})` : ""}
-                </option>
-              ))}
-            </select>
+              onChange={(v) => set("accessoryId", v || null)}
+              options={[
+                { value: "", label: "— no accessory —" },
+                ...(accessories.data ?? []).map((acc) => ({
+                  value: acc.id,
+                  label: `${acc.name}${acc.mech && acc.mech.id !== id ? ` (on ${acc.mech.name})` : ""}`,
+                })),
+              ]}
+            />
           </div>
         </div>
         <p className="-mt-2 text-xs text-ink-dim">
@@ -353,6 +390,8 @@ export function MechFormPage() {
           <div className="space-y-2">
             {rankUp.map((line, i) => (
               <div key={i} className="flex items-center gap-2">
+                <QualityIcon tier={QUALITY_TIERS[i]} />
+                
                 <input
                   aria-label={`Rank ${i + 1} preview`}
                   value={line}
@@ -360,7 +399,7 @@ export function MechFormPage() {
                     setRankUp((list) => list.map((l, j) => (j === i ? e.target.value : l)))
                   }
                   className={fieldCls}
-                  placeholder={`Rank ${i + 1}`}
+                  placeholder={QUALITY_TIERS[i]}
                 />
               </div>
             ))}
@@ -371,8 +410,6 @@ export function MechFormPage() {
           <legend className="mb-1 text-sm font-semibold">Traits</legend>
           <div className="space-y-2">
             {(form.traitNames ?? []).map((trait, i) => (
-              // Index keys are fine here: rows are plain values with no
-              // internal state, and rows are only added/removed at known spots.
               <div key={i} className="flex gap-2">
                 <input
                   aria-label={`Trait ${i + 1}`}

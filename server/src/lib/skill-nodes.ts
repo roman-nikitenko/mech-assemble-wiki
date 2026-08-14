@@ -26,6 +26,7 @@ export async function createSkillNodes(
         type: entry.type,
         sortOrder: order,
         repeatable: entry.repeatable,
+        initialAtTier: entry.initialAtTier,
       },
     });
     createdIds.push(node.id);

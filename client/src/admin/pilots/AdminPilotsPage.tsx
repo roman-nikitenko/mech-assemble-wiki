@@ -4,16 +4,29 @@ import { imageSrc, useDeletePilot, usePilots } from "../../api/client";
 import type { Pilot } from "../../api/types";
 import { LoadingSkeleton } from "../../components/LoadingSkeleton";
 import { ErrorPanel } from "../../components/ErrorPanel";
+import { AdminTableFilters } from "../AdminTableFilters";
 
 export function AdminPilotsPage() {
   const { data, isPending, isError, refetch } = usePilots();
   const deletePilot = useDeletePilot();
   const [confirming, setConfirming] = useState<Pilot | null>(null);
+  // Pilots have no type/tier — name search only.
+  const [search, setSearch] = useState("");
+
+  const filtered = (data ?? []).filter((pilot) =>
+    pilot.name.toLowerCase().includes(search.trim().toLowerCase())
+  );
 
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-black tracking-tight">Pilots</h1>
+        <AdminTableFilters
+          search={search}
+          onSearch={setSearch}
+          showType={false}
+          showTier={false}
+        />
         <Link
           to="/admin/pilots/new"
           className="rounded-lg bg-accent px-4 py-2 font-semibold text-bg hover:brightness-110"
@@ -38,7 +51,14 @@ export function AdminPilotsPage() {
               </tr>
             </thead>
             <tbody>
-              {data.map((pilot) => (
+              {filtered.length === 0 && (
+                <tr className="border-t border-edge">
+                  <td colSpan={4} className="px-4 py-6 text-center text-ink-dim">
+                    No pilots match your search.
+                  </td>
+                </tr>
+              )}
+              {filtered.map((pilot) => (
                 <tr key={pilot.id} className="border-t border-edge">
                   <td className="px-4 py-2">
                     {pilot.iconUrl ? (
@@ -51,7 +71,14 @@ export function AdminPilotsPage() {
                       <div className="h-10 w-10 rounded-full bg-surface-2" aria-hidden />
                     )}
                   </td>
-                  <td className="px-4 py-2 font-semibold">{pilot.name}</td>
+                  <td className="px-4 py-2 font-semibold">
+                    <Link
+                      to={`/admin/pilots/${pilot.id}/edit`}
+                      className="hover:text-accent hover:underline"
+                    >
+                      {pilot.name}
+                    </Link>
+                  </td>
                   <td className="px-4 py-2 text-ink-dim">
                     {pilot.mech?.name ?? pilot.weapon?.name ?? "—"}
                   </td>

@@ -1,6 +1,6 @@
 import { Router } from "express";
 import type { Request } from "express";
-import type { BuildStatus } from "@prisma/client";
+import type { BuildStatus, QualityTier } from "@prisma/client";
 import { prisma } from "../lib/prisma";
 import { currentUserId, requireUser } from "../lib/auth";
 
@@ -17,6 +17,8 @@ function formatBuild(b: {
   weaponSkillIds: unknown;
   status: BuildStatus;
   hearts: number;
+  quality: QualityTier;
+  weaponQualities: unknown;
   createdAt: Date;
   updatedAt: Date;
   user: { nickname: string | null; server: string | null };
@@ -32,6 +34,8 @@ function formatBuild(b: {
     weaponSkillIds: b.weaponSkillIds as Record<string, string[]>,
     status: b.status,
     hearts: b.hearts,
+    quality: b.quality,
+    weaponQualities: b.weaponQualities as Record<string, QualityTier>,
     createdAt: b.createdAt.toISOString(),
     updatedAt: b.updatedAt.toISOString(),
     author: { nickname: b.user.nickname, server: b.user.server },
@@ -48,9 +52,21 @@ function currentUser(req: Request) {
 
 /** Validate + normalize the editable build fields shared by create and edit.
     Returns null when the name is missing (the one hard requirement). */
+const QUALITY_TIERS = ["Blue", "Purple", "Orange", "Red", "Turquoise", "Gold", "Mythic"];
+
 function parseBuildInput(body: unknown) {
   const b = (body ?? {}) as Record<string, unknown>;
   if (typeof b.name !== "string" || b.name.trim() === "") return null;
+  const quality =
+    typeof b.quality === "string" && QUALITY_TIERS.includes(b.quality) ? b.quality : "Blue";
+  const weaponQualities =
+    b.weaponQualities !== null && typeof b.weaponQualities === "object"
+      ? Object.fromEntries(
+          Object.entries(b.weaponQualities as Record<string, unknown>).filter(
+            ([, v]) => typeof v === "string" && QUALITY_TIERS.includes(v as string)
+          )
+        )
+      : {};
   return {
     name: b.name.trim(),
     description: typeof b.description === "string" ? b.description.trim() : "",
@@ -62,6 +78,8 @@ function parseBuildInput(body: unknown) {
       b.weaponSkillIds !== null && typeof b.weaponSkillIds === "object"
         ? (b.weaponSkillIds as Record<string, string[]>)
         : {},
+    quality: quality as QualityTier,
+    weaponQualities: weaponQualities as Record<string, QualityTier>,
   };
 }
 

@@ -79,6 +79,9 @@ interface SkillsBlockProps {
   globalCoreCount: number;
   /** id→icon map for gate partners; a linked skill shows its partner's icon. */
   linkedIcons?: Record<string, string | null>;
+  /** Nodes pre-granted by the owner's quality tier — active from the start,
+      shown as a non-removable strip, and they satisfy parent/level gates. */
+  granted?: SkillNodeRow[];
 }
 
 /** One expandable "skills" block: header (click to open) → 8 pick slots →
@@ -94,12 +97,14 @@ export function SkillsBlock({
   loading = false,
   globalCoreCount,
   linkedIcons,
+  granted = [],
 }: SkillsBlockProps) {
   const [expanded, setExpanded] = useState(defaultExpanded);
   const [removedNote, setRemovedNote] = useState<string | null>(null);
 
-  // Derived every render — stored ids may reference deleted skills.
-  const picks = resolvePicks(skills, pickedIds);
+  // Derived every render — stored ids may reference deleted skills. Granted
+  // (quality) nodes count toward the level/parent gates.
+  const picks = resolvePicks(skills, pickedIds, granted);
   const palette = familyOrder(skills);
   // Core picks show in the editor's build-wide Core section, not here.
   const normalPicks = picks.filter((p) => p.type !== "Core");
@@ -133,7 +138,7 @@ export function SkillsBlock({
       }
     }
     if (absolute === -1) return;
-    const result = normalizePicks(picks.filter((_, j) => j !== absolute));
+    const result = normalizePicks(picks.filter((_, j) => j !== absolute), granted);
     noteRemoved(result.removed);
     onPickedChange(result.picks.map((p) => p.id));
   }
@@ -141,7 +146,7 @@ export function SkillsBlock({
   // Remove every copy of an id — only used by the non-repeatable palette
   // toggle, where there is exactly one copy anyway.
   function removeById(id: string) {
-    const result = normalizePicks(picks.filter((p) => p.id !== id));
+    const result = normalizePicks(picks.filter((p) => p.id !== id), granted);
     noteRemoved(result.removed);
     onPickedChange(result.picks.map((p) => p.id));
   }
@@ -152,7 +157,7 @@ export function SkillsBlock({
         type="button"
         aria-expanded={expanded}
         onClick={() => setExpanded((e) => !e)}
-        className="flex min-h-11 w-full items-center justify-between gap-2 px-4 py-2 text-left text-sm font-semibold hover:text-accent"
+        className="flex min-h-11 cursor-pointer w-full items-center justify-between gap-2 px-4 py-2 text-left text-sm font-semibold hover:text-accent"
       >
         <span>
           {title}{" "}
@@ -165,6 +170,18 @@ export function SkillsBlock({
 
       {expanded && (
         <div className="border-t border-edge p-4">
+          {granted.length > 0 && (
+            <>
+              <h4 className="mb-2 text-sm font-semibold">
+                Initial <span className="text-ink-dim">(from quality — always active)</span>
+              </h4>
+              <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-8">
+                {granted.map((g) => (
+                  <PickedSlot key={`granted-${g.id}`} skill={g} cardImageUrl={cardImageUrl} linkedIcons={linkedIcons} />
+                ))}
+              </div>
+            </>
+          )}
           <h4 className="mb-2 text-sm font-semibold">
             Skills <span className="text-ink-dim">(tap a slot to remove)</span>
           </h4>
@@ -202,8 +219,8 @@ export function SkillsBlock({
                 const count = picks.filter((p) => p.id === skill.id).length;
                 // Only NON-repeatable skills use the toggle-off "picked" card.
                 const picked = !skill.repeatable && count > 0;
-                const reason = lockReason(skill, picks, skills, globalCoreCount);
-                const addable = canPick(skill, picks, skills, globalCoreCount);
+                const reason = lockReason(skill, picks, skills, globalCoreCount, granted);
+                const addable = canPick(skill, picks, skills, globalCoreCount, granted);
                 return (
                   <SkillPickCard
                     key={skill.id}

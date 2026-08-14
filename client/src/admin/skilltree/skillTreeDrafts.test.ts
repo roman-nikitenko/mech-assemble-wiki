@@ -11,7 +11,7 @@ import {
 } from "./skillTreeDrafts";
 
 function draft(key: string, parentKey: string | null, name = key): SkillDraft {
-  return { key, parentKey, name, description: "", appearanceLevel: 1, type: "Normal", expanded: false, repeatable: false };
+  return { key, parentKey, name, description: "", appearanceLevel: 1, type: "Normal", expanded: false, repeatable: false, initialAtTier: null };
 }
 
 // DFS order: a, a1, a1x, b   (a1 child of a; a1x child of a1; b root)
@@ -62,9 +62,9 @@ describe("skillTreeDrafts helpers", () => {
     expect(serialized[3].parentIndex).toBeNull();
 
     const rebuilt = draftsFromNodes([
-      { id: "a", parentId: null, name: "a", description: null, appearanceLevel: 1, type: "Normal", sortOrder: 0, repeatable: false, linkedWeaponId: null, linkedMechId: null },
-      { id: "b", parentId: null, name: "b", description: null, appearanceLevel: 1, type: "Normal", sortOrder: 1, repeatable: false, linkedWeaponId: null, linkedMechId: null },
-      { id: "a1", parentId: "a", name: "a1", description: null, appearanceLevel: 1, type: "Normal", sortOrder: 0, repeatable: false, linkedWeaponId: null, linkedMechId: null },
+      { id: "a", parentId: null, name: "a", description: null, appearanceLevel: 1, type: "Normal", sortOrder: 0, repeatable: false, linkedWeaponId: null, linkedMechId: null, initialAtTier: null },
+      { id: "b", parentId: null, name: "b", description: null, appearanceLevel: 1, type: "Normal", sortOrder: 1, repeatable: false, linkedWeaponId: null, linkedMechId: null, initialAtTier: null },
+      { id: "a1", parentId: "a", name: "a1", description: null, appearanceLevel: 1, type: "Normal", sortOrder: 0, repeatable: false, linkedWeaponId: null, linkedMechId: null, initialAtTier: null },
     ]);
     expect(rebuilt.map((d) => d.key)).toEqual(["a", "a1", "b"]); // depth-first
   });
@@ -73,15 +73,15 @@ describe("skillTreeDrafts helpers", () => {
 describe("repeatable serialization", () => {
   it("serializeDrafts keeps repeatable for Normal skills", () => {
     const drafts: SkillDraft[] = [
-      { key: "a", parentKey: null, name: "Stack", description: "", appearanceLevel: 1, type: "Normal", expanded: false, repeatable: true },
+      { key: "a", parentKey: null, name: "Stack", description: "", appearanceLevel: 1, type: "Normal", expanded: false, repeatable: true, initialAtTier: null },
     ];
     expect(serializeDrafts(drafts)[0].repeatable).toBe(true);
   });
 
   it("serializeDrafts forces repeatable false for Premium and Core", () => {
     const drafts: SkillDraft[] = [
-      { key: "p", parentKey: null, name: "Prem", description: "", appearanceLevel: 1, type: "Premium", expanded: false, repeatable: true },
-      { key: "c", parentKey: null, name: "", description: "core", appearanceLevel: 1, type: "Core", expanded: false, repeatable: true },
+      { key: "p", parentKey: null, name: "Prem", description: "", appearanceLevel: 1, type: "Premium", expanded: false, repeatable: true, initialAtTier: null },
+      { key: "c", parentKey: null, name: "", description: "core", appearanceLevel: 1, type: "Core", expanded: false, repeatable: true, initialAtTier: null },
     ];
     const out = serializeDrafts(drafts);
     expect(out[0].repeatable).toBe(false);
@@ -90,8 +90,16 @@ describe("repeatable serialization", () => {
 
   it("draftsFromNodes restores repeatable from the API node", () => {
     const drafts = draftsFromNodes([
-      { id: "n1", parentId: null, name: "Stack", description: null, appearanceLevel: 1, type: "Normal", sortOrder: 0, repeatable: true, linkedWeaponId: null, linkedMechId: null },
+      { id: "n1", parentId: null, name: "Stack", description: null, appearanceLevel: 1, type: "Normal", sortOrder: 0, repeatable: true, linkedWeaponId: null, linkedMechId: null, initialAtTier: null },
     ]);
     expect(drafts[0].repeatable).toBe(true);
+  });
+
+  it("round-trips initialAtTier through draftsFromNodes + serializeDrafts", () => {
+    const drafts = draftsFromNodes([
+      { id: "n1", parentId: null, name: "Freeze", description: null, appearanceLevel: 1, type: "Normal", sortOrder: 0, repeatable: false, linkedWeaponId: null, linkedMechId: null, initialAtTier: "Gold" },
+    ]);
+    expect(drafts[0].initialAtTier).toBe("Gold");
+    expect(serializeDrafts(drafts)[0].initialAtTier).toBe("Gold");
   });
 });

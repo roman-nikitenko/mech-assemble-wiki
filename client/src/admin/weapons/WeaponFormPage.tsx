@@ -9,6 +9,10 @@ import {
   useWeapons,
 } from "../../api/client";
 import type { MechRank, WeaponInput } from "../../api/types";
+import { QUALITY_TIERS } from "../../api/types";
+import { Dropdown } from "../../components/Dropdown";
+import { QualityIcon } from "../../components/QualityIcon";
+import { STierIcon } from "../../components/STierIcon";
 import { slugify } from "../../lib/slug";
 import { ImageUploadField } from "../ImageUploadField";
 import { SkillTreeEditor } from "../skilltree/SkillTreeEditor";
@@ -174,33 +178,74 @@ export function WeaponFormPage() {
           </p>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-4 sm:grid-cols-1">
           <div>
-            <label htmlFor="type" className="mb-1 block text-sm font-semibold">Type</label>
-            <select
-              id="type"
-              value={form.typeId ?? ""}
-              onChange={(e) => set("typeId", e.target.value || null)}
-              className={fieldCls}
-            >
-              <option value="">— no type —</option>
-              {(types.data ?? []).map((t) => (
-                <option key={t.id} value={t.id}>{t.name}</option>
-              ))}
-            </select>
+            <label className="mb-1 block text-sm font-semibold">Type</label>
+            <div className="flex flex-wrap gap-2" role="group" aria-label="Type">
+              {/* "None" first, then one icon+name button per catalog type. */}
+              <button
+                type="button"
+                aria-label="Type none"
+                aria-pressed={form.typeId === null}
+                onClick={() => set("typeId", null)}
+                className={`min-h-11 cursor-pointer rounded-lg border px-3 text-sm font-semibold transition-colors ${
+                  form.typeId === null
+                    ? "border-accent bg-accent/15 text-accent"
+                    : "border-edge text-ink-dim hover:border-accent/50"
+                }`}
+              >
+                — none —
+              </button>
+              {(types.data ?? []).map((t) => {
+                const active = form.typeId === t.id;
+                return (
+                  <button
+                    key={t.id}
+                    type="button"
+                    aria-label={`Type ${t.name}`}
+                    aria-pressed={active}
+                    onClick={() => set("typeId", t.id)}
+                    className={`flex min-h-11 cursor-pointer items-center gap-2 rounded-lg border px-3 text-sm font-semibold transition-colors ${
+                      active
+                        ? "border-accent bg-accent/15 text-accent"
+                        : "border-edge text-ink-dim hover:border-accent/50"
+                    }`}
+                  >
+                    {t.iconUrl && (
+                      <img src={t.iconUrl} alt="" className="h-5 w-5 object-contain" />
+                    )}
+                   
+                  </button>
+                );
+              })}
+            </div>
           </div>
           <div>
-            <label htmlFor="tier" className="mb-1 block text-sm font-semibold">Tier</label>
-            <select
-              id="tier"
-              value={form.tier}
-              onChange={(e) => set("tier", e.target.value as MechRank)}
-              className={fieldCls}
-            >
-              {TIERS.map((t) => (
-                <option key={t}>{t}</option>
-              ))}
-            </select>
+            <label className="mb-1 block text-sm font-semibold">Tier</label>
+            <div className="flex gap-2" role="group" aria-label="Tier">
+              {TIERS.map((t) => {
+                const active = form.tier === t;
+                return (
+                  <button
+                    key={t}
+                    type="button"
+                    aria-label={`Tier ${t}`}
+                    aria-pressed={active}
+                    onClick={() => set("tier", t)}
+                    className={`flex min-h-11 flex-1 cursor-pointer items-center justify-center gap-2 rounded-lg border px-3 text-sm font-semibold transition-colors ${
+                      active
+                        ? "border-accent bg-accent/15 text-accent"
+                        : "border-edge text-ink-dim hover:border-accent/50"
+                    }`}
+                  >
+                    {/* S-tier gets the drawn gold badge; Standard is label-only,
+                        mirroring how RankBadge renders the two ranks. */}
+                    {t === "S" && <STierIcon size={18} />}
+                    {t}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
 
@@ -217,51 +262,51 @@ export function WeaponFormPage() {
 
         <fieldset>
           <legend className="mb-1 text-sm font-semibold">Rank-up preview</legend>
-          <div className="grid gap-2 sm:grid-cols-2">
+          <div className="grid gap-2 sm:grid-cols-1">
             {rankUp.map((line, i) => (
-              <input
-                key={i}
-                aria-label={`Rank ${i + 1} preview`}
-                value={line}
-                onChange={(e) => setRankUp((list) => list.map((l, j) => (j === i ? e.target.value : l)))}
-                className={fieldCls}
-                placeholder={`Lv.${i + 1}`}
-              />
+              <div key={i} className="flex items-center gap-2">
+                <QualityIcon tier={QUALITY_TIERS[i]} />
+                <input
+                  aria-label={`Rank ${i + 1} preview`}
+                  value={line}
+                  onChange={(e) => setRankUp((list) => list.map((l, j) => (j === i ? e.target.value : l)))}
+                  className={fieldCls}
+                  placeholder={QUALITY_TIERS[i]}
+                />
+              </div>
             ))}
           </div>
         </fieldset>
 
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-4 sm:grid-cols-1">
           <div>
-            <label htmlFor="pilot" className="mb-1 block text-sm font-semibold">Pilot</label>
-            <select
-              id="pilot"
+            <label className="mb-1 block text-sm font-semibold">Pilot</label>
+            <Dropdown
+              ariaLabel="Pilot"
+              searchable
               value={form.pilotId ?? ""}
-              onChange={(e) => set("pilotId", e.target.value || null)}
-              className={fieldCls}
-            >
-              <option value="">— no pilot —</option>
-              {(pilots.data ?? []).map((p) => (
-                <option key={p.id} value={p.id}>{p.name}</option>
-              ))}
-            </select>
+              onChange={(v) => set("pilotId", v || null)}
+              options={[
+                { value: "", label: "— no pilot —" },
+                ...(pilots.data ?? []).map((p) => ({ value: p.id, label: p.name })),
+              ]}
+            />
             <p className="mt-1 text-xs text-ink-dim">
               Assigning un-seats the pilot from any mech or other weapon.
             </p>
           </div>
           <div>
-            <label htmlFor="mech" className="mb-1 block text-sm font-semibold">Owner mech</label>
-            <select
-              id="mech"
+            <label className="mb-1 block text-sm font-semibold">Owner mech</label>
+            <Dropdown
+              ariaLabel="Owner mech"
+              searchable
               value={form.mechId ?? ""}
-              onChange={(e) => set("mechId", e.target.value || null)}
-              className={fieldCls}
-            >
-              <option value="">— no mech —</option>
-              {(ownerMechs.data ?? []).map((m) => (
-                <option key={m.id} value={m.id}>{m.name}</option>
-              ))}
-            </select>
+              onChange={(v) => set("mechId", v || null)}
+              options={[
+                { value: "", label: "— no mech —" },
+                ...(ownerMechs.data ?? []).map((m) => ({ value: m.id, label: m.name })),
+              ]}
+            />
           </div>
         </div>
 
@@ -284,7 +329,7 @@ export function WeaponFormPage() {
           </p>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-4 sm:grid-cols-1">
           <ImageUploadField
             label="Image"
             value={form.imageUrl ?? null}
