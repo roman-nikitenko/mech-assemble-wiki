@@ -1,5 +1,6 @@
 import { Link, useParams } from "react-router-dom";
-import { imageSrc, useMech, useMechs, usePostedBuild, useWeapons } from "../api/client";
+import { imageSrc, useMech, useMechs, useModuleQualities, useModules, usePostedBuild, useTypes, useWeapons } from "../api/client";
+import { BuildModuleCard } from "./profile/BuildModuleCard";
 import type { WeaponSummary } from "../api/types";
 import { Seo } from "../components/Seo";
 import { AuthorTag } from "../profile/AuthorTag";
@@ -29,6 +30,9 @@ export function BuildDetailPage() {
   const detail = useMech(build.data?.mechId ?? "");
   const weapons = useWeapons();
   const allWeapons = weapons.data ?? [];
+  const modules = useModules();
+  const moduleQualities = useModuleQualities();
+  const types = useTypes();
 
   if (build.isPending) {
     return (
@@ -230,7 +234,23 @@ export function BuildDetailPage() {
         );
       })}
 
-
+      {(modules.data ?? []).length > 0 && (
+        <>
+          <h2 className="mt-6 mb-2 text-lg font-black tracking-tight">Attack Module</h2>
+          <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-4 items-start">
+            {(modules.data ?? []).map((m) => (
+              <BuildModuleCard
+                key={m.id}
+                module={m}
+                types={types.data ?? []}
+                qualities={moduleQualities.data ?? []}
+                selection={b.moduleSelections[m.id]}
+                readOnly
+              />
+            ))}
+          </div>
+        </>
+      )}
     </main>
   );
 }

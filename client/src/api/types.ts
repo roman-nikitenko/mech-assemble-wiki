@@ -200,6 +200,9 @@ export interface WeaponInput {
   iconUrl?: string | null;
   skins?: { name: string; bonuses: string[]; imageUrl?: string | null }[];
   skills?: {
+    // Existing node id (keeps ids stable on re-save so builds don't break);
+    // omitted for a brand-new node.
+    id?: string;
     name: string | null;
     description: string | null;
     appearanceLevel: number;
@@ -299,6 +302,9 @@ export interface MechInput {
   weaponId?: string | null;
   accessoryId?: string | null;
   skills?: {
+    // Existing node id (keeps ids stable on re-save so builds don't break);
+    // omitted for a brand-new node.
+    id?: string;
     name: string | null;
     description: string | null;
     appearanceLevel: number;
@@ -373,6 +379,8 @@ export interface PostedBuild {
   // The subject's quality tier + per-equipped-weapon tiers.
   quality: QualityTier;
   weaponQualities: Record<string, QualityTier>;
+  // Attack-module picks, keyed by module id.
+  moduleSelections: Record<string, ModuleSelection>;
   // Set by the client after a heart toggle — not included in GET responses.
   userHearted?: boolean;
   createdAt: string;
@@ -391,6 +399,16 @@ export interface AdminUser {
   buildCount: number;
 }
 
+/** One module's picks within a build. Effect 1 = element typeId; Effect 2/3 =
+    the equipped bonus's target mech/weapon id (both stable across module
+    re-saves, so builds don't break when a module is edited). */
+export interface ModuleSelection {
+  quality: QualityTier;
+  effect1: string | null;
+  effect2: string | null;
+  effect3: string | null;
+}
+
 /** Payload for POST /api/builds. */
 export interface BuildPostInput {
   name: string;
@@ -403,6 +421,7 @@ export interface BuildPostInput {
   // Optional on input — the server defaults quality to Blue / {} when absent.
   quality?: QualityTier;
   weaponQualities?: Record<string, QualityTier>;
+  moduleSelections?: Record<string, ModuleSelection>;
 }
 
 /** Payload for POST/PUT /api/accessories. */
@@ -444,4 +463,92 @@ export interface Feedback {
   message: string;
   read: boolean;
   createdAt: string;
+}
+
+/** Modules attach to either a weapon or a mech (never both). */
+export type ModuleTargetKind = "Weapon" | "Mech";
+
+/** A module quality — the catalog rung (like a rarity tier) a module's
+    effects are keyed off of. */
+export interface ModuleQuality {
+  id: string;
+  name: string;
+  iconUrl: string | null;
+  hp: string;
+  atk: string;
+  def: string;
+  // Effect 1 (elemental DMG %) — a property of the quality: same for all
+  // modules, applies to every element. Null below Turquoise (effectCount 0).
+  effect1Value: string | null;
+  effectCount: number;
+  sortOrder: number;
+}
+
+/** Payload for POST/PUT /api/module-qualities. */
+export interface ModuleQualityInput {
+  name: string;
+  iconUrl?: string | null;
+  hp: string;
+  atk: string;
+  def: string;
+  effect1Value?: string | null;
+  effectCount: number;
+  sortOrder?: number;
+}
+
+/** One bonus row within a module quality effect — targets a mech or a weapon. */
+export interface ModuleBonusRow {
+  id: string;
+  slot: number;
+  effectText: string;
+  sortOrder: number;
+  mech: { id: string; slug: string | null; name: string; iconUrl: string | null } | null;
+  weapon: { id: string; slug: string | null; name: string; iconUrl: string | null } | null;
+}
+
+/** A module's per-quality effect, with its bonus rows nested. */
+export interface ModuleQualityEffectRow {
+  id: string;
+  qualityId: string;
+  effect1Value: string | null;
+  bonuses: ModuleBonusRow[];
+}
+
+/** Shape of GET /api/modules rows — now includes each module's effects. */
+export interface ModuleSummary {
+  id: string;
+  name: string;
+  iconUrl: string | null;
+  // Effect 2 and Effect 3 each target weapons OR mechs independently.
+  effect2Target: ModuleTargetKind;
+  effect3Target: ModuleTargetKind;
+  effects: ModuleQualityEffectRow[];
+}
+
+/** GET /api/modules/:id returns the same shape as the list rows. */
+export interface ModuleDetail extends ModuleSummary {}
+
+/** One bonus row within POST/PUT /api/modules. */
+export interface ModuleBonusInput {
+  slot: number;
+  mechId: string | null;
+  weaponId: string | null;
+  effectText: string;
+  sortOrder?: number;
+}
+
+/** One quality effect within POST/PUT /api/modules. */
+export interface ModuleQualityEffectInput {
+  qualityId: string;
+  effect1Value: string | null;
+  bonuses: ModuleBonusInput[];
+}
+
+/** Payload for POST/PUT /api/modules. */
+export interface ModuleInput {
+  name: string;
+  iconUrl?: string | null;
+  effect2Target: ModuleTargetKind;
+  effect3Target: ModuleTargetKind;
+  qualityEffects: ModuleQualityEffectInput[];
 }

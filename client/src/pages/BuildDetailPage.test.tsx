@@ -41,7 +41,7 @@ const mechDetail: MechDetail = {
 // Builds that reach (or don't) the Gold tier that pre-grants the "Freeze" node.
 const GRANT_ON: PostedBuild = {
   id: "bgon", name: "Golden", description: "", mechId: "m1", weaponId: null,
-  skillIds: [], weaponIds: [], weaponSkillIds: {}, hearts: 0, quality: "Gold", weaponQualities: {},
+  skillIds: [], weaponIds: [], weaponSkillIds: {}, hearts: 0, quality: "Gold", weaponQualities: {}, moduleSelections: {},
   status: "Published", createdAt: "2026-08-12T00:00:00.000Z",
   updatedAt: "2026-08-12T00:00:00.000Z", author: { nickname: null, server: null },
 };
@@ -51,7 +51,7 @@ const GRANT_OFF: PostedBuild = { ...GRANT_ON, id: "bgoff", quality: "Blue" };
 // equips w1, the other doesn't — so only the first should show Frost Synergy.
 const LINKED_ON: PostedBuild = {
   id: "bon", name: "Combo", description: "", mechId: "m1", weaponId: null,
-  skillIds: ["s1", "ls1"], weaponIds: ["w1"], weaponSkillIds: {}, hearts: 0, quality: "Blue", weaponQualities: {},
+  skillIds: ["s1", "ls1"], weaponIds: ["w1"], weaponSkillIds: {}, hearts: 0, quality: "Blue", weaponQualities: {}, moduleSelections: {},
   status: "Published", createdAt: "2026-07-20T00:00:00.000Z",
   updatedAt: "2026-07-20T00:00:00.000Z", author: { nickname: null, server: null },
 };
@@ -82,7 +82,7 @@ const weapon: WeaponSummary = {
 // A weapon-only build (no mech) that PICKED the weapon's linked skill.
 const WEAPON_ONLY: PostedBuild = {
   id: "bwo", name: "Weapon only", description: "", mechId: null, weaponId: "w1",
-  skillIds: ["ws1", "wls1"], weaponIds: [], weaponSkillIds: {}, hearts: 0, quality: "Blue", weaponQualities: {},
+  skillIds: ["ws1", "wls1"], weaponIds: [], weaponSkillIds: {}, hearts: 0, quality: "Blue", weaponQualities: {}, moduleSelections: {},
   status: "Published", createdAt: "2026-08-10T00:00:00.000Z",
   updatedAt: "2026-08-10T00:00:00.000Z", author: { nickname: null, server: null },
 };
@@ -96,7 +96,7 @@ const BUILD: PostedBuild = {
   skillIds: ["s1", "s5"],
   weaponIds: ["w1"],
   weaponSkillIds: { w1: ["ws1"] },
-  hearts: 0, quality: "Blue", weaponQualities: {},
+  hearts: 0, quality: "Blue", weaponQualities: {}, moduleSelections: {},
   status: "Published",
   createdAt: "2026-07-20T00:00:00.000Z",
   updatedAt: "2026-07-20T00:00:00.000Z",

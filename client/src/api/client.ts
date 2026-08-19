@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { AccessoryInput, AccessorySummary, AdminUser, DashboardStats, Feedback, GameType, MechDetail, MechInput, MechRank, MechSummary, Pilot, PilotInput, PostedBuild, TypeInput, WeaponDetail, WeaponInput, WeaponSummary } from "./types";
+import type { AccessoryInput, AccessorySummary, AdminUser, DashboardStats, Feedback, GameType, MechDetail, MechInput, MechRank, MechSummary, ModuleDetail, ModuleInput, ModuleQuality, ModuleQualityInput, ModuleSummary, Pilot, PilotInput, PostedBuild, TypeInput, WeaponDetail, WeaponInput, WeaponSummary } from "./types";
 import { adminHeaders } from "../auth/adminSession";
 
 export const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
@@ -477,5 +477,104 @@ export function useDeleteFeedback() {
       qc.invalidateQueries({ queryKey: FEEDBACK_KEY });
       qc.invalidateQueries({ queryKey: FEEDBACK_UNREAD_KEY });
     },
+  });
+}
+
+// ---- Module qualities (catalog) ----
+
+export function useModuleQualities() {
+  return useQuery({ queryKey: ["module-qualities"], queryFn: () => fetchJson<ModuleQuality[]>("/api/module-qualities") });
+}
+
+export function useCreateModuleQuality() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: ModuleQualityInput) => sendJson<ModuleQuality>("/api/module-qualities", "POST", input),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["module-qualities"] }),
+  });
+}
+
+export function useUpdateModuleQuality(id: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: ModuleQualityInput) => sendJson<ModuleQuality>(`/api/module-qualities/${id}`, "PUT", input),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["module-qualities"] }),
+  });
+}
+
+export function useDeleteModuleQuality() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`${API_URL}/api/module-qualities/${id}`, { method: "DELETE", headers: adminHeaders() });
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        throw new Error(data?.error ?? `API error ${res.status}`);
+      }
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["module-qualities"] }),
+  });
+}
+
+/** Create-or-update a module quality: PUT when an id is given, else POST. Lets
+    callers (e.g. the module form's per-tier attribute editor) save a tier
+    without knowing up front whether its catalog row already exists. */
+export function useUpsertModuleQuality() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ...body }: ModuleQualityInput & { id?: string }) =>
+      id
+        ? sendJson<ModuleQuality>(`/api/module-qualities/${id}`, "PUT", body)
+        : sendJson<ModuleQuality>("/api/module-qualities", "POST", body),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["module-qualities"] }),
+  });
+}
+
+// ---- Modules ----
+
+export function useModules() {
+  return useQuery({ queryKey: ["modules"], queryFn: () => fetchJson<ModuleSummary[]>("/api/modules") });
+}
+
+export function useModule(id: string) {
+  return useQuery({
+    queryKey: ["module", id],
+    queryFn: () => fetchJson<ModuleDetail>(`/api/modules/${id}`),
+    enabled: id !== "",
+    retry: (failureCount, error) =>
+      !(error instanceof NotFoundError) && failureCount < 3,
+  });
+}
+
+export function useCreateModule() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: ModuleInput) => sendJson<ModuleDetail>("/api/modules", "POST", input),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["modules"] }),
+  });
+}
+
+export function useUpdateModule(id: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: ModuleInput) => sendJson<ModuleDetail>(`/api/modules/${id}`, "PUT", input),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["modules"] });
+      qc.invalidateQueries({ queryKey: ["module", id] });
+    },
+  });
+}
+
+export function useDeleteModule() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`${API_URL}/api/modules/${id}`, { method: "DELETE", headers: adminHeaders() });
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        throw new Error(data?.error ?? `API error ${res.status}`);
+      }
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["modules"] }),
   });
 }

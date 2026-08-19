@@ -88,6 +88,29 @@ describe("POST /api/builds", () => {
     const res = await request(app).get("/api/builds");
     expect(testBuilds(res.body)).toEqual([]);
   });
+
+  it("round-trips moduleSelections", async () => {
+    authState.sub = "test|builds-a";
+    const res = await request(app)
+      .post("/api/builds")
+      .send({
+        ...BUILD,
+        name: "[test:builds] With Modules",
+        moduleSelections: {
+          "mod-1": { quality: "Gold", effect1: "type-ice", effect2: "weapon-9", effect3: null },
+          bad: "not-an-object",
+        },
+      });
+    expect(res.status).toBe(201);
+    expect(res.body.moduleSelections["mod-1"]).toEqual({
+      quality: "Gold",
+      effect1: "type-ice",
+      effect2: "weapon-9",
+      effect3: null,
+    });
+    // malformed entries are dropped, not fatal
+    expect(res.body.moduleSelections.bad).toBeUndefined();
+  });
 });
 
 describe("GET /api/builds/mine", () => {

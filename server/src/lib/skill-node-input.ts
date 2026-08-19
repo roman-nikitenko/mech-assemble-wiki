@@ -1,4 +1,5 @@
 import { SkillNodeType, QualityTier } from "@prisma/client";
+import { UUID_RE } from "./uuid";
 
 // Shared skill-tree payload parsing — used by BOTH weapon-input (Cycle I)
 // and mech-input (Cycle J). One entry of the FLAT list; parentIndex points
@@ -6,6 +7,9 @@ import { SkillNodeType, QualityTier } from "@prisma/client";
 // also makes cycles impossible.
 
 export interface SkillNodeInput {
+  // Stable id carried over from the editor so a re-save keeps the SAME node id
+  // (builds reference nodes by id). null = a brand-new node (DB assigns one).
+  id: string | null;
   name: string | null;
   description: string | null;
   appearanceLevel: number;
@@ -84,7 +88,11 @@ export function parseSkillNodes(raw: unknown): ParseSkillsResult {
       }
       initialAtTier = s.initialAtTier as QualityTier;
     }
+    // Accept a client-supplied id only when it's a valid UUID; otherwise treat
+    // it as a new node (null) so a bad value can never poison the DB.
+    const id = typeof s.id === "string" && UUID_RE.test(s.id) ? s.id : null;
     skills.push({
+      id,
       name,
       description,
       appearanceLevel: s.appearanceLevel,

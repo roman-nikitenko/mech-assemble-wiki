@@ -8,6 +8,8 @@ import type {
   GameType,
   MechDetail,
   MechSummary,
+  ModuleQuality,
+  ModuleSummary,
   PostedBuild,
   WeaponSummary,
 } from "../../api/types";
@@ -26,7 +28,7 @@ const postedBuild = (over: Partial<PostedBuild> = {}): PostedBuild => ({
   weaponIds: [],
   weaponSkillIds: {},
   status: "Draft" as BuildStatus,
-  hearts: 0, quality: "Blue", weaponQualities: {},
+  hearts: 0, quality: "Blue", weaponQualities: {}, moduleSelections: {},
   createdAt: "2026-07-15T00:00:00.000Z",
   updatedAt: "2026-07-15T00:00:00.000Z",
   author: { nickname: "Tester", server: "" },
@@ -91,6 +93,27 @@ const detail: MechDetail = {
 };
 
 const fireType: GameType = { id: "t1", name: "Fire", iconUrl: null };
+
+const moduleQualityFixture: ModuleQuality = {
+  id: "mq1",
+  name: "Blue",
+  iconUrl: null,
+  hp: "100",
+  atk: "10",
+  def: "5",
+  effect1Value: null,
+  effectCount: 0,
+  sortOrder: 0,
+};
+
+const moduleFixture: ModuleSummary = {
+  id: "mod1",
+  name: "Ion Reactor",
+  iconUrl: null,
+  effect2Target: "Mech",
+  effect3Target: "Weapon",
+  effects: [],
+};
 
 const weaponFixture = (over: Partial<WeaponSummary>): WeaponSummary => ({
   id: "w1",
@@ -163,6 +186,10 @@ function renderEditor(path = "/profile/builds/new") {
       body = weaponsFixture;
     } else if (url.includes("/api/types")) {
       body = [fireType];
+    } else if (url.includes("/api/module-qualities")) {
+      body = [moduleQualityFixture];
+    } else if (url.includes("/api/modules")) {
+      body = [moduleFixture];
     } else {
       body = [summary];
     }
@@ -383,6 +410,14 @@ describe("BuildEditorPage (new build)", () => {
     expect(lastSavedInput().weaponSkillIds).toEqual({ w1: ["ws1"] });
   });
 
+  it("shows the Attack Module section", async () => {
+    renderEditor();
+    // The module section lives in the shared meta form, which only mounts
+    // once a subject (mech or weapon) has been picked past step 1.
+    await userEvent.click(await screen.findByRole("button", { name: /Iron Colossus/ }));
+    expect(await screen.findByRole("heading", { name: "Attack Module" })).toBeInTheDocument();
+  });
+
   it("filters the weapon strip by name and tier", async () => {
     renderEditor();
     await userEvent.click(await screen.findByRole("button", { name: /Iron Colossus/ }));
@@ -391,7 +426,7 @@ describe("BuildEditorPage (new build)", () => {
     expect(screen.queryByRole("button", { name: /Blade of Dawn/ })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Thunder Pike/ })).toBeInTheDocument();
     await userEvent.clear(screen.getByLabelText("Filter weapons by name"));
-    await userEvent.selectOptions(screen.getByLabelText("Filter weapons by tier"), "S");
+    await userEvent.click(screen.getByRole("button", { name: "Tier S" }));
     expect(screen.queryByRole("button", { name: /Thunder Pike/ })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Blade of Dawn/ })).toBeInTheDocument();
   });

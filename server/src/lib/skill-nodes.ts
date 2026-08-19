@@ -18,6 +18,9 @@ export async function createSkillNodes(
     siblingCounts.set(entry.parentIndex, order + 1);
     const node = await tx.skillNode.create({
       data: {
+        // Reuse the node's existing id when the editor sends one, so re-saving
+        // (delete-all + recreate) keeps ids stable and saved builds still match.
+        ...(entry.id ? { id: entry.id } : {}),
         ...owner,
         parentId: entry.parentIndex === null ? null : createdIds[entry.parentIndex],
         name: entry.name,
