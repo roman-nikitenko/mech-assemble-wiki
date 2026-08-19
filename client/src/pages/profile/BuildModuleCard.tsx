@@ -15,12 +15,15 @@ export function BuildModuleCard({
   qualities,
   selection,
   onChange,
+  readOnly = false,
 }: {
   module: ModuleSummary;
   types: GameType[];
   qualities: ModuleQuality[];
   selection: ModuleSelection | undefined;
-  onChange: (next: ModuleSelection) => void;
+  onChange?: (next: ModuleSelection) => void;
+  // Read-only view (build detail page): no dropdown, no tabs — just Equipped.
+  readOnly?: boolean;
 }) {
   const sel = selection ?? EMPTY;
   const tier = sel.quality;
@@ -34,7 +37,7 @@ export function BuildModuleCard({
   const entityOf = (b: ModuleBonusRow) => b.mech ?? b.weapon;
 
   function set(patch: Partial<ModuleSelection>) {
-    onChange({ ...sel, ...patch });
+    onChange?.({ ...sel, ...patch });
   }
   function changeQuality(q: QualityTier) {
     const n = effectCountForTier(q);
@@ -54,8 +57,39 @@ export function BuildModuleCard({
 
   const tabLabels = ["Equipped", ...Array.from({ length: count }, (_, i) => `Effect ${i + 1}`)];
 
+  // The Equipped summary — shared by the editor's Equipped tab and the
+  // read-only build-detail view.
+  const equippedList = (
+    <ul className="text-sm [&>li+li]:mt-[10px]">
+      {equippedElement && (
+        <li className=" flex items-center gap-2">
+          {equippedElement.iconUrl && (
+            <img src={imageSrc(equippedElement.iconUrl)} alt="" className="h-6 w-6 rounded-full object-cover" />
+          )}
+          <span className="font-semibold">{equippedElement.name} DMG <span className="font-bold text-accent">{tierQuality?.effect1Value ?? ""}</span></span>
+        </li>
+      )}
+      {[2, 3].map((slot) => {
+        const b = equippedBonus(slot, slot === 2 ? sel.effect2 : sel.effect3);
+        if (!b) return null;
+        const entity = entityOf(b);
+        return (
+          <li key={slot} className=" flex items-center gap-2">
+            {entity?.iconUrl && (
+              <img src={imageSrc(entity.iconUrl)} alt="" className="h-6 w-6 rounded-full object-cover" />
+            )}
+            <span className="font-semibold">{b.effectText}</span>
+          </li>
+        );
+      })}
+      {!equippedElement && !equippedBonus(2, sel.effect2) && !equippedBonus(3, sel.effect3) && (
+        <li className="text-ink-dim">Nothing equipped yet.</li>
+      )}
+    </ul>
+  );
+
   return (
-    <div className="max-w-[300px] min-w-[300px] min-h-[540px] place-self-center border border-edge bg-surface">
+    <div className="max-w-[300px] min-w-[300px] self-stretch justify-self-center border border-edge bg-surface">
       <div
         className={`flex flex-col gap-3  relative bg-contain bg-no-repeat bg-center p-3 after:absolute after:z-0 after:bg-no-repeat after:bg-cover after:inset-0 after:bg-(image:--bg-url)`}
         //style={style.header ? { backgroundImage: `url(${style.header})` } : undefined}
@@ -74,12 +108,18 @@ export function BuildModuleCard({
 
       <div className="p-2">
         <div className="mb-3">
-          <Dropdown
-            ariaLabel={`${module.name} quality`}
-            value={tier}
-            onChange={(v) => changeQuality(v as QualityTier)}
-            options={QUALITY_TIERS.map((t) => ({ value: t, label: t, icon: <QualityIcon tier={t} size={16} /> }))}
-          />
+          {readOnly ? (
+            <div className="flex items-center gap-2 text-sm font-semibold">
+              <QualityIcon tier={tier} size={16} /> {tier}
+            </div>
+          ) : (
+            <Dropdown
+              ariaLabel={`${module.name} quality`}
+              value={tier}
+              onChange={(v) => changeQuality(v as QualityTier)}
+              options={QUALITY_TIERS.map((t) => ({ value: t, label: t, icon: <QualityIcon tier={t} size={16} /> }))}
+            />
+          )}
         </div>
 
         <p className="mb-2 text-center text-sm font-bold text-ink-dim">Base Attributes</p>
@@ -92,7 +132,10 @@ export function BuildModuleCard({
           ))}
         </dl>
 
-        {count >= 1 && (
+        {count >= 1 &&
+          (readOnly ? (
+            <div className="mt-3 border border-edge p-2 max-h-[210px] overflow-y-scroll">{equippedList}</div>
+          ) : (
           <div className="mt-3">
             <div
               className="grid gap-1"
@@ -115,33 +158,7 @@ export function BuildModuleCard({
 
             <div className=" border border-edge p-2 max-h-[210px] overflow-y-scroll">
               {active === 0 ? (
-                // Equipped summary
-                <ul className="text-sm [&>li+li]:mt-[10px]">
-                  {equippedElement && (
-                    <li className=" flex items-center gap-2">
-                      {equippedElement.iconUrl && (
-                        <img src={imageSrc(equippedElement.iconUrl)} alt="" className="h-6 w-6 rounded-full object-cover" />
-                      )}
-                      <span className="font-semibold">{equippedElement.name} DMG <span className="font-bold text-accent">{tierQuality?.effect1Value ?? ""}</span></span>
-                    </li>
-                  )}
-                  {[2, 3].map((slot) => {
-                    const b = equippedBonus(slot, slot === 2 ? sel.effect2 : sel.effect3);
-                    if (!b) return null;
-                    const entity = entityOf(b);
-                    return (
-                      <li key={slot} className=" flex items-center gap-2">
-                        {entity?.iconUrl && (
-                          <img src={imageSrc(entity.iconUrl)} alt="" className="h-6 w-6 rounded-full object-cover" />
-                        )}
-                        <span className="font-semibold">{b.effectText}</span>
-                      </li>
-                    );
-                  })}
-                  {!equippedElement && !equippedBonus(2, sel.effect2) && !equippedBonus(3, sel.effect3) && (
-                    <li className="text-ink-dim">Nothing equipped yet.</li>
-                  )}
-                </ul>
+                equippedList
               ) : active === 1 ? (
                 // Effect 1 — elements, single-select
                 <ul className="[&>li+li]:mt-[10px]">
@@ -194,7 +211,7 @@ export function BuildModuleCard({
               )}
             </div>
           </div>
-        )}
+          ))}
       </div>
     </div>
   );

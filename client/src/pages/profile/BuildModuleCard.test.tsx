@@ -39,6 +39,17 @@ describe("BuildModuleCard", () => {
     expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ effect2: "w9" }));
   });
 
+  it("readOnly shows the equipped effect, no tabs, no quality dropdown", () => {
+    const sel = { quality: "Gold" as const, effect1: "t-ice", effect2: null, effect3: null };
+    render(<BuildModuleCard module={module} types={types} qualities={qualities} selection={sel} readOnly />);
+    // No editing controls
+    expect(screen.queryByRole("tab", { name: "Effect 1" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /quality/ })).not.toBeInTheDocument();
+    // The equipped element shows
+    expect(screen.getByText(/Ice DMG/)).toBeInTheDocument();
+    expect(screen.getByText("+30%")).toBeInTheDocument();
+  });
+
   it("shows only base attributes (no effect tabs) at Blue", () => {
     render(<BuildModuleCard module={module} types={types} qualities={qualities} selection={{ quality: "Blue", effect1: null, effect2: null, effect3: null }} onChange={() => {}} />);
     expect(screen.queryByRole("tab", { name: "Effect 1" })).not.toBeInTheDocument();
