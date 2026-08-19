@@ -516,6 +516,10 @@ model Build {
   quality         QualityTier @default(Blue)
   // Per equipped weapon: {"<weaponId>": "Gold", ...}
   weaponQualities Json        @default("{}") @map("weapon_qualities")
+  // Attack-module picks: {"<moduleId>": {quality, effect1, effect2, effect3}}.
+  // effect1 = element typeId; effect2/3 = the equipped bonus's target mech/weapon
+  // id (both stable across module re-saves, so builds don't break).
+  moduleSelections Json       @default("{}") @map("module_selections")
   // Publication state. New builds start as Draft (private); the public feed
   // and share pages only surface Published rows.
   status    BuildStatus @default(Draft)

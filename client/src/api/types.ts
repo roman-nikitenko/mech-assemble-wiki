@@ -379,6 +379,8 @@ export interface PostedBuild {
   // The subject's quality tier + per-equipped-weapon tiers.
   quality: QualityTier;
   weaponQualities: Record<string, QualityTier>;
+  // Attack-module picks, keyed by module id.
+  moduleSelections: Record<string, ModuleSelection>;
   // Set by the client after a heart toggle — not included in GET responses.
   userHearted?: boolean;
   createdAt: string;
@@ -397,6 +399,16 @@ export interface AdminUser {
   buildCount: number;
 }
 
+/** One module's picks within a build. Effect 1 = element typeId; Effect 2/3 =
+    the equipped bonus's target mech/weapon id (both stable across module
+    re-saves, so builds don't break when a module is edited). */
+export interface ModuleSelection {
+  quality: QualityTier;
+  effect1: string | null;
+  effect2: string | null;
+  effect3: string | null;
+}
+
 /** Payload for POST /api/builds. */
 export interface BuildPostInput {
   name: string;
@@ -409,6 +421,7 @@ export interface BuildPostInput {
   // Optional on input — the server defaults quality to Blue / {} when absent.
   quality?: QualityTier;
   weaponQualities?: Record<string, QualityTier>;
+  moduleSelections?: Record<string, ModuleSelection>;
 }
 
 /** Payload for POST/PUT /api/accessories. */
