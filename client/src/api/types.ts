@@ -200,6 +200,9 @@ export interface WeaponInput {
   iconUrl?: string | null;
   skins?: { name: string; bonuses: string[]; imageUrl?: string | null }[];
   skills?: {
+    // Existing node id (keeps ids stable on re-save so builds don't break);
+    // omitted for a brand-new node.
+    id?: string;
     name: string | null;
     description: string | null;
     appearanceLevel: number;
@@ -299,6 +302,9 @@ export interface MechInput {
   weaponId?: string | null;
   accessoryId?: string | null;
   skills?: {
+    // Existing node id (keeps ids stable on re-save so builds don't break);
+    // omitted for a brand-new node.
+    id?: string;
     name: string | null;
     description: string | null;
     appearanceLevel: number;
