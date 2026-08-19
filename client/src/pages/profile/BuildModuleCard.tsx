@@ -32,8 +32,9 @@ export function BuildModuleCard({
   const [tab, setTab] = useState(0); // 0 = Equipped, 1..N = Effect n
 
   const tierQuality = qualities.find((q) => q.name === tier) ?? null;
-  const effectRow = tierQuality ? module.effects.find((e) => e.qualityId === tierQuality.id) ?? null : null;
-  const bonusesForSlot = (slot: number) => (effectRow?.bonuses ?? []).filter((b) => b.slot === slot);
+  // Effect 2/3 bonuses are per-module (same at every quality that shows them);
+  // the quality still drives attributes + Effect 1 %.
+  const bonusesForSlot = (slot: number) => module.bonuses.filter((b) => b.slot === slot);
   const entityOf = (b: ModuleBonusRow) => b.mech ?? b.weapon;
 
   function set(patch: Partial<ModuleSelection>) {

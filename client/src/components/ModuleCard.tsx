@@ -22,8 +22,9 @@ export function ModuleCard({
 
   // The module's per-quality effect row at the selected tier (bonuses live per
   // module × quality); matched via the quality catalog id.
-  const effectRow = quality ? module.effects.find((e) => e.qualityId === quality.id) ?? null : null;
-  const bonusesForSlot = (slot: number) => (effectRow?.bonuses ?? []).filter((b) => b.slot === slot);
+  // Effect 2/3 bonuses are per-module (same at every quality that shows them);
+  // the quality only gates which effect tabs appear.
+  const bonusesForSlot = (slot: number) => module.bonuses.filter((b) => b.slot === slot);
 
   return (
     <div className="overflow-hidden max-w-[300px] min-w-[300px] place-self-center border border-edge bg-surface">
@@ -78,11 +79,11 @@ export function ModuleCard({
             </div>
             <div className="rounded-b rounded-tr border border-edge p-2 max-h-[210px] overflow-y-scroll">
               {active === 1 ? (
-                <ul className="space-y-1">
+                <ul className="[&>li+li]:mt-[10px]">
                   {types.map((t) => (
-                    <li key={t.id} className="flex items-center mb-2 gap-2 text-sm">
+                    <li key={t.id} className="flex items-center gap-2 text-sm">
                       {t.iconUrl && (
-                        <img src={imageSrc(t.iconUrl)} alt="" className="h-5 w-5 rounded-full object-cover" />
+                        <img src={imageSrc(t.iconUrl)} alt="" className="h-6 w-6 rounded-full object-cover" />
                       )}
                       <span>
                         {t.name} DMG{" "}
@@ -94,15 +95,14 @@ export function ModuleCard({
               ) : bonusesForSlot(active).length === 0 ? (
                 <p className="text-sm text-ink-dim">No bonuses.</p>
               ) : (
-                <ul className="space-y-1">
+                <ul className="[&>li+li]:mt-[10px]">
                   {bonusesForSlot(active).map((b) => {
                     const entity = b.mech ?? b.weapon;
                     return (
-                      <li key={b.id} className="flex items-center mb-2 gap-2 text-sm">
+                      <li key={b.id} className="flex items-center gap-2 text-sm">
                         {entity?.iconUrl && (
-                          <img src={imageSrc(entity.iconUrl)} alt="" className="h-5 w-5 rounded-full object-cover" />
+                          <img src={imageSrc(entity.iconUrl)} alt="" className="h-10 w-10 object-contain" />
                         )}
-                        <span className="font-semibold">{entity?.name}</span>
                         <span className="text-ink-dim">{b.effectText}</span>
                       </li>
                     );
