@@ -26,20 +26,24 @@ export function ModuleCard({
   const bonusesForSlot = (slot: number) => (effectRow?.bonuses ?? []).filter((b) => b.slot === slot);
 
   return (
-    <div className="overflow-hidden rounded-xl border border-edge bg-surface">
+    <div className="overflow-hidden max-w-[300px] min-w-[300px] place-self-center border border-edge bg-surface">
       <div
-        className="flex items-center gap-3 bg-surface-2 bg-cover bg-center p-3"
+        className="flex flex-col  gap-3  h-[160px] bg-contain bg-no-repeat bg-center p-3"
         style={style.header ? { backgroundImage: `url(${style.header})` } : undefined}
       >
-        <div
-          className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-surface bg-cover bg-center"
-          style={style.iconBorder ? { backgroundImage: `url(${style.iconBorder})` } : undefined}
-        >
-          {module.iconUrl && (
-            <img src={imageSrc(module.iconUrl)} alt="" className="h-10 w-10 object-contain" />
-          )}
+        <h3 className="font-black font-2xl text-white  [-webkit-text-stroke:0.3px_#000000]">Aiming calibration system</h3>
+        <div className="flex gap-2">
+          <div
+            className="flex h-14 w-14 shrink-0 items-center justify-center  bg-cover bg-center"
+            style={style.iconBorder ? { backgroundImage: `url(${style.iconBorder})` } : undefined}
+          >
+
+            {module.iconUrl && (
+              <img src={imageSrc(module.iconUrl)} alt="" className="p-1 object-contain" />
+            )}
+          </div>
+          <p className="text-lg font-black text-white drop-shadow">{module.name}</p>
         </div>
-        <p className="text-lg font-black text-white drop-shadow">{module.name}</p>
       </div>
 
       <div className="p-3">
@@ -57,7 +61,7 @@ export function ModuleCard({
 
         {count >= 1 && (
           <div className="mt-3">
-            <div className="flex gap-1" role="tablist">
+            <div className="grid grid-cols-3 gap-1" role="tablist">
               {Array.from({ length: count }, (_, i) => i + 1).map((n) => (
                 <button
                   key={n}
@@ -65,19 +69,18 @@ export function ModuleCard({
                   role="tab"
                   aria-selected={active === n}
                   onClick={() => setTab(n)}
-                  className={`rounded-t px-3 py-1 text-sm font-semibold ${
-                    active === n ? "bg-accent text-bg" : "bg-surface-2 text-ink-dim"
-                  }`}
+                  className={`cursor-pointer rounded-t  px-3 py-1 text-sm font-semibold ${active === n ? "bg-accent text-bg" : "bg-surface-2 text-ink-dim"
+                    }`}
                 >
                   Effect {n}
                 </button>
               ))}
             </div>
-            <div className="rounded-b rounded-tr border border-edge p-2">
+            <div className="rounded-b rounded-tr border border-edge p-2 max-h-[210px] overflow-y-scroll">
               {active === 1 ? (
                 <ul className="space-y-1">
                   {types.map((t) => (
-                    <li key={t.id} className="flex items-center gap-2 text-sm">
+                    <li key={t.id} className="flex items-center mb-2 gap-2 text-sm">
                       {t.iconUrl && (
                         <img src={imageSrc(t.iconUrl)} alt="" className="h-5 w-5 rounded-full object-cover" />
                       )}
@@ -95,7 +98,7 @@ export function ModuleCard({
                   {bonusesForSlot(active).map((b) => {
                     const entity = b.mech ?? b.weapon;
                     return (
-                      <li key={b.id} className="flex items-center gap-2 text-sm">
+                      <li key={b.id} className="flex items-center mb-2 gap-2 text-sm">
                         {entity?.iconUrl && (
                           <img src={imageSrc(entity.iconUrl)} alt="" className="h-5 w-5 rounded-full object-cover" />
                         )}
