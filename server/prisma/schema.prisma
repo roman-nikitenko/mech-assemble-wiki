@@ -50,6 +50,11 @@ enum BuildStatus {
   Unposted
 }
 
+enum ModuleTargetKind {
+  Weapon
+  Mech
+}
+
 // ---------- The hub ----------
 
 model Mech {
@@ -101,6 +106,7 @@ model Mech {
   skillNodes       SkillNode[] @relation("SkillNodeMechOwner")
   // Linked skills on OTHER owners that require this mech as their gate partner.
   gatingSkillNodes SkillNode[] @relation("SkillNodeMechGate")
+  moduleBonuses    ModuleBonus[]
 
   @@map("mechs")
 }
@@ -198,8 +204,8 @@ model Type {
   name    String  @unique
   iconUrl String? @map("icon_url")
 
-  mechs   Mech[]
-  weapons Weapon[]
+  mechs    Mech[]
+  weapons  Weapon[]
 
   @@map("types")
 }
@@ -352,6 +358,7 @@ model Weapon {
   skillNodes       SkillNode[] @relation("SkillNodeWeaponOwner")
   // Linked skills on OTHER owners that require this weapon as their gate partner.
   gatingSkillNodes SkillNode[] @relation("SkillNodeWeaponGate")
+  moduleBonuses    ModuleBonus[]
 
   @@map("weapons")
 }
@@ -549,4 +556,84 @@ model Feedback {
   createdAt DateTime @default(now()) @map("created_at")
 
   @@map("feedback")
+}
+
+// ---------- Modules ----------
+
+// The (4) game modules. Icon is fixed; the module has ONE elemental type
+// (its Effect 1) and a target_kind deciding whether Effect 2/3 bonuses point
+// at weapons or mechs. Base attributes are NOT here — they live on the shared
+// quality catalog (same HP/ATK/DEF for every module at a given quality).
+model Module {
+  id            String           @id @default(uuid()) @db.Uuid
+  name          String           @unique
+  iconUrl       String?          @map("icon_url")
+  // Effect 2 and Effect 3 each target weapons OR mechs independently (e.g. a
+  // Mythic module can grant a weapon bonus AND a mech bonus).
+  effect2Target ModuleTargetKind @default(Weapon) @map("effect2_target")
+  effect3Target ModuleTargetKind @default(Weapon) @map("effect3_target")
+  createdAt     DateTime         @default(now()) @map("created_at")
+
+  // A module has NO fixed elemental type: Effect 1 applies to every element,
+  // and its value lives on the quality (module_qualities.effect1_value).
+  effects ModuleQualityEffect[]
+
+  @@map("modules")
+}
+
+// Extensible quality catalog. Base attributes (free-text) and effect_count
+// (how many effect tabs this quality unlocks) live here, shared across modules.
+model ModuleQuality {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String   @unique
+  iconUrl     String?  @map("icon_url")
+  hp          String
+  atk         String
+  def         String
+  // Effect 1 (the elemental DMG %) is a property of the quality: it's the same
+  // for every module and applies to all elements. Null below Turquoise (effect_count 0).
+  effect1Value String? @map("effect1_value")
+  effectCount Int      @map("effect_count")
+  sortOrder   Int      @default(0) @map("sort_order")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  effects ModuleQualityEffect[]
+
+  @@map("module_qualities")
+}
+
+// One row per module x quality the admin has filled in. Holds the Effect-1
+// value and parents the Effect 2/3 bonus rows. quality onDelete: Restrict — a
+// quality in use can't be deleted (clear its module effects first).
+model ModuleQualityEffect {
+  id           String  @id @default(uuid()) @db.Uuid
+  moduleId     String  @map("module_id") @db.Uuid
+  qualityId    String  @map("quality_id") @db.Uuid
+  effect1Value String? @map("effect1_value")
+
+  module  Module        @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  quality ModuleQuality @relation(fields: [qualityId], references: [id], onDelete: Restrict)
+  bonuses ModuleBonus[]
+
+  @@unique([moduleId, qualityId])
+  @@map("module_quality_effects")
+}
+
+// A single Effect 2 or Effect 3 bonus. mech_id XOR weapon_id (app-enforced to
+// match the module's target_kind). SetNull so deleting a mech/weapon leaves the
+// row with a re-pointable blank target instead of cascading data loss.
+model ModuleBonus {
+  id         String  @id @default(uuid()) @db.Uuid
+  effectId   String  @map("module_quality_effect_id") @db.Uuid
+  slot       Int
+  mechId     String? @map("mech_id") @db.Uuid
+  weaponId   String? @map("weapon_id") @db.Uuid
+  effectText String  @map("effect_text")
+  sortOrder  Int     @default(0) @map("sort_order")
+
+  effect ModuleQualityEffect @relation(fields: [effectId], references: [id], onDelete: Cascade)
+  mech   Mech?               @relation(fields: [mechId], references: [id], onDelete: SetNull)
+  weapon Weapon?             @relation(fields: [weaponId], references: [id], onDelete: SetNull)
+
+  @@map("module_bonuses")
 }

@@ -32,6 +32,8 @@ const NAV = [
   { to: "/admin/accessories", label: "Accessories", end: false },
   { to: "/admin/pilots", label: "Pilots", end: false },
   { to: "/admin/types", label: "Types", end: false },
+  { to: "/admin/modules", label: "Modules", end: false },
+  { to: "/admin/module-qualities", label: "Module Qualities", end: false },
   { to: "/admin/settings", label: "Settings", end: false },
 ];
 
