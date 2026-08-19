@@ -580,7 +580,8 @@ model Module {
 
   // A module has NO fixed elemental type: Effect 1 applies to every element,
   // and its value lives on the quality (module_qualities.effect1_value).
-  effects ModuleQualityEffect[]
+  // Effect 2/3 bonuses are per-module (same at every quality that shows them).
+  bonuses ModuleBonus[]
 
   @@map("modules")
 }
@@ -601,43 +602,28 @@ model ModuleQuality {
   sortOrder   Int      @default(0) @map("sort_order")
   createdAt   DateTime @default(now()) @map("created_at")
 
-  effects ModuleQualityEffect[]
-
   @@map("module_qualities")
 }
 
 // One row per module x quality the admin has filled in. Holds the Effect-1
 // value and parents the Effect 2/3 bonus rows. quality onDelete: Restrict — a
 // quality in use can't be deleted (clear its module effects first).
-model ModuleQualityEffect {
-  id           String  @id @default(uuid()) @db.Uuid
-  moduleId     String  @map("module_id") @db.Uuid
-  qualityId    String  @map("quality_id") @db.Uuid
-  effect1Value String? @map("effect1_value")
-
-  module  Module        @relation(fields: [moduleId], references: [id], onDelete: Cascade)
-  quality ModuleQuality @relation(fields: [qualityId], references: [id], onDelete: Restrict)
-  bonuses ModuleBonus[]
-
-  @@unique([moduleId, qualityId])
-  @@map("module_quality_effects")
-}
 
 // A single Effect 2 or Effect 3 bonus. mech_id XOR weapon_id (app-enforced to
 // match the module's target_kind). SetNull so deleting a mech/weapon leaves the
 // row with a re-pointable blank target instead of cascading data loss.
 model ModuleBonus {
   id         String  @id @default(uuid()) @db.Uuid
-  effectId   String  @map("module_quality_effect_id") @db.Uuid
+  moduleId   String  @map("module_id") @db.Uuid
   slot       Int
   mechId     String? @map("mech_id") @db.Uuid
   weaponId   String? @map("weapon_id") @db.Uuid
   effectText String  @map("effect_text")
   sortOrder  Int     @default(0) @map("sort_order")
 
-  effect ModuleQualityEffect @relation(fields: [effectId], references: [id], onDelete: Cascade)
-  mech   Mech?               @relation(fields: [mechId], references: [id], onDelete: SetNull)
-  weapon Weapon?             @relation(fields: [weaponId], references: [id], onDelete: SetNull)
+  module Module  @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  mech   Mech?   @relation(fields: [mechId], references: [id], onDelete: SetNull)
+  weapon Weapon? @relation(fields: [weaponId], references: [id], onDelete: SetNull)
 
   @@map("module_bonuses")
 }

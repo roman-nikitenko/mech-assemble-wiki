@@ -112,7 +112,7 @@ const moduleFixture: ModuleSummary = {
   iconUrl: null,
   effect2Target: "Mech",
   effect3Target: "Weapon",
-  effects: [],
+  bonuses: [],
 };
 
 const weaponFixture = (over: Partial<WeaponSummary>): WeaponSummary => ({

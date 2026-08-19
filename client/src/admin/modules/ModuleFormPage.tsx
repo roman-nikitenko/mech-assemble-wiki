@@ -13,40 +13,33 @@ const TARGET_KINDS: ModuleTargetKind[] = ["Weapon", "Mech"];
 
 // One Effect 2/3 bonus row being edited. `entityId` holds whichever of
 // mechId/weaponId applies — decided at submit time by the module's targetKind
-// (a module targets weapons XOR mechs). Bonuses are per-module, keyed by tier.
+// (a module targets weapons XOR mechs). Bonuses are per-module (module-level,
+// not per-quality) — the same list applies at every quality that unlocks the slot.
 type BonusDraft = { slot: 2 | 3; entityId: string; effectText: string };
-type BonusesByTier = Record<string, BonusDraft[]>;
 
 const EMPTY: ModuleInput = {
   name: "",
   iconUrl: null,
   effect2Target: "Weapon",
   effect3Target: "Weapon",
-  qualityEffects: [],
+  bonuses: [],
 };
 
-/** Rebuilds the per-tier bonus drafts from a loaded module's effect rows
-    (edit-mode prefill). Effects come back keyed by qualityId, so map each back
-    to its tier name using the quality catalog. */
-function bonusesFromDetail(detail: ModuleDetail, tierByQualityId: Map<string, string>): BonusesByTier {
-  const map: BonusesByTier = {};
-  for (const row of detail.effects) {
-    const tierName = tierByQualityId.get(row.qualityId);
-    if (!tierName) continue;
-    map[tierName] = row.bonuses.map((b) => ({
-      slot: b.slot as 2 | 3,
-      entityId: b.mech?.id ?? b.weapon?.id ?? "",
-      effectText: b.effectText,
-    }));
-  }
-  return map;
+/** Rebuilds the flat bonus drafts from a loaded module's bonus rows (edit-mode
+    prefill). Bonuses are module-level now, so no tier/quality mapping is needed. */
+function bonusesFromDetail(detail: ModuleDetail): BonusDraft[] {
+  return detail.bonuses.map((b) => ({
+    slot: b.slot as 2 | 3,
+    entityId: b.mech?.id ?? b.weapon?.id ?? "",
+    effectText: b.effectText,
+  }));
 }
 
 /** One form for BOTH /admin/modules/new and /admin/modules/:id/edit —
     mirrors MechFormPage's create+edit-in-one-component pattern via useParams.
-    A module is just name + icon + target kind (its base attributes and Effect 1
-    come from the quality). The per-quality Effect 2/3 editor is a later phase;
-    the effects state below is kept dormant for it. */
+    Base attributes (HP/ATK/DEF) and Effect 1 (Elemental DMG %) are per-quality
+    (shared across all modules at that tier); Effect 2/3 bonuses are per-module
+    (module-level, shown regardless of the selected quality). */
 export function ModuleFormPage() {
   const { id } = useParams<{ id: string }>();
   const isEdit = id !== undefined;
@@ -62,8 +55,8 @@ export function ModuleFormPage() {
   const weapons = useWeapons();
 
   const [form, setForm] = useState<ModuleInput>(EMPTY);
-  // Effect 2/3 bonuses, per-module, keyed by tier name.
-  const [bonusesByTier, setBonusesByTier] = useState<BonusesByTier>({});
+  // Effect 2/3 bonuses — module-level, flat list (not keyed by quality tier).
+  const [bonuses, setBonuses] = useState<BonusDraft[]>([]);
   // Which quality tier's attributes to edit — the same fixed Blue→Mythic ladder
   // weapons/mechs use. Base attributes + Effect 1 live on the quality (shared
   // across all modules), matched to the tier by name.
@@ -110,33 +103,24 @@ export function ModuleFormPage() {
           ) : undefined,
         }));
   }
-  const tierBonuses = bonusesByTier[tier] ?? [];
-
   // Changing an effect's target invalidates that slot's picked entities (a
-  // weapon id isn't a mech id), so clear the slot's bonuses across all tiers.
+  // weapon id isn't a mech id), so clear the slot's bonuses.
   function setSlotTarget(slot: 2 | 3, value: ModuleTargetKind) {
     set(slot === 2 ? "effect2Target" : "effect3Target", value);
-    setBonusesByTier((b) => {
-      const next: BonusesByTier = {};
-      for (const [t, rows] of Object.entries(b)) next[t] = rows.filter((x) => x.slot !== slot);
-      return next;
-    });
+    setBonuses((b) => b.filter((x) => x.slot !== slot));
   }
 
   function addBonus(slot: 2 | 3) {
-    setBonusesByTier((b) => ({ ...b, [tier]: [...(b[tier] ?? []), { slot, entityId: "", effectText: "" }] }));
+    setBonuses((b) => [...b, { slot, entityId: "", effectText: "" }]);
   }
   function patchBonus(index: number, patch: Partial<BonusDraft>) {
-    setBonusesByTier((b) => ({
-      ...b,
-      [tier]: (b[tier] ?? []).map((row, i) => (i === index ? { ...row, ...patch } : row)),
-    }));
+    setBonuses((b) => b.map((row, i) => (i === index ? { ...row, ...patch } : row)));
   }
   function removeBonus(index: number) {
-    setBonusesByTier((b) => ({ ...b, [tier]: (b[tier] ?? []).filter((_, i) => i !== index) }));
+    setBonuses((b) => b.filter((_, i) => i !== index));
   }
 
-  // Effect 2 (slot 2) and Effect 3 (slot 3) share this per-module bonus list —
+  // Effect 2 (slot 2) and Effect 3 (slot 3) share this module-level bonus list —
   // a target dropdown (mech/weapon per target kind) + effect text per row.
   function bonusSection(slot: 2 | 3) {
     const target = targetForSlot(slot);
@@ -157,7 +141,7 @@ export function ModuleFormPage() {
           </div>
         </div>
         <p className="mb-2 text-xs text-ink-dim">Each bonus targets a {targetLabel}.</p>
-        {tierBonuses.map((b, i) =>
+        {bonuses.map((b, i) =>
           b.slot === slot ? (
             <div key={i} className="mb-2 flex items-center gap-2">
               <div className="flex-1">
@@ -199,21 +183,21 @@ export function ModuleFormPage() {
     );
   }
 
-  // Prefill once the existing module + quality catalog arrive (edit mode only).
+  // Prefill once the existing module arrives (edit mode only). Bonuses are
+  // module-level now, so no quality catalog lookup is needed for the mapping.
   useEffect(() => {
-    if (isEdit && existing.data && qualities.data) {
+    if (isEdit && existing.data) {
       const m = existing.data;
       setForm({
         name: m.name,
         iconUrl: m.iconUrl,
         effect2Target: m.effect2Target,
         effect3Target: m.effect3Target,
-        qualityEffects: [],
+        bonuses: [],
       });
-      const tierByQualityId = new Map(qualities.data.map((q) => [q.id, q.name]));
-      setBonusesByTier(bonusesFromDetail(m, tierByQualityId));
+      setBonuses(bonusesFromDetail(m));
     }
-  }, [isEdit, existing.data, qualities.data]);
+  }, [isEdit, existing.data]);
 
   const mutation = isEdit ? updateModule : createModule;
 
@@ -225,10 +209,6 @@ export function ModuleFormPage() {
     e.preventDefault();
     setSaveError(null);
     try {
-      // Resolve each tier to its quality-catalog id (needed to key bonuses).
-      const qualityIdByTier: Record<string, string> = {};
-      for (const q of qualities.data ?? []) qualityIdByTier[q.name] = q.id;
-
       // Persist any tier whose fields were edited. HP/ATK/DEF are required by
       // the catalog; the values are shared across every module at that tier.
       for (const [t, d] of Object.entries(edits)) {
@@ -243,7 +223,7 @@ export function ModuleFormPage() {
           row.def === d.def.trim() &&
           (row.effect1Value ?? null) === effect1Value;
         if (unchanged) continue;
-        const saved = await upsertQuality.mutateAsync({
+        await upsertQuality.mutateAsync({
           id: row?.id,
           name: t,
           iconUrl: row?.iconUrl ?? null,
@@ -254,32 +234,19 @@ export function ModuleFormPage() {
           effectCount: count,
           sortOrder: QUALITY_TIERS.indexOf(t as QualityTier),
         });
-        qualityIdByTier[t] = saved.id;
       }
 
-      // Build the per-module effect rows (bonuses) from the tier drafts.
-      const qualityEffects = [];
-      for (const [t, rows] of Object.entries(bonusesByTier)) {
-        const valid = rows.filter((b) => b.entityId && b.effectText.trim());
-        if (valid.length === 0) continue;
-        const qualityId = qualityIdByTier[t];
-        if (!qualityId) throw new Error(`Set ${t}'s attributes before adding its bonuses.`);
-        qualityEffects.push({
-          qualityId,
-          effect1Value: null, // Effect 1 lives on the quality now; dormant here
-          bonuses: valid.map((b, i) => {
-            const target = b.slot === 2 ? form.effect2Target : form.effect3Target;
-            return {
-              slot: b.slot,
-              mechId: target === "Mech" ? b.entityId : null,
-              weaponId: target === "Weapon" ? b.entityId : null,
-              effectText: b.effectText.trim(),
-              sortOrder: i,
-            };
-          }),
-        });
-      }
-      await mutation.mutateAsync({ ...form, qualityEffects });
+      // Build the module-level bonus rows (Effect 2/3) from the flat drafts.
+      const payloadBonuses = bonuses
+        .filter((b) => b.entityId && b.effectText.trim())
+        .map((b, i) => ({
+          slot: b.slot,
+          mechId: (b.slot === 2 ? form.effect2Target : form.effect3Target) === "Mech" ? b.entityId : null,
+          weaponId: (b.slot === 2 ? form.effect2Target : form.effect3Target) === "Weapon" ? b.entityId : null,
+          effectText: b.effectText.trim(),
+          sortOrder: i,
+        }));
+      await mutation.mutateAsync({ ...form, bonuses: payloadBonuses });
       navigate("/admin/modules");
     } catch (err) {
       setSaveError((err as Error).message);
@@ -383,13 +350,14 @@ export function ModuleFormPage() {
                 </p>
               </div>
             )}
-
-            {/* Effect 2 unlocks at Gold, Effect 3 at Mythic — same per-module
-                bonus list, just a different slot. */}
-            {effectCount >= 2 && bonusSection(2)}
-            {effectCount >= 3 && bonusSection(3)}
           </div>
         </div>
+
+        {/* Effect 2 and Effect 3 bonuses are module-level (not per-quality) —
+            they apply the same regardless of which quality unlocks the slot in
+            game, so they're edited here independent of the Quality selector above. */}
+        {bonusSection(2)}
+        {bonusSection(3)}
 
         {saveError && <p className="text-sm text-fire">{saveError}</p>}
 

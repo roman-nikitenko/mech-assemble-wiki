@@ -12,7 +12,7 @@ const modules: ModuleSummary[] = [
     iconUrl: null,
     effect2Target: "Weapon",
     effect3Target: "Weapon",
-    effects: [],
+    bonuses: [],
   },
 ];
 

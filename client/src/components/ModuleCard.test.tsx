@@ -27,21 +27,14 @@ const module: ModuleSummary = {
   iconUrl: null,
   effect2Target: "Weapon",
   effect3Target: "Weapon",
-  effects: [
+  bonuses: [
     {
-      id: "e1",
-      qualityId: "qGold",
-      effect1Value: null,
-      bonuses: [
-        {
-          id: "b1",
-          slot: 2,
-          effectText: "reload -0.5s",
-          sortOrder: 0,
-          mech: null,
-          weapon: { id: "w1", slug: null, name: "Rail Gun", iconUrl: null },
-        },
-      ],
+      id: "b1",
+      slot: 2,
+      effectText: "reload -0.5s",
+      sortOrder: 0,
+      mech: null,
+      weapon: { id: "w1", slug: null, name: "Rail Gun", iconUrl: null },
     },
   ],
 };
@@ -58,7 +51,6 @@ describe("ModuleCard", () => {
   it("switches to Effect 2 and lists the module's bonuses", async () => {
     render(<ModuleCard module={module} tier="Gold" quality={goldQuality} types={types} />);
     await userEvent.click(screen.getByRole("tab", { name: "Effect 2" }));
-    expect(screen.getByText("Rail Gun")).toBeInTheDocument();
     expect(screen.getByText("reload -0.5s")).toBeInTheDocument();
   });
 

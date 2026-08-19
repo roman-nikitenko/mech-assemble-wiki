@@ -506,15 +506,8 @@ export interface ModuleBonusRow {
   weapon: { id: string; slug: string | null; name: string; iconUrl: string | null } | null;
 }
 
-/** A module's per-quality effect, with its bonus rows nested. */
-export interface ModuleQualityEffectRow {
-  id: string;
-  qualityId: string;
-  effect1Value: string | null;
-  bonuses: ModuleBonusRow[];
-}
-
-/** Shape of GET /api/modules rows — now includes each module's effects. */
+/** Shape of GET /api/modules rows — includes each module's Effect 2/3 bonuses
+    (per-module; the same at every quality that unlocks them). */
 export interface ModuleSummary {
   id: string;
   name: string;
@@ -522,7 +515,7 @@ export interface ModuleSummary {
   // Effect 2 and Effect 3 each target weapons OR mechs independently.
   effect2Target: ModuleTargetKind;
   effect3Target: ModuleTargetKind;
-  effects: ModuleQualityEffectRow[];
+  bonuses: ModuleBonusRow[];
 }
 
 /** GET /api/modules/:id returns the same shape as the list rows. */
@@ -537,18 +530,11 @@ export interface ModuleBonusInput {
   sortOrder?: number;
 }
 
-/** One quality effect within POST/PUT /api/modules. */
-export interface ModuleQualityEffectInput {
-  qualityId: string;
-  effect1Value: string | null;
-  bonuses: ModuleBonusInput[];
-}
-
 /** Payload for POST/PUT /api/modules. */
 export interface ModuleInput {
   name: string;
   iconUrl?: string | null;
   effect2Target: ModuleTargetKind;
   effect3Target: ModuleTargetKind;
-  qualityEffects: ModuleQualityEffectInput[];
+  bonuses: ModuleBonusInput[];
 }

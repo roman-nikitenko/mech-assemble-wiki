@@ -42,11 +42,9 @@ describe("ModuleFormPage (create mode)", () => {
     expect(await screen.findByLabelText("Name *")).toBeInTheDocument();
   });
 
-  it("has a per-effect target toggle inside Effect 2 (Gold)", async () => {
+  it("has a per-effect target toggle inside Effect 2 (module-level, no quality needed)", async () => {
     renderForm();
     await screen.findByDisplayValue("10.00k");
-    await userEvent.click(screen.getByRole("button", { name: "Quality" }));
-    await userEvent.click(screen.getByRole("option", { name: "Gold" }));
 
     const weaponBtn = screen.getByRole("button", { name: "Effect 2 Weapon" });
     expect(weaponBtn).toHaveAttribute("aria-pressed", "true");
@@ -78,31 +76,32 @@ describe("ModuleFormPage (create mode)", () => {
     await userEvent.click(screen.getByRole("button", { name: "Quality" }));
     await userEvent.click(screen.getByRole("option", { name: "Red" }));
     expect(screen.getByLabelText("Effect 1 · Elemental DMG")).toBeInTheDocument();
-    // Effect 2 (bonuses) only unlocks at Gold — not yet at Red.
-    expect(screen.queryByText("Effect 2 · Bonuses")).not.toBeInTheDocument();
   });
 
-  it("shows the Effect 2 bonus list at Gold and adds a bonus row", async () => {
+  it("shows the Effect 2 and Effect 3 bonus editors without picking a quality, and adds a bonus row", async () => {
+    renderForm();
+    await screen.findByDisplayValue("10.00k");
+
+    // Effect 2/3 bonuses are module-level now — both editors are visible at
+    // the default (Blue) tier, no quality selection needed.
+    expect(screen.getByText("Effect 2 · Bonuses")).toBeInTheDocument();
+    expect(screen.getByText("Effect 3 · Bonuses")).toBeInTheDocument();
+
+    // No bonus rows until the admin adds one.
+    expect(screen.queryByLabelText("Effect 2 bonus 1 weapon")).not.toBeInTheDocument();
+
+    const addButtons = screen.getAllByRole("button", { name: "+ Add bonus" });
+    expect(addButtons).toHaveLength(2); // one per section (Effect 2, Effect 3)
+    await userEvent.click(addButtons[0]);
+    expect(screen.getByLabelText("Effect 2 bonus 1 weapon")).toBeInTheDocument();
+    expect(screen.getByLabelText("Effect 2 bonus 1 text")).toBeInTheDocument();
+  });
+
+  it("keeps the Effect 2/3 bonus editors visible after switching quality tiers", async () => {
     renderForm();
     await screen.findByDisplayValue("10.00k");
     await userEvent.click(screen.getByRole("button", { name: "Quality" }));
     await userEvent.click(screen.getByRole("option", { name: "Gold" }));
-
-    expect(screen.getByText("Effect 2 · Bonuses")).toBeInTheDocument();
-    // No bonus rows until the admin adds one.
-    expect(screen.queryByLabelText("Effect 2 bonus 1 weapon")).not.toBeInTheDocument();
-    await userEvent.click(screen.getByRole("button", { name: "+ Add bonus" }));
-    expect(screen.getByLabelText("Effect 2 bonus 1 weapon")).toBeInTheDocument();
-    expect(screen.getByLabelText("Effect 2 bonus 1 text")).toBeInTheDocument();
-    // Effect 3 only unlocks at Mythic.
-    expect(screen.queryByText("Effect 3 · Bonuses")).not.toBeInTheDocument();
-  });
-
-  it("shows both Effect 2 and Effect 3 at Mythic", async () => {
-    renderForm();
-    await screen.findByDisplayValue("10.00k");
-    await userEvent.click(screen.getByRole("button", { name: "Quality" }));
-    await userEvent.click(screen.getByRole("option", { name: "Mythic" }));
 
     expect(screen.getByText("Effect 2 · Bonuses")).toBeInTheDocument();
     expect(screen.getByText("Effect 3 · Bonuses")).toBeInTheDocument();
