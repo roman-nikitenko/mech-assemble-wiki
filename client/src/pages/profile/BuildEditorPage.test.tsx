@@ -426,7 +426,7 @@ describe("BuildEditorPage (new build)", () => {
     expect(screen.queryByRole("button", { name: /Blade of Dawn/ })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Thunder Pike/ })).toBeInTheDocument();
     await userEvent.clear(screen.getByLabelText("Filter weapons by name"));
-    await userEvent.selectOptions(screen.getByLabelText("Filter weapons by tier"), "S");
+    await userEvent.click(screen.getByRole("button", { name: "Tier S" }));
     expect(screen.queryByRole("button", { name: /Thunder Pike/ })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Blade of Dawn/ })).toBeInTheDocument();
   });

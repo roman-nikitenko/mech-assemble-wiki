@@ -16,7 +16,9 @@ import type { MechRank, ModuleSelection, PostedBuild, QualityTier, SkillNodeRow,
 import { QUALITY_TIERS } from "../../api/types";
 import { MAX_CORE_SLOTS, availableSkills, grantedSkills, resolvePicks } from "../../profile/buildRules";
 import { QualityIcon } from "../../components/QualityIcon";
+import { STierIcon } from "../../components/STierIcon";
 import { Dropdown } from "../../components/Dropdown";
+import { ButtonGroup } from "../../components/ButtonGroup";
 import { PickedSlot, SkillsBlock } from "../../profile/SkillsBlock";
 import { NotesField } from "../../profile/NotesField";
 import { useMe } from "../../auth/useMe";
@@ -471,7 +473,29 @@ function BuildEditorContent({ existing }: { existing: PostedBuild | undefined })
 
   const fieldCls = "min-h-11 w-full rounded-lg border border-edge bg-surface px-3 text-sm";
 
-  // Shared tail of both boards: name + notes + save.
+  // Name + notes — placed at the top of each board, beside the hero image.
+  const nameNotes = (
+    <div className="space-y-4">
+      <div>
+        <label htmlFor="build-name" className="mb-1 block text-sm font-semibold">
+          Build name *
+        </label>
+        <input id="build-name" value={name} onChange={(e) => setName(e.target.value)} className={fieldCls} />
+      </div>
+      <div>
+        <label htmlFor="build-notes" className="mb-1 block text-sm font-semibold">Notes</label>
+        <NotesField
+          id="build-notes"
+          value={description}
+          onChange={setDescription}
+          mechs={mechs.data ?? []}
+          weapons={allWeapons}
+        />
+      </div>
+    </div>
+  );
+
+  // Shared tail of both boards: attack modules + save.
   const metaForm = (
     <div className="mt-6 space-y-4">
       <div>
@@ -488,22 +512,6 @@ function BuildEditorContent({ existing }: { existing: PostedBuild | undefined })
             />
           ))}
         </div>
-      </div>
-      <div>
-        <label htmlFor="build-name" className="mb-1 block text-sm font-semibold">
-          Build name *
-        </label>
-        <input id="build-name" value={name} onChange={(e) => setName(e.target.value)} className={fieldCls} />
-      </div>
-      <div>
-        <label htmlFor="build-notes" className="mb-1 block text-sm font-semibold">Notes</label>
-        <NotesField
-          id="build-notes"
-          value={description}
-          onChange={setDescription}
-          mechs={mechs.data ?? []}
-          weapons={allWeapons}
-        />
       </div>
       <button
         type="button"
@@ -550,6 +558,8 @@ function BuildEditorContent({ existing }: { existing: PostedBuild | undefined })
           </div>
         </div>
 
+        <div className="mt-4">{nameNotes}</div>
+
         {coreSection}
 
         <QualitySelect label="Weapon quality" value={quality} onChange={setQuality} />
@@ -576,8 +586,9 @@ function BuildEditorContent({ existing }: { existing: PostedBuild | undefined })
     <main className="mx-auto max-w-6xl px-4 py-6">
       <Link to="/profile" className="text-sm text-ink-dim hover:text-accent">← My Profile</Link>
 
-      {/* hero banner from the mech's art (765px per design request) */}
-      <div className="relative mt-3 h-[765px] max-w-full md:max-w-[369px] overflow-hidden rounded-xl border border-edge bg-surface">
+      {/* hero banner (mech art) + build meta (name/notes) side by side */}
+      <div className="mt-3 md:flex md:items-start md:gap-4">
+      <div className="relative h-[765px] max-w-full md:min-w-[369px] md:shrink-0 overflow-hidden rounded-xl border border-edge bg-surface">
         {mech?.imageUrl && (
           <img src={imageSrc(mech.imageUrl)} alt="" className="absolute inset-0 h-full w-full object-cover" />
         )}
@@ -636,6 +647,8 @@ function BuildEditorContent({ existing }: { existing: PostedBuild | undefined })
           </button>
         </div>
       </div>
+        <div className="mt-4 md:mt-0 md:flex-1">{nameNotes}</div>
+      </div>
 
       {/* weapon strip: filters + horizontal scroll, feeds the corner squares */}
       <h3 className="mt-5 mb-2 text-sm font-semibold">
@@ -644,37 +657,43 @@ function BuildEditorContent({ existing }: { existing: PostedBuild | undefined })
           ({equipped.length}/{MAX_WEAPONS} — tap a square on the image to remove)
         </span>
       </h3>
-      <div className="mb-2 grid gap-2 sm:grid-cols-3">
+      <div className="mb-2 flex flex-wrap items-center gap-2">
         <input
           aria-label="Filter weapons by name"
           value={weaponName}
           onChange={(e) => setWeaponName(e.target.value)}
           placeholder="Search weapons…"
-          className={fieldCls}
+          className="min-h-11 w-3xs rounded-lg border border-edge bg-surface px-3 text-sm"
         />
-        <select
-          aria-label="Filter weapons by type"
+        {/* Icon filters, same as the admin tables: empty = all; click the
+            active one again to clear. */}
+        <ButtonGroup
+          ariaLabel="Filter weapons by type"
+          labelPrefix="Type"
+          iconOnly
+          toggleable
           value={weaponTypeId}
-          onChange={(e) => setWeaponTypeId(e.target.value)}
-          className={fieldCls}
-        >
-          <option value="">All types</option>
-          {(types.data ?? []).map((t) => (
-            <option key={t.id} value={t.id}>
-              {t.name}
-            </option>
-          ))}
-        </select>
-        <select
-          aria-label="Filter weapons by tier"
+          onChange={setWeaponTypeId}
+          options={(types.data ?? []).map((t) => ({
+            value: t.id,
+            label: t.name,
+            icon: t.iconUrl ? (
+              <img src={imageSrc(t.iconUrl)} alt="" className="h-[32px] w-[32px] rounded-full object-cover" />
+            ) : undefined,
+          }))}
+        />
+        <ButtonGroup
+          ariaLabel="Filter weapons by tier"
+          labelPrefix="Tier"
+          iconOnly
+          toggleable
           value={weaponTier}
-          onChange={(e) => setWeaponTier(e.target.value as MechRank | "")}
-          className={fieldCls}
-        >
-          <option value="">All tiers</option>
-          <option value="Standard">Standard</option>
-          <option value="S">S</option>
-        </select>
+          onChange={(v) => setWeaponTier(v as MechRank | "")}
+          options={[
+            { value: "Standard", label: "Standard" },
+            { value: "S", label: "S", icon: <STierIcon size={25} /> },
+          ]}
+        />
       </div>
 
       {weapons.isPending ? (
