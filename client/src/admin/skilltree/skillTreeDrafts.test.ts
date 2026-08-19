@@ -68,6 +68,15 @@ describe("skillTreeDrafts helpers", () => {
     ]);
     expect(rebuilt.map((d) => d.key)).toEqual(["a", "a1", "b"]); // depth-first
   });
+
+  it("carries an existing node id through draftsFromNodes → serializeDrafts", () => {
+    // The node's id must survive a load→save round-trip so re-saving keeps the
+    // same id and builds that reference it don't lose the skill.
+    const drafts = draftsFromNodes([
+      { id: "node-xyz", parentId: null, name: "Frost", description: null, appearanceLevel: 1, type: "Normal", sortOrder: 0, repeatable: false, linkedWeaponId: null, linkedMechId: null, initialAtTier: null },
+    ]);
+    expect(serializeDrafts(drafts)[0].id).toBe("node-xyz");
+  });
 });
 
 describe("repeatable serialization", () => {

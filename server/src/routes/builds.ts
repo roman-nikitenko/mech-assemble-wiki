@@ -19,6 +19,7 @@ function formatBuild(b: {
   hearts: number;
   quality: QualityTier;
   weaponQualities: unknown;
+  moduleSelections: unknown;
   createdAt: Date;
   updatedAt: Date;
   user: { nickname: string | null; server: string | null };
@@ -36,6 +37,10 @@ function formatBuild(b: {
     hearts: b.hearts,
     quality: b.quality,
     weaponQualities: b.weaponQualities as Record<string, QualityTier>,
+    moduleSelections: b.moduleSelections as Record<
+      string,
+      { quality: QualityTier; effect1: string | null; effect2: string | null; effect3: string | null }
+    >,
     createdAt: b.createdAt.toISOString(),
     updatedAt: b.updatedAt.toISOString(),
     author: { nickname: b.user.nickname, server: b.user.server },
@@ -67,6 +72,20 @@ function parseBuildInput(body: unknown) {
           )
         )
       : {};
+  const pickId = (x: unknown) => (typeof x === "string" ? x : null);
+  const moduleSelections =
+    b.moduleSelections !== null && typeof b.moduleSelections === "object"
+      ? Object.fromEntries(
+          Object.entries(b.moduleSelections as Record<string, unknown>)
+            .filter(([, v]) => v !== null && typeof v === "object")
+            .map(([moduleId, v]) => {
+              const s = v as Record<string, unknown>;
+              const quality =
+                typeof s.quality === "string" && QUALITY_TIERS.includes(s.quality) ? s.quality : "Blue";
+              return [moduleId, { quality, effect1: pickId(s.effect1), effect2: pickId(s.effect2), effect3: pickId(s.effect3) }];
+            })
+        )
+      : {};
   return {
     name: b.name.trim(),
     description: typeof b.description === "string" ? b.description.trim() : "",
@@ -80,6 +99,7 @@ function parseBuildInput(body: unknown) {
         : {},
     quality: quality as QualityTier,
     weaponQualities: weaponQualities as Record<string, QualityTier>,
+    moduleSelections,
   };
 }
 

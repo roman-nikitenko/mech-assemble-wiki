@@ -7,6 +7,7 @@ const TABS = [
   { to: "/weapons", label: "Weapons" },
   { to: "/accessories", label: "Accessories" },
   { to: "/pilots", label: "Pilots" },
+  { to: "/modules", label: "Attack Module" },
   { to: "/feedback", label: "Feedback" },
 ];
 

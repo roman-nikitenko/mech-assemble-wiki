@@ -121,6 +121,9 @@ export function moveRow(
 // DFS-order invariant.
 export function serializeDrafts(drafts: SkillDraft[]) {
   return drafts.map((d) => ({
+    // Send the node's stable key as its id so a re-save keeps the SAME node id
+    // — builds reference skill nodes by id, so this stops edits from wiping them.
+    id: d.key,
     name: d.type === "Core" ? null : d.name.trim(),
     description: d.description.trim() === "" ? null : d.description.trim(),
     appearanceLevel: d.appearanceLevel,

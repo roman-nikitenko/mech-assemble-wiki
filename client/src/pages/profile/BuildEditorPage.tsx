@@ -1,12 +1,24 @@
 import { useState } from "react";
 import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../../auth/useAuth";
-import { imageSrc, srcSet, CARD_SIZES, useMech, useMechs, useTypes, useWeapons } from "../../api/client";
-import type { MechRank, PostedBuild, QualityTier, SkillNodeRow, WeaponSummary } from "../../api/types";
+import {
+  imageSrc,
+  srcSet,
+  CARD_SIZES,
+  useMech,
+  useMechs,
+  useModuleQualities,
+  useModules,
+  useTypes,
+  useWeapons,
+} from "../../api/client";
+import type { MechRank, ModuleSelection, PostedBuild, QualityTier, SkillNodeRow, WeaponSummary } from "../../api/types";
 import { QUALITY_TIERS } from "../../api/types";
 import { MAX_CORE_SLOTS, availableSkills, grantedSkills, resolvePicks } from "../../profile/buildRules";
 import { QualityIcon } from "../../components/QualityIcon";
+import { STierIcon } from "../../components/STierIcon";
 import { Dropdown } from "../../components/Dropdown";
+import { ButtonGroup } from "../../components/ButtonGroup";
 import { PickedSlot, SkillsBlock } from "../../profile/SkillsBlock";
 import { NotesField } from "../../profile/NotesField";
 import { useMe } from "../../auth/useMe";
@@ -14,6 +26,7 @@ import { useCreateBuild, useMyBuilds, useUpdateBuild } from "../../auth/useBuild
 import { RankBadge } from "../../components/RankBadge";
 import { FilterBar } from "../../components/FilterBar";
 import { LoadingSkeleton } from "../../components/LoadingSkeleton";
+import { BuildModuleCard } from "./BuildModuleCard";
 
 export const MAX_WEAPONS = 4;
 
@@ -104,6 +117,10 @@ function BuildEditorContent({ existing }: { existing: PostedBuild | undefined })
   const [weaponQualities, setWeaponQualities] = useState<Record<string, QualityTier>>(
     existing?.weaponQualities ?? {}
   );
+  // Per-module picks (quality + up to 3 equipped effects), keyed by module id.
+  const [moduleSel, setModuleSel] = useState<Record<string, ModuleSelection>>(
+    existing?.moduleSelections ?? {}
+  );
   // Weapon strip filters — each one narrows the strip; blank = show all.
   const [weaponName, setWeaponName] = useState("");
   const [weaponTypeId, setWeaponTypeId] = useState("");
@@ -123,6 +140,8 @@ function BuildEditorContent({ existing }: { existing: PostedBuild | undefined })
   const detail = useMech(mechId ?? "");
   const weapons = useWeapons();
   const types = useTypes();
+  const modules = useModules();
+  const moduleQualities = useModuleQualities();
   const allWeapons = weapons.data ?? [];
 
   // Creating requires a logged-in user with a nickname (the author).
@@ -331,50 +350,50 @@ function BuildEditorContent({ existing }: { existing: PostedBuild | undefined })
   // them for the shared section and the shared 3-cap.
   const corePool = isWeaponBuild
     ? resolvePicks(buildWeaponPickable, pickedIds, buildWeaponGranted)
+      .filter((s) => s.type === "Core")
+      .map((s) => ({
+        skill: s,
+        art: buildWeapon?.iconUrl ?? buildWeapon?.imageUrl,
+        onRemove: () =>
+          setPickedIds(
+            resolvePicks(
+              buildWeaponPickable,
+              pickedIds.filter((id) => id !== s.id),
+              buildWeaponGranted
+            ).map((p) => p.id)
+          ),
+      }))
+    : [
+      ...resolvePicks(mechPickable, pickedIds, mechGranted)
         .filter((s) => s.type === "Core")
         .map((s) => ({
           skill: s,
-          art: buildWeapon?.iconUrl ?? buildWeapon?.imageUrl,
+          art: mech?.cardSkillIconUrl,
           onRemove: () =>
             setPickedIds(
-              resolvePicks(
-                buildWeaponPickable,
-                pickedIds.filter((id) => id !== s.id),
-                buildWeaponGranted
-              ).map((p) => p.id)
+              resolvePicks(mechPickable, pickedIds.filter((id) => id !== s.id), mechGranted).map(
+                (p) => p.id
+              )
             ),
-        }))
-    : [
-        ...resolvePicks(mechPickable, pickedIds, mechGranted)
+        })),
+      ...equipped.flatMap((w) =>
+        resolvePicks(weaponPickable(w), weaponSkillIds[w.id] ?? [], weaponGranted(w))
           .filter((s) => s.type === "Core")
           .map((s) => ({
             skill: s,
-            art: mech?.cardSkillIconUrl,
+            art: w.iconUrl ?? w.imageUrl,
             onRemove: () =>
-              setPickedIds(
-                resolvePicks(mechPickable, pickedIds.filter((id) => id !== s.id), mechGranted).map(
-                  (p) => p.id
-                )
-              ),
-          })),
-        ...equipped.flatMap((w) =>
-          resolvePicks(weaponPickable(w), weaponSkillIds[w.id] ?? [], weaponGranted(w))
-            .filter((s) => s.type === "Core")
-            .map((s) => ({
-              skill: s,
-              art: w.iconUrl ?? w.imageUrl,
-              onRemove: () =>
-                setWeaponSkillIds((prev) => ({
-                  ...prev,
-                  [w.id]: resolvePicks(
-                    weaponPickable(w),
-                    (prev[w.id] ?? []).filter((id) => id !== s.id),
-                    weaponGranted(w)
-                  ).map((p) => p.id),
-                })),
-            }))
-        ),
-      ];
+              setWeaponSkillIds((prev) => ({
+                ...prev,
+                [w.id]: resolvePicks(
+                  weaponPickable(w),
+                  (prev[w.id] ?? []).filter((id) => id !== s.id),
+                  weaponGranted(w)
+                ).map((p) => p.id),
+              })),
+          }))
+      ),
+    ];
 
   // Shared "Core skills" section — 3 slots for the whole build.
   const coreSection = (
@@ -434,15 +453,16 @@ function BuildEditorContent({ existing }: { existing: PostedBuild | undefined })
       weaponQualities: isWeaponBuild
         ? {}
         : Object.fromEntries(savedWeaponIds.map((id) => [id, weaponQualities[id] ?? "Blue"])),
+      moduleSelections: moduleSel,
       weaponSkillIds: isWeaponBuild
         ? {}
         : Object.fromEntries(
-            savedWeaponIds.map((id) => {
-              const w = allWeapons.find((x) => x.id === id);
-              const ids = weaponSkillIds[id] ?? [];
-              return [id, w ? resolvePicks(weaponPickable(w), ids, weaponGranted(w)).map((s) => s.id) : ids];
-            })
-          ),
+          savedWeaponIds.map((id) => {
+            const w = allWeapons.find((x) => x.id === id);
+            const ids = weaponSkillIds[id] ?? [];
+            return [id, w ? resolvePicks(weaponPickable(w), ids, weaponGranted(w)).map((s) => s.id) : ids];
+          })
+        ),
     };
     const onSuccess = () => navigate("/profile");
     // Editing keeps the same row (and its status/hearts); creating makes a
@@ -453,9 +473,9 @@ function BuildEditorContent({ existing }: { existing: PostedBuild | undefined })
 
   const fieldCls = "min-h-11 w-full rounded-lg border border-edge bg-surface px-3 text-sm";
 
-  // Shared tail of both boards: name + notes + save.
-  const metaForm = (
-    <div className="mt-6 space-y-4">
+  // Name + notes — placed at the top of each board, beside the hero image.
+  const nameNotes = (
+    <div className="space-y-4">
       <div>
         <label htmlFor="build-name" className="mb-1 block text-sm font-semibold">
           Build name *
@@ -471,6 +491,27 @@ function BuildEditorContent({ existing }: { existing: PostedBuild | undefined })
           mechs={mechs.data ?? []}
           weapons={allWeapons}
         />
+      </div>
+    </div>
+  );
+
+  // Shared tail of both boards: attack modules + save.
+  const metaForm = (
+    <div className="mt-6 space-y-4">
+      <div>
+        <h2 className="mb-2 text-lg font-black tracking-tight">Attack Module</h2>
+        <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-4 items-start">
+          {(modules.data ?? []).map((m) => (
+            <BuildModuleCard
+              key={m.id}
+              module={m}
+              types={types.data ?? []}
+              qualities={moduleQualities.data ?? []}
+              selection={moduleSel[m.id]}
+              onChange={(next) => setModuleSel((s) => ({ ...s, [m.id]: next }))}
+            />
+          ))}
+        </div>
       </div>
       <button
         type="button"
@@ -517,6 +558,8 @@ function BuildEditorContent({ existing }: { existing: PostedBuild | undefined })
           </div>
         </div>
 
+        <div className="mt-4">{nameNotes}</div>
+
         {coreSection}
 
         <QualitySelect label="Weapon quality" value={quality} onChange={setQuality} />
@@ -543,8 +586,9 @@ function BuildEditorContent({ existing }: { existing: PostedBuild | undefined })
     <main className="mx-auto max-w-6xl px-4 py-6">
       <Link to="/profile" className="text-sm text-ink-dim hover:text-accent">← My Profile</Link>
 
-      {/* hero banner from the mech's art (765px per design request) */}
-      <div className="relative mt-3 h-[765px] overflow-hidden rounded-xl border border-edge bg-surface">
+      {/* hero banner (mech art) + build meta (name/notes) side by side */}
+      <div className="mt-3 md:flex md:items-start md:gap-4">
+      <div className="relative h-[765px] max-w-full md:min-w-[369px] md:shrink-0 overflow-hidden rounded-xl border border-edge bg-surface">
         {mech?.imageUrl && (
           <img src={imageSrc(mech.imageUrl)} alt="" className="absolute inset-0 h-full w-full object-cover" />
         )}
@@ -603,6 +647,8 @@ function BuildEditorContent({ existing }: { existing: PostedBuild | undefined })
           </button>
         </div>
       </div>
+        <div className="mt-4 md:mt-0 md:flex-1">{nameNotes}</div>
+      </div>
 
       {/* weapon strip: filters + horizontal scroll, feeds the corner squares */}
       <h3 className="mt-5 mb-2 text-sm font-semibold">
@@ -611,39 +657,45 @@ function BuildEditorContent({ existing }: { existing: PostedBuild | undefined })
           ({equipped.length}/{MAX_WEAPONS} — tap a square on the image to remove)
         </span>
       </h3>
-      <div className="mb-2 grid gap-2 sm:grid-cols-3">
+      <div className="mb-2 flex flex-wrap items-center gap-2">
         <input
           aria-label="Filter weapons by name"
           value={weaponName}
           onChange={(e) => setWeaponName(e.target.value)}
           placeholder="Search weapons…"
-          className={fieldCls}
+          className="min-h-11 w-3xs rounded-lg border border-edge bg-surface px-3 text-sm"
         />
-        <select
-          aria-label="Filter weapons by type"
+        {/* Icon filters, same as the admin tables: empty = all; click the
+            active one again to clear. */}
+        <ButtonGroup
+          ariaLabel="Filter weapons by type"
+          labelPrefix="Type"
+          iconOnly
+          toggleable
           value={weaponTypeId}
-          onChange={(e) => setWeaponTypeId(e.target.value)}
-          className={fieldCls}
-        >
-          <option value="">All types</option>
-          {(types.data ?? []).map((t) => (
-            <option key={t.id} value={t.id}>
-              {t.name}
-            </option>
-          ))}
-        </select>
-        <select
-          aria-label="Filter weapons by tier"
+          onChange={setWeaponTypeId}
+          options={(types.data ?? []).map((t) => ({
+            value: t.id,
+            label: t.name,
+            icon: t.iconUrl ? (
+              <img src={imageSrc(t.iconUrl)} alt="" className="h-[32px] w-[32px] rounded-full object-cover" />
+            ) : undefined,
+          }))}
+        />
+        <ButtonGroup
+          ariaLabel="Filter weapons by tier"
+          labelPrefix="Tier"
+          iconOnly
+          toggleable
           value={weaponTier}
-          onChange={(e) => setWeaponTier(e.target.value as MechRank | "")}
-          className={fieldCls}
-        >
-          <option value="">All tiers</option>
-          <option value="Standard">Standard</option>
-          <option value="S">S</option>
-        </select>
+          onChange={(v) => setWeaponTier(v as MechRank | "")}
+          options={[
+            { value: "Standard", label: "Standard" },
+            { value: "S", label: "S", icon: <STierIcon size={25} /> },
+          ]}
+        />
       </div>
-      
+
       {weapons.isPending ? (
         <p className="text-sm text-ink-dim">Loading weapons…</p>
       ) : filteredWeapons.length === 0 ? (

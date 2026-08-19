@@ -243,6 +243,31 @@ describe("PUT /api/weapons/:id", () => {
     expect(moved!.weaponId).toBe(created.body.id);
     expect(moved!.mechId).toBeNull();
   });
+
+  it("preserves skill-node ids across a re-save (protects saved builds)", async () => {
+    const created = await request(app).post("/api/weapons").set(ADMIN).send({
+      name: "[test:weapons] Skill Keeper",
+      tier: "S",
+      skills: [
+        { name: "Frost Strike", description: null, appearanceLevel: 1, type: "Normal", parentIndex: null, repeatable: false, initialAtTier: null },
+      ],
+    });
+    expect(created.status).toBe(201);
+    const nodeId = created.body.skillNodes[0].id;
+    expect(nodeId).toBeTruthy();
+
+    // Re-saving (e.g. after uploading a new icon) resends the SAME node WITH its
+    // id — the id must survive so builds that reference it keep matching.
+    const res = await request(app).put(`/api/weapons/${created.body.id}`).set(ADMIN).send({
+      name: "[test:weapons] Skill Keeper",
+      tier: "S",
+      skills: [
+        { id: nodeId, name: "Frost Strike", description: null, appearanceLevel: 1, type: "Normal", parentIndex: null, repeatable: false, initialAtTier: null },
+      ],
+    });
+    expect(res.status).toBe(200);
+    expect(res.body.skillNodes[0].id).toBe(nodeId);
+  });
 });
 
 describe("DELETE /api/weapons/:id", () => {
