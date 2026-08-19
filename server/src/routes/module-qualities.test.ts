@@ -8,10 +8,6 @@ const ADMIN = { "x-admin-token": testAdminToken() };
 const P = "[test:mod-qual] ";
 
 afterAll(async () => {
-  // effects reference qualities with onDelete: Restrict — none created here,
-  // but delete any leaked effect rows for our qualities first to be safe.
-  const quals = await prisma.moduleQuality.findMany({ where: { name: { startsWith: P } } });
-  await prisma.moduleQualityEffect.deleteMany({ where: { qualityId: { in: quals.map((q) => q.id) } } });
   await prisma.moduleQuality.deleteMany({ where: { name: { startsWith: P } } });
   await prisma.$disconnect();
 });

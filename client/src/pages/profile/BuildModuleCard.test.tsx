@@ -14,10 +14,8 @@ const qualities: ModuleQuality[] = [
 ];
 const module: ModuleSummary = {
   id: "m1", name: "Ammo Chain", iconUrl: null, effect2Target: "Weapon", effect3Target: "Weapon",
-  effects: [
-    { id: "eGold", qualityId: "qGold", effect1Value: null, bonuses: [
-      { id: "b1", slot: 2, effectText: "reload -0.5s", sortOrder: 0, mech: null, weapon: { id: "w9", slug: null, name: "Rail Gun", iconUrl: null } },
-    ] },
+  bonuses: [
+    { id: "b1", slot: 2, effectText: "reload -0.5s", sortOrder: 0, mech: null, weapon: { id: "w9", slug: null, name: "Rail Gun", iconUrl: null } },
   ],
 };
 const goldSel: ModuleSelection = { quality: "Gold", effect1: null, effect2: null, effect3: null };
@@ -37,6 +35,21 @@ describe("BuildModuleCard", () => {
     await userEvent.click(screen.getByRole("tab", { name: "Effect 2" }));
     await userEvent.click(screen.getByText("reload -0.5s"));
     expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ effect2: "w9" }));
+  });
+
+  it("shows the same Effect 2 bonus at Gold AND Mythic (per-module)", async () => {
+    // Gold
+    const { unmount } = render(
+      <BuildModuleCard module={module} types={types} qualities={qualities} selection={goldSel} onChange={() => {}} />
+    );
+    await userEvent.click(screen.getByRole("tab", { name: "Effect 2" }));
+    expect(screen.getByText("reload -0.5s")).toBeInTheDocument();
+    unmount();
+    // Mythic — same bonus (it's module-level, not per quality)
+    const mythicSel = { quality: "Mythic" as const, effect1: null, effect2: null, effect3: null };
+    render(<BuildModuleCard module={module} types={types} qualities={qualities} selection={mythicSel} onChange={() => {}} />);
+    await userEvent.click(screen.getByRole("tab", { name: "Effect 2" }));
+    expect(screen.getByText("reload -0.5s")).toBeInTheDocument();
   });
 
   it("readOnly shows the equipped effect, no tabs, no quality dropdown", () => {

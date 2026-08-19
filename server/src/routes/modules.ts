@@ -8,44 +8,19 @@ import { parseModuleInput, type ModuleInput } from "../lib/module-input";
 export const modulesRouter = Router();
 
 const DETAIL_INCLUDE = {
-  effects: {
-    orderBy: { quality: { sortOrder: "asc" } },
+  bonuses: {
+    orderBy: { sortOrder: "asc" },
     include: {
-      bonuses: {
-        orderBy: { sortOrder: "asc" },
-        include: {
-          mech: { select: { id: true, slug: true, name: true, iconUrl: true } },
-          weapon: { select: { id: true, slug: true, name: true, iconUrl: true } },
-        },
-      },
+      mech: { select: { id: true, slug: true, name: true, iconUrl: true } },
+      weapon: { select: { id: true, slug: true, name: true, iconUrl: true } },
     },
   },
 } satisfies Prisma.ModuleInclude;
 
-// Validate DB existence + effect_count gating. Returns an error string or null.
+// Validate DB existence of bonus targets. Returns an error string or null.
 async function validateModule(input: ModuleInput): Promise<string | null> {
-  const qualityIds = input.qualityEffects.map((e) => e.qualityId);
-  if (new Set(qualityIds).size !== qualityIds.length) return "Duplicate quality in qualityEffects";
-
-  const qualities = await prisma.moduleQuality.findMany({ where: { id: { in: qualityIds } } });
-  const byId = new Map(qualities.map((q) => [q.id, q]));
-
-  for (const e of input.qualityEffects) {
-    const quality = byId.get(e.qualityId);
-    if (!quality) return "Unknown quality id";
-    if (quality.effectCount < 1 && (e.effect1Value !== null || e.bonuses.length > 0)) {
-      return `Quality '${quality.name}' grants no effects.`;
-    }
-    for (const bonus of e.bonuses) {
-      if (bonus.slot > quality.effectCount) {
-        return `Quality '${quality.name}' does not unlock Effect ${bonus.slot}.`;
-      }
-    }
-  }
-
-  // All bonus targets must exist (and be the right entity).
-  const mechIds = input.qualityEffects.flatMap((e) => e.bonuses.map((b) => b.mechId).filter((x): x is string => x !== null));
-  const weaponIds = input.qualityEffects.flatMap((e) => e.bonuses.map((b) => b.weaponId).filter((x): x is string => x !== null));
+  const mechIds = input.bonuses.map((b) => b.mechId).filter((x): x is string => x !== null);
+  const weaponIds = input.bonuses.map((b) => b.weaponId).filter((x): x is string => x !== null);
   if (mechIds.length) {
     const found = await prisma.mech.count({ where: { id: { in: mechIds } } });
     if (found !== new Set(mechIds).size) return "Unknown mech id in a bonus";
@@ -57,20 +32,14 @@ async function validateModule(input: ModuleInput): Promise<string | null> {
   return null;
 }
 
-// Build the nested Prisma create for a module's effects + bonuses.
-function effectsCreate(input: ModuleInput): Prisma.ModuleQualityEffectCreateWithoutModuleInput[] {
-  return input.qualityEffects.map((e) => ({
-    quality: { connect: { id: e.qualityId } },
-    effect1Value: e.effect1Value,
-    bonuses: {
-      create: e.bonuses.map((b) => ({
-        slot: b.slot,
-        effectText: b.effectText,
-        sortOrder: b.sortOrder,
-        ...(b.mechId ? { mech: { connect: { id: b.mechId } } } : {}),
-        ...(b.weaponId ? { weapon: { connect: { id: b.weaponId } } } : {}),
-      })),
-    },
+// Build the nested Prisma create for a module's bonuses.
+function bonusesCreate(input: ModuleInput): Prisma.ModuleBonusCreateWithoutModuleInput[] {
+  return input.bonuses.map((b) => ({
+    slot: b.slot,
+    effectText: b.effectText,
+    sortOrder: b.sortOrder,
+    ...(b.mechId ? { mech: { connect: { id: b.mechId } } } : {}),
+    ...(b.weaponId ? { weapon: { connect: { id: b.weaponId } } } : {}),
   }));
 }
 
@@ -95,10 +64,10 @@ modulesRouter.post("/", requireAdmin, async (req, res) => {
   if (!input.ok) return res.status(400).json({ error: input.message });
   const invalid = await validateModule(input.value);
   if (invalid) return res.status(400).json({ error: invalid });
-  const { qualityEffects, ...fields } = input.value;
+  const { bonuses, ...fields } = input.value;
   try {
     const module = await prisma.module.create({
-      data: { ...fields, effects: { create: effectsCreate(input.value) } },
+      data: { ...fields, bonuses: { create: bonusesCreate(input.value) } },
       include: DETAIL_INCLUDE,
     });
     res.status(201).json(module);
@@ -110,8 +79,8 @@ modulesRouter.post("/", requireAdmin, async (req, res) => {
   }
 });
 
-// PUT — update fields and REPLACE the entire effect set (same semantics as
-// weapon skins). Bonuses cascade-delete with their parent effect rows.
+// PUT — update fields and REPLACE the entire bonus set (same semantics as
+// weapon skins).
 modulesRouter.put("/:id", requireAdmin, async (req, res) => {
   const { id } = req.params;
   if (!UUID_RE.test(id)) return res.status(404).json({ error: "Module not found" });
@@ -119,13 +88,13 @@ modulesRouter.put("/:id", requireAdmin, async (req, res) => {
   if (!input.ok) return res.status(400).json({ error: input.message });
   const invalid = await validateModule(input.value);
   if (invalid) return res.status(400).json({ error: invalid });
-  const { qualityEffects, ...fields } = input.value;
+  const { bonuses, ...fields } = input.value;
   try {
     const module = await prisma.$transaction(async (tx) => {
-      await tx.moduleQualityEffect.deleteMany({ where: { moduleId: id } });
+      await tx.moduleBonus.deleteMany({ where: { moduleId: id } });
       return tx.module.update({
         where: { id },
-        data: { ...fields, effects: { create: effectsCreate(input.value) } },
+        data: { ...fields, bonuses: { create: bonusesCreate(input.value) } },
         include: DETAIL_INCLUDE,
       });
     });
