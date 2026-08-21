@@ -63,7 +63,7 @@ export function BuildModuleCard({
   const equippedList = (
     <ul className="text-sm [&>li+li]:mt-[10px]">
       {equippedElement && (
-        <li className=" flex items-center gap-2">
+        <li className=" flex p-1 items-center relative gap-2 text-sm border border-edge bg-surface-2">
           {equippedElement.iconUrl && (
             <img src={imageSrc(equippedElement.iconUrl)} alt="" className="h-6 w-6 rounded-full object-cover" />
           )}
@@ -75,9 +75,9 @@ export function BuildModuleCard({
         if (!b) return null;
         const entity = entityOf(b);
         return (
-          <li key={slot} className=" flex items-center gap-2">
+          <li key={slot} className="flex p-1 items-center relative gap-2 text-sm border border-edge bg-surface-2">
             {entity?.iconUrl && (
-              <img src={imageSrc(entity.iconUrl)} alt="" className="h-6 w-6 rounded-full object-cover" />
+              <img src={imageSrc(entity.iconUrl)} alt="" className="h-8 w-8 rounded-full object-cover" />
             )}
             <span className="font-semibold">{b.effectText}</span>
           </li>
@@ -135,7 +135,7 @@ export function BuildModuleCard({
 
         {count >= 1 &&
           (readOnly ? (
-            <div className="mt-3 border border-edge p-2 max-h-[210px] overflow-y-scroll">{equippedList}</div>
+            <div className="mt-3 max-h-[210px] overflow-y-scroll">{equippedList}</div>
           ) : (
           <div className="mt-3">
             <div
@@ -150,14 +150,14 @@ export function BuildModuleCard({
                   role="tab"
                   aria-selected={active === i}
                   onClick={() => setTab(i)}
-                  className={`cursor-pointer rounded-t  py-1 text-sm font-semibold ${active === i ? "bg-accent text-bg" : "bg-surface-2 text-ink-dim"}`}
+                  className={`cursor-pointer px-1 py-0.5 text-sm font-semibold ${active === i ? "bg-accent text-bg" : "bg-surface-2 text-ink-dim"}`}
                 >
                   {label}
                 </button>
               ))}
             </div>
 
-            <div className=" border border-edge p-2 max-h-[210px] overflow-y-scroll">
+            <div className="mt-3 max-h-[210px] overflow-y-scroll">
               {active === 0 ? (
                 equippedList
               ) : active === 1 ? (
@@ -170,7 +170,7 @@ export function BuildModuleCard({
                         <button
                           type="button"
                           onClick={() => set({ effect1: on ? null : t.id })}
-                          className={`flex w-full cursor-pointer items-center gap-2 rounded  text-left text-sm ${on ? "bg-accent/15 ring-1 ring-accent" : "hover:bg-surface-2"}`}
+                          className={`flex p-1 w-full cursor-pointer items-center relative gap-2 text-sm border border-edge bg-surface-2 ${on ? "bg-accent/15 ring-1 ring-accent" : "hover:bg-surface-2"}`}
                         >
                           {t.iconUrl && <img src={imageSrc(t.iconUrl)} alt="" className="h-6 w-6 rounded-full object-cover" />}
                           <span className="font-semibold">{t.name} DMG <span className="font-bold text-accent">{tierQuality?.effect1Value ?? ""}</span></span>
@@ -196,10 +196,10 @@ export function BuildModuleCard({
                             <button
                               type="button"
                               onClick={() => set(slot === 2 ? { effect2: on ? null : entity?.id ?? null } : { effect3: on ? null : entity?.id ?? null })}
-                              className={`flex w-full cursor-pointer items-center gap-2 rounded px-2 py-1 text-left text-sm ${on ? "bg-accent/15 ring-1 ring-accent" : "hover:bg-surface-2"}`}
+                              className={`flex p-1 w-full cursor-pointer items-center relative gap-2 text-sm border border-edge bg-surface-2 ${on ? "bg-accent/15 ring-1 ring-accent" : "hover:bg-surface-2"}`}
                             >
                               {entity && "iconUrl" in entity && entity.iconUrl && (
-                                <img src={imageSrc(entity.iconUrl)} alt="" className="h-6 w-6 rounded-full object-cover" />
+                                <img src={imageSrc(entity.iconUrl)} alt="" className="h-10 w-10 rounded-full object-cover" />
                               )}
                               <span className="font-semibold">{b.effectText}</span>
                             </button>

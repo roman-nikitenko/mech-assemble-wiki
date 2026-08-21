@@ -3,7 +3,7 @@ import { imageSrc } from "../api/client";
 export function LinkedBadge({ iconUrl }: { iconUrl?: string | null }) {
   return (
     <span
-      className="absolute right-1 top-10 z-10 h-10 w-10 overflow-hidden rounded-md border border-accent bg-bg shadow"
+      className="absolute right-1 top-10 z-10 h-10 w-10 overflow-hidden rounded-md border border-accent bg-transparent shadoww"
       title="Linked skill"
       aria-label="Linked skill"
     >
