@@ -208,7 +208,7 @@ export function SkillsBlock({
             })}
           </div>
 
-          <h4 className="mt-6 mb-2 text-sm font-semibold">All skills</h4>
+          <h4 className="mt-6 mb-2 text-2xl font-semibold">All skills</h4>
           {loading ? (
             <LoadingSkeleton variant="cards" />
           ) : skills.length === 0 ? (

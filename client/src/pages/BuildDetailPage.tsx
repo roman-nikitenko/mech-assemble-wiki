@@ -166,7 +166,7 @@ export function BuildDetailPage() {
 
       {corePool.length > 0 && (
         <>
-          <h2 className="mt-6 mb-2 text-sm font-semibold">Core skills</h2>
+          <h2 className="mt-6 mb-2 text-2xl font-semibold">Core skills</h2>
           <SkillGrid>
             {corePool.map(({ skill, art }) => (
               <PickedSlot key={skill.id} skill={skill} cardImageUrl={art} linkedIcons={linkedIcons} />
@@ -177,7 +177,7 @@ export function BuildDetailPage() {
 
       {subjectGranted.length > 0 && (
         <>
-          <h2 className="mt-6 mb-2 text-sm font-semibold">
+          <h2 className="mt-6 mb-2 text-2xl font-semibold">
             {subjectName} initial <span className="text-ink-dim">(from quality)</span>
           </h2>
           <SkillGrid>
@@ -190,7 +190,7 @@ export function BuildDetailPage() {
 
       {subjectRegular.length > 0 && (
         <>
-          <h2 className="mt-6 mb-2 text-sm font-semibold">{subjectName} skills</h2>
+          <h2 className="mt-6 mb-2 text-2xl font-semibold">{subjectName} skills</h2>
           <SkillGrid>
             {/* Keyed by position, not id — a repeatable skill can appear
                 more than once in the same list. */}
@@ -205,8 +205,8 @@ export function BuildDetailPage() {
         const regular = picks.filter((s) => s.type !== "Core");
         if (regular.length === 0 && granted.length === 0) return null;
         return (
-          <div key={weapon.id}>
-            <h2 className="mt-6 mb-2 text-sm font-semibold">{weapon.name} skills</h2>
+          <div className="flex flex-col gap-2" key={weapon.id}>
+            <h2 className="mt-6 mb-2 text-2xl font-semibold">{weapon.name} skills</h2>
             {granted.length > 0 && (
               <SkillGrid>
                 {granted.map((skill) => (
@@ -236,7 +236,7 @@ export function BuildDetailPage() {
 
       {(modules.data ?? []).length > 0 && (
         <>
-          <h2 className="mt-6 mb-2 text-lg font-black tracking-tight">Attack Module</h2>
+          <h2 className="mt-6 mb-2 text-2xl font-black tracking-tight">Attack Module</h2>
           <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-4 items-start">
             {(modules.data ?? []).map((m) => (
               <BuildModuleCard
