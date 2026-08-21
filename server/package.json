@@ -9,6 +9,7 @@
     "test": "vitest run",
     "migrate": "prisma migrate dev",
     "backup": "bash scripts/backup.sh",
+    "restore": "bash scripts/restore.sh",
     "studio": "prisma studio",
     "admin:hash": "tsx scripts/admin-hash.ts",
     "admin:check": "tsx scripts/admin-check.ts",

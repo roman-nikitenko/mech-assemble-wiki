@@ -29,7 +29,7 @@ export function ModuleCard({
   return (
     <div className="overflow-hidden max-w-[300px] min-w-[300px] place-self-center border border-edge bg-surface">
       <div
-        className="flex flex-col  gap-3  h-[160px] bg-contain bg-no-repeat bg-center p-3"
+        className="flex flex-col  gap-3  h-[160px] bg-contain bg-no-repeat bg-center px-3 pt-3"
         style={style.header ? { backgroundImage: `url(${style.header})` } : undefined}
       >
         <h3 className="font-black font-2xl text-white  [-webkit-text-stroke:0.3px_#000000]">Aiming calibration system</h3>
@@ -70,18 +70,19 @@ export function ModuleCard({
                   role="tab"
                   aria-selected={active === n}
                   onClick={() => setTab(n)}
-                  className={`cursor-pointer rounded-t  px-3 py-1 text-sm font-semibold ${active === n ? "bg-accent text-bg" : "bg-surface-2 text-ink-dim"
+                  className={`cursor-pointer px-1 py-0.5 text-sm font-semibold ${active === n ? "bg-accent text-bg" : "bg-surface-2 text-ink-dim"
                     }`}
                 >
                   Effect {n}
                 </button>
               ))}
             </div>
-            <div className="rounded-b rounded-tr border border-edge p-2 max-h-[210px] overflow-y-scroll">
+            <div className="max-h-[210px] overflow-y-scroll mt-3">
               {active === 1 ? (
-                <ul className="[&>li+li]:mt-[10px]">
+                <ul className="[&>li+li]:mt-[10px] ">
                   {types.map((t) => (
-                    <li key={t.id} className="flex items-center gap-2 text-sm">
+                    <li key={t.id} className="flex p-1 items-center relative gap-2 text-sm border border-edge bg-surface-2">
+                      
                       {t.iconUrl && (
                         <img src={imageSrc(t.iconUrl)} alt="" className="h-6 w-6 rounded-full object-cover" />
                       )}
@@ -99,11 +100,11 @@ export function ModuleCard({
                   {bonusesForSlot(active).map((b) => {
                     const entity = b.mech ?? b.weapon;
                     return (
-                      <li key={b.id} className="flex items-center gap-2 text-sm">
+                      <li key={b.id} className="flex p-1 items-center relative gap-2 text-sm border border-edge bg-surface-2">
                         {entity?.iconUrl && (
-                          <img src={imageSrc(entity.iconUrl)} alt="" className="h-10 w-10 object-contain" />
+                          <img src={imageSrc(entity.iconUrl)} alt="" className="h-10 w-10 object-cover" />
                         )}
-                        <span className="text-ink-dim">{b.effectText}</span>
+                        <span className="text-ink-dim font-semibold">{b.effectText}</span>
                       </li>
                     );
                   })}
