@@ -44,6 +44,7 @@ export function ModuleCard({
       <div className="p-3">
         <p className="mb-2 text-center text-sm font-bold text-ink-dim">Base Attributes</p>
         <dl className="space-y-1 text-sm">
+          
           {([["HP", quality?.hp], ["ATK", quality?.atk], ["DEF", quality?.def]] as const).map(
             ([k, v]) => (
               <div key={k} className="flex justify-between">
