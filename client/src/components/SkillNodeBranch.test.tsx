@@ -25,4 +25,27 @@ describe("SkillsTab", () => {
     expect(screen.getByText("Normal Skill")).toBeInTheDocument();
     expect(screen.queryByText("Linked Skill")).not.toBeInTheDocument();
   });
+
+  it("groups base skills by appearance level under ascending N/8 headers", () => {
+    const nodes: SkillNodeRow[] = [
+      { ...base, id: "s5", name: "Skill L5", appearanceLevel: 5 },
+      { ...base, id: "s1", name: "Skill L1", appearanceLevel: 1 },
+      { ...base, id: "s3", name: "Skill L3", appearanceLevel: 3 },
+    ];
+    render(<SkillsTab nodes={nodes} />);
+    const headers = screen.getAllByRole("heading", { level: 3 }).map((h) => h.textContent);
+    expect(headers).toEqual(["1/8", "3/8", "5/8"]);
+  });
+
+  it("keeps each base skill's upgrade tree nested beneath it", () => {
+    const nodes: SkillNodeRow[] = [
+      { ...base, id: "root5", name: "Root L5", appearanceLevel: 5 },
+      { ...base, id: "up", name: "Upgrade", parentId: "root5", appearanceLevel: 5 },
+    ];
+    render(<SkillsTab nodes={nodes} />);
+    // The Lv5 base skill sits under the 5/8 header, with its upgrade still shown.
+    expect(screen.getByText("5/8")).toBeInTheDocument();
+    expect(screen.getByText("Root L5")).toBeInTheDocument();
+    expect(screen.getByText("Upgrade")).toBeInTheDocument();
+  });
 });

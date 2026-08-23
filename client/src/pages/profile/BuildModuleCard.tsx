@@ -93,7 +93,6 @@ export function BuildModuleCard({
     <div className="max-w-[300px] min-w-[300px] self-stretch justify-self-center border border-edge bg-surface">
       <div
         className={`flex flex-col gap-3  relative bg-contain bg-no-repeat bg-center p-3 after:absolute after:z-0 after:bg-no-repeat after:bg-cover after:inset-0 after:bg-(image:--bg-url)`}
-        //style={style.header ? { backgroundImage: `url(${style.header})` } : undefined}
         style={{ "--bg-url": `url(${style.header})` } as CSSProperties}
       >
         <div className="flex gap-2 z-10">

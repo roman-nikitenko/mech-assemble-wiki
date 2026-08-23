@@ -3,7 +3,6 @@ import { STierIcon } from "./STierIcon";
 
 export function RankBadge({ rank }: { rank: MechRank }) {
   return rank === "S" ? (
-    // S-tier gets the drawn gold icon; Standard keeps a plain text pill.
     <STierIcon size={32} className="align-middle" />
   ) : (
     <span className="inline-block rounded border border-edge bg-surface-2 px-2 py-0.5 text-xs font-semibold text-ink-dim">
