@@ -3,12 +3,14 @@ import type { MechSummary } from "../api/types";
 import { imageSrc, srcSet, CARD_SIZES } from "../api/client";
 import { TypeBadge } from "./TypeBadge";
 import { RankBadge } from "./RankBadge";
+import mechCardBg from "../assets/mecha_story_bg.webp"
 
 export function MechCard({ mech, priority = false }: { mech: MechSummary; priority?: boolean }) {
   return (
     <Link
       to={`/mechs/${mech.slug ?? mech.id}`}
-      className="block rounded-xl relative overflow-hidden border border-edge bg-surface transition hover:border-accent/60 hover:bg-surface-2"
+      className="@container block rounded-xl relative overflow-hidden border border-edge bg-surface transition hover:border-accent/60 hover:bg-surface-2 bg-no-repeat bg-cover bg-center"
+      style={{ backgroundImage: `url(${mechCardBg})` }}
     >
       {mech.imageUrl ? (
         <img
@@ -28,9 +30,9 @@ export function MechCard({ mech, priority = false }: { mech: MechSummary; priori
           🤖
         </div>
       )}
-      <div className="flex items-center absolute min-w-full bottom-0 left-1/2 -translate-x-1/2 z-10  justify-center py-2 gap-2 backdrop-blur-sm bg-black/10">
+      <div className="min-h-[50px] flex items-center absolute min-w-full bottom-0 left-1/2 -translate-x-1/2 z-10  justify-center py-2 gap-2 backdrop-blur-sm bg-black/10">
         {mech.rank !== 'Standard' && <RankBadge rank={mech.rank} />}
-        <h2 className="font-bold">{mech.name}</h2>
+        <h2 className="font-bold text-[6cqw]">{mech.name}</h2>
         <div className="flex items-center gap-2">
           {mech.type && <TypeBadge type={mech.type} />}
         </div>

@@ -23,12 +23,15 @@ export function PickedSlot({
   cardImageUrl,
   onRemove,
   linkedIcons,
+  initial = false,
 }: {
   skill: SkillNodeRow;
   cardImageUrl?: string | null;
   onRemove?: () => void;
   /** id→icon map for gate partners; a linked skill shows its partner's icon. */
   linkedIcons?: Record<string, string | null>;
+  /** Marks a quality-granted "initial" skill — shows an "Initial skill" band. */
+  initial?: boolean;
 }) {
   const cls = `relative flex min-h-50 flex-col gap-2 rounded-xl border-2 p-2 text-center ${SKILL_CARD[skill.type].frame}`;
   const linked = skill.linkedWeaponId !== null || skill.linkedMechId !== null;
@@ -42,12 +45,25 @@ export function PickedSlot({
       >
         {skillDisplayName(skill)}
       </span>
+      {/* Absolute band just under the header, marking a quality-granted skill. */}
+      {initial && (
+        <span className="absolute inset-x-0 top-8 z-10 py-0.5 text-[10px] font-black uppercase tracking-wider text-bg">
+          Initial skill
+        </span>
+      )}
       {cardImageUrl && (
         <img src={imageSrc(cardImageUrl)} alt="" className="h-20 object-contain" />
       )}
       {skill.description && (
         <span className="px-0.5 text-xs font-bold">{skill.description}</span>
       )}
+      {/* Footer: the level this skill shows up at (N/8), mirroring the header's
+          border on the bottom of the card. */}
+      <span
+        className={`mt-auto border-t border-t-white/30 pt-1 text-xs font-black ${SKILL_CARD[skill.type].header}`}
+      >
+        {skill.appearanceLevel}/8
+      </span>
     </>
   );
   if (!onRemove) return <div className={cls}>{content}</div>;
@@ -177,7 +193,7 @@ export function SkillsBlock({
               </h4>
               <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-8">
                 {granted.map((g) => (
-                  <PickedSlot key={`granted-${g.id}`} skill={g} cardImageUrl={cardImageUrl} linkedIcons={linkedIcons} />
+                  <PickedSlot key={`granted-${g.id}`} skill={g} cardImageUrl={cardImageUrl} linkedIcons={linkedIcons} initial />
                 ))}
               </div>
             </>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
 import { imageSrc } from "../api/client";
 import type { GameType, ModuleQuality, ModuleSummary, QualityTier } from "../api/types";
 import { effectCountForTier } from "../lib/moduleEffects";
@@ -19,21 +19,15 @@ export function ModuleCard({
   const style = qualityCardStyle(tier);
   const [tab, setTab] = useState(1);
   const active = Math.min(tab, Math.max(1, count));
-
-  // The module's per-quality effect row at the selected tier (bonuses live per
-  // module × quality); matched via the quality catalog id.
-  // Effect 2/3 bonuses are per-module (same at every quality that shows them);
-  // the quality only gates which effect tabs appear.
   const bonusesForSlot = (slot: number) => module.bonuses.filter((b) => b.slot === slot);
 
   return (
     <div className="overflow-hidden max-w-[300px] min-w-[300px] place-self-center border border-edge bg-surface">
       <div
-        className="flex flex-col  gap-3  h-[160px] bg-contain bg-no-repeat bg-center px-3 pt-3"
-        style={style.header ? { backgroundImage: `url(${style.header})` } : undefined}
+        className="flex flex-col  gap-3 relative  bg-contain bg-no-repeat bg-center p-3 after:absolute after:z-0 after:bg-no-repeat after:bg-cover after:inset-0 after:bg-(image:--bg-url)"
+        style={{ "--bg-url": style.header ? `url(${style.header})` : "" } as CSSProperties}
       >
-        <h3 className="font-black font-2xl text-white  [-webkit-text-stroke:0.3px_#000000]">Aiming calibration system</h3>
-        <div className="flex gap-2">
+        <div className="flex z-10 gap-2">
           <div
             className="flex h-14 w-14 shrink-0 items-center justify-center  bg-cover bg-center"
             style={style.iconBorder ? { backgroundImage: `url(${style.iconBorder})` } : undefined}
@@ -50,6 +44,7 @@ export function ModuleCard({
       <div className="p-3">
         <p className="mb-2 text-center text-sm font-bold text-ink-dim">Base Attributes</p>
         <dl className="space-y-1 text-sm">
+          
           {([["HP", quality?.hp], ["ATK", quality?.atk], ["DEF", quality?.def]] as const).map(
             ([k, v]) => (
               <div key={k} className="flex justify-between">

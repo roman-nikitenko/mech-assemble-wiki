@@ -1,12 +1,20 @@
 import type { SkillNodeRow } from "../api/types";
 
-export function SkillNodeBranch({ nodes, parentId }: { nodes: SkillNodeRow[]; parentId: string | null }) {
+export function SkillNodeBranch({
+  nodes,
+  parentId,
+  rootLevel,
+}: {
+  nodes: SkillNodeRow[];
+  parentId: string | null;
+  rootLevel?: number;
+}) {
   const children = nodes
-    .filter((n) => n.parentId === parentId)
+    .filter((n) => n.parentId === parentId && (rootLevel === undefined || n.appearanceLevel === rootLevel))
     .sort((a, b) => a.sortOrder - b.sortOrder);
   if (children.length === 0) return null;
   return (
-    <div className={parentId ? "mt-2 ml-4 space-y-2 pl-4" : "space-y-2"}>
+    <div className={parentId ? "mt-2 ml-4 space-y-4 pl-4" : "space-y-4"}>
       {children.map((node) => (
         <div
           key={node.id}
