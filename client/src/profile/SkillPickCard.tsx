@@ -2,6 +2,15 @@ import type { SkillNodeRow } from "../api/types";
 import { imageSrc } from "../api/client";
 import { LinkedBadge, linkedPartnerIcon } from "../components/LinkedBadge";
 import { skillDisplayName } from "./buildRules";
+import normalCardBg from "../assets/skill-card-bg/normal.webp";
+import premiumCardBg from "../assets/skill-card-bg/premium.webp";
+
+// Card-background art for a skill card, by type. Normal/Premium wear the
+// game's frame images; Core has none yet, so it falls back to SKILL_CARD.frame.
+export const SKILL_CARD_BG: Partial<Record<SkillNodeRow["type"], string>> = {
+  Normal: normalCardBg,
+  Premium: premiumCardBg,
+};
 
 // Game-card palette, matching the in-game rank-up cards the user provided:
 // Normal = blue frame on a dark body, Premium = solid orange, Core follows
@@ -13,12 +22,12 @@ export const SKILL_CARD: Record<
   { frame: string; header: string; footer: string }
 > = {
   Normal: {
-    frame: "border-thunder/70 bg-[#195998]",
+    frame: "border-thunder/70 bg-[#195998]/80",
     header: "text-white text-bg",
     footer: "border-thunder/40 text-thunder",
   },
   Premium: {
-    frame: "border-skill-premium bg-[#BF7805]",
+    frame: "border-skill-premium bg-[#BF7805]/80",
     header: " text-white",
     footer: "border-black/25 text-white",
   },

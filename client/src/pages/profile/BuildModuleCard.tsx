@@ -1,6 +1,6 @@
 import { useState, type CSSProperties } from "react";
 import { imageSrc } from "../../api/client";
-import type { GameType, ModuleBonusRow, ModuleQuality, ModuleSelection, ModuleSummary, QualityTier } from "../../api/types";
+import type { GameType, ModuleBonusRow, ModuleQuality, ModuleSelection, ModuleSummary } from "../../api/types";
 import { effectCountForTier } from "../../lib/moduleEffects";
 import { qualityCardStyle } from "../../lib/moduleCardStyle";
 
