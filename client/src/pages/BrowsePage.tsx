@@ -61,10 +61,8 @@ export function BrowsePage() {
       ) : visible.length === 0 ? (
         <p className="mt-8 text-center text-ink-dim">No mechs match.</p>
       ) : (
-        <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
           {visible.map((m, i) => (
-            // The first card is the likely LCP element — load it eagerly with
-            // high priority; the rest lazy-load as they scroll into view.
             <MechCard key={m.id} mech={m} priority={i === 0} />
           ))}
         </div>

@@ -8,6 +8,7 @@ import { TypeBadge } from "../components/TypeBadge";
 import { LoadingSkeleton } from "../components/LoadingSkeleton";
 import { ErrorPanel } from "../components/ErrorPanel";
 import { Seo } from "../components/Seo";
+import cardBg from "../assets/acessery-card-bg.jpeg";
 
 export function WeaponsPage() {
   const { data, isPending, isError, refetch } = useWeapons();
@@ -61,12 +62,13 @@ export function WeaponsPage() {
       ) : visible.length === 0 ? (
         <p className="mt-8 text-center text-ink-dim">No weapons match.</p>
       ) : (
-        <div className="mt-4 grid  gap-3 grid-cols-1 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4">
+        <div className="mt-4 grid  gap-3 grid-cols-1 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
           {visible.map((w) => (
             <Link
               key={w.id}
               to={`/weapons/${w.slug ?? w.id}`}
-              className="block rounded-xl relative overflow-hidden border border-edge bg-surface transition hover:border-accent/60 hover:bg-surface-2"
+              className="@container  block rounded-xl relative overflow-hidden border border-edge bg-surface transition hover:border-accent/60 hover:bg-surface-2 bg-no-repeat bg-cover bg-center"
+              style={{ backgroundImage: `url(${cardBg})` }}
             >
               {w.imageUrl ? (
                 <img
@@ -75,7 +77,7 @@ export function WeaponsPage() {
                   sizes={CARD_SIZES}
                   alt={w.name}
                   loading="lazy"
-                  className="h-62 w-full rounded-lg object-cover"
+                  className=" w-full rounded-lg object-contain"
                 />
               ) : (
                 <div
@@ -87,7 +89,7 @@ export function WeaponsPage() {
               )}
               <div className="flex items-center absolute min-w-full bottom-0 left-1/2 -translate-x-1/2 z-10 justify-center py-2 gap-2 backdrop-blur-sm bg-black/20">
                 {w.tier !== "Standard" && <RankBadge rank={w.tier} />}
-                <h2 className="font-bold">{w.name}</h2>
+                <h2 className="font-bold text-[6cqw]">{w.name}</h2>
                 <div className="flex items-center gap-2">
                   {w.type && <TypeBadge type={w.type} />}
                 </div>

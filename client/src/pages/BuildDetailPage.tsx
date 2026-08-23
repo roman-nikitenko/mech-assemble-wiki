@@ -182,7 +182,7 @@ export function BuildDetailPage() {
           </h2>
           <SkillGrid>
             {subjectGranted.map((skill) => (
-              <PickedSlot key={`sgrant-${skill.id}`} skill={skill} cardImageUrl={subjectArt} linkedIcons={linkedIcons} />
+              <PickedSlot key={`sgrant-${skill.id}`} skill={skill} cardImageUrl={subjectArt} linkedIcons={linkedIcons} initial />
             ))}
           </SkillGrid>
         </>
@@ -215,6 +215,7 @@ export function BuildDetailPage() {
                     skill={skill}
                     cardImageUrl={weapon.iconUrl ?? weapon.imageUrl}
                     linkedIcons={linkedIcons}
+                    initial
                   />
                 ))}
               </SkillGrid>

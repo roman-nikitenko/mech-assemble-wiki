@@ -1,9 +1,6 @@
 import { useState, type CSSProperties } from "react";
 import { imageSrc } from "../../api/client";
-import type { GameType, ModuleBonusRow, ModuleQuality, ModuleSelection, ModuleSummary, QualityTier } from "../../api/types";
-import { QUALITY_TIERS } from "../../api/types";
-import { Dropdown } from "../../components/Dropdown";
-import { QualityIcon } from "../../components/QualityIcon";
+import type { GameType, ModuleBonusRow, ModuleQuality, ModuleSelection, ModuleSummary } from "../../api/types";
 import { effectCountForTier } from "../../lib/moduleEffects";
 import { qualityCardStyle } from "../../lib/moduleCardStyle";
 
@@ -40,16 +37,7 @@ export function BuildModuleCard({
   function set(patch: Partial<ModuleSelection>) {
     onChange?.({ ...sel, ...patch });
   }
-  function changeQuality(q: QualityTier) {
-    const n = effectCountForTier(q);
-    // Clear picks the new tier no longer unlocks.
-    set({
-      quality: q,
-      effect1: n >= 1 ? sel.effect1 : null,
-      effect2: n >= 2 ? sel.effect2 : null,
-      effect3: n >= 3 ? sel.effect3 : null,
-    });
-  }
+  
   const active = Math.min(tab, count); // clamp when count shrinks
 
   const equippedElement = types.find((t) => t.id === sel.effect1) ?? null;
@@ -93,7 +81,6 @@ export function BuildModuleCard({
     <div className="max-w-[300px] min-w-[300px] self-stretch justify-self-center border border-edge bg-surface">
       <div
         className={`flex flex-col gap-3  relative bg-contain bg-no-repeat bg-center p-3 after:absolute after:z-0 after:bg-no-repeat after:bg-cover after:inset-0 after:bg-(image:--bg-url)`}
-        //style={style.header ? { backgroundImage: `url(${style.header})` } : undefined}
         style={{ "--bg-url": `url(${style.header})` } as CSSProperties}
       >
         <div className="flex gap-2 z-10">
@@ -108,34 +95,19 @@ export function BuildModuleCard({
       </div>
 
       <div className="p-2">
-        <div className="mb-3">
-          {readOnly ? (
-            <div className="flex items-center gap-2 text-sm font-semibold">
-              <QualityIcon tier={tier} size={16} /> {tier}
-            </div>
-          ) : (
-            <Dropdown
-              ariaLabel={`${module.name} quality`}
-              value={tier}
-              onChange={(v) => changeQuality(v as QualityTier)}
-              options={QUALITY_TIERS.map((t) => ({ value: t, label: t, icon: <QualityIcon tier={t} size={16} /> }))}
-            />
-          )}
-        </div>
-
-        <p className="mb-2 text-center text-sm font-bold text-ink-dim">Base Attributes</p>
-        <dl className="space-y-1 text-sm">
+        <p className="mb-2 text-center bg-surface-2/60 text-sm font-bold text-ink-dim">Base Attributes</p>
+        <dl className=" mb-2">
           {([["HP", tierQuality?.hp], ["ATK", tierQuality?.atk], ["DEF", tierQuality?.def]] as const).map(([k, v]) => (
             <div key={k} className="flex justify-between">
-              <dt className="text-ink-dim">{k}</dt>
+              <dt className="text-ink-dim font-semibold">{k}</dt>
               <dd className="font-bold">{v || "—"}</dd>
             </div>
           ))}
         </dl>
-
+        <p className="text-center bg-surface-2/60 text-sm font-bold py-0.5 text-ink-dim">Additional Attributes</p>
         {count >= 1 &&
           (readOnly ? (
-            <div className="mt-3 max-h-[210px] overflow-y-scroll">{equippedList}</div>
+            <div className="mt-2 max-h-[210px] overflow-y-scroll">{equippedList}</div>
           ) : (
           <div className="mt-3">
             <div

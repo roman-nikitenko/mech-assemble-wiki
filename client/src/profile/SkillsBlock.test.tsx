@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useState } from "react";
-import { SkillsBlock } from "./SkillsBlock";
+import { PickedSlot, SkillsBlock } from "./SkillsBlock";
 import type { SkillNodeRow } from "../api/types";
 
 const rows: SkillNodeRow[] = [
@@ -23,6 +23,28 @@ function Harness() {
     />
   );
 }
+
+describe("PickedSlot footer", () => {
+  it("shows the skill's appearance level as N/8", () => {
+    const skill: SkillNodeRow = {
+      id: "x", parentId: null, name: "Boost", description: "d", appearanceLevel: 3,
+      type: "Normal", sortOrder: 0, repeatable: false, linkedWeaponId: null, linkedMechId: null, initialAtTier: null,
+    };
+    render(<PickedSlot skill={skill} />);
+    expect(screen.getByText("3/8")).toBeInTheDocument();
+  });
+
+  it("shows an 'Initial skill' band only when initial", () => {
+    const skill: SkillNodeRow = {
+      id: "x", parentId: null, name: "Boost", description: "d", appearanceLevel: 3,
+      type: "Normal", sortOrder: 0, repeatable: false, linkedWeaponId: null, linkedMechId: null, initialAtTier: null,
+    };
+    const { rerender } = render(<PickedSlot skill={skill} />);
+    expect(screen.queryByText("Initial skill")).not.toBeInTheDocument();
+    rerender(<PickedSlot skill={skill} initial />);
+    expect(screen.getByText("Initial skill")).toBeInTheDocument();
+  });
+});
 
 describe("SkillsBlock repeatable picks", () => {
   it("adds the same repeatable skill into two slots and removes one at a time", async () => {
