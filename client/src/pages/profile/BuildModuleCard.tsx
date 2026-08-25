@@ -1,6 +1,9 @@
 import { useState, type CSSProperties } from "react";
 import { imageSrc } from "../../api/client";
-import type { GameType, ModuleBonusRow, ModuleQuality, ModuleSelection, ModuleSummary } from "../../api/types";
+import type { GameType, ModuleBonusRow, ModuleQuality, ModuleSelection, ModuleSummary, QualityTier } from "../../api/types";
+import { QUALITY_TIERS } from "../../api/types";
+import { Dropdown } from "../../components/Dropdown";
+import { QualityIcon } from "../../components/QualityIcon";
 import { effectCountForTier } from "../../lib/moduleEffects";
 import { qualityCardStyle } from "../../lib/moduleCardStyle";
 
@@ -37,7 +40,16 @@ export function BuildModuleCard({
   function set(patch: Partial<ModuleSelection>) {
     onChange?.({ ...sel, ...patch });
   }
-  
+  function changeQuality(q: QualityTier) {
+    const n = effectCountForTier(q);
+    // Clear picks the new tier no longer unlocks.
+    set({
+      quality: q,
+      effect1: n >= 1 ? sel.effect1 : null,
+      effect2: n >= 2 ? sel.effect2 : null,
+      effect3: n >= 3 ? sel.effect3 : null,
+    });
+  }
   const active = Math.min(tab, count); // clamp when count shrinks
 
   const equippedElement = types.find((t) => t.id === sel.effect1) ?? null;
@@ -95,6 +107,21 @@ export function BuildModuleCard({
       </div>
 
       <div className="p-2">
+        <div className="mb-3">
+          {readOnly ? (
+            <div className="flex items-center gap-2 text-sm font-semibold">
+              <QualityIcon tier={tier} size={16} /> {tier}
+            </div>
+          ) : (
+            <Dropdown
+              ariaLabel={`${module.name} quality`}
+              value={tier}
+              onChange={(v) => changeQuality(v as QualityTier)}
+              options={QUALITY_TIERS.map((t) => ({ value: t, label: t, icon: <QualityIcon tier={t} size={16} /> }))}
+            />
+          )}
+        </div>
+
         <p className="mb-2 text-center bg-surface-2/60 text-sm font-bold text-ink-dim">Base Attributes</p>
         <dl className=" mb-2">
           {([["HP", tierQuality?.hp], ["ATK", tierQuality?.atk], ["DEF", tierQuality?.def]] as const).map(([k, v]) => (
