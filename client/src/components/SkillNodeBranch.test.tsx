@@ -44,7 +44,8 @@ describe("SkillsTab", () => {
     ];
     render(<SkillsTab nodes={nodes} />);
     // The Lv5 base skill sits under the 5/8 header, with its upgrade still shown.
-    expect(screen.getByText("5/8")).toBeInTheDocument();
+    // "5/8" now appears both as the group header and on each card's level badge.
+    expect(screen.getAllByText("5/8").length).toBeGreaterThan(0);
     expect(screen.getByText("Root L5")).toBeInTheDocument();
     expect(screen.getByText("Upgrade")).toBeInTheDocument();
   });
