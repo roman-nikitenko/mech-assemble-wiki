@@ -44,8 +44,8 @@ export function SkillNodeBranch({
                   PREMIUM
                 </span>
               )}
-              <span className="rounded bg-surface-2 px-1.5 py-0.5 text-[10px] text-ink-dim">
-                from Lv.{node.appearanceLevel}
+              <span className="text-sm bg-surface-2 px-2 rounded font-black">
+                {node.appearanceLevel}/8
               </span>
             </div>
             {node.description && <p className="mt-1 font-semibold text-sm text-ink-dim">{node.description}</p>}
