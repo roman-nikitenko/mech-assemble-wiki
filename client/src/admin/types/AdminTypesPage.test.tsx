@@ -42,4 +42,11 @@ describe("AdminTypesPage", () => {
     expect(screen.getByRole("dialog")).toBeInTheDocument();
     expect(screen.getByText(/still uses/)).toBeInTheDocument();
   });
+
+  it("switches to the Drone tab and shows its create button", async () => {
+    renderPage();
+    await screen.findByText("Thunder"); // default Mech/Weapon tab loaded
+    await userEvent.click(screen.getByRole("tab", { name: "Drone" }));
+    expect(await screen.findByRole("link", { name: "+ New drone type" })).toBeInTheDocument();
+  });
 });

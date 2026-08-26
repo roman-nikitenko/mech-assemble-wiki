@@ -15,6 +15,7 @@ const PNG_1PX = Buffer.from(
 );
 
 const uploaded: string[] = [];
+const uploadedRaw: string[] = []; // videos: single stored file, no variants
 
 afterAll(() => {
   // remove the files these tests created — the base image plus every variant.
@@ -25,6 +26,10 @@ afterAll(() => {
       const file = path.join(uploadsDir, name);
       if (fs.existsSync(file)) fs.unlinkSync(file);
     }
+  }
+  for (const url of uploadedRaw) {
+    const file = path.join(uploadsDir, path.basename(url));
+    if (fs.existsSync(file)) fs.unlinkSync(file);
   }
 });
 
@@ -61,5 +66,35 @@ describe("POST /api/uploads", () => {
   it("rejects a request with no file", async () => {
     const res = await request(app).post("/api/uploads").set(ADMIN);
     expect(res.status).toBe(400);
+  });
+});
+
+describe("POST /api/uploads/video", () => {
+  it("accepts an mp4 and returns its url, served back", async () => {
+    const res = await request(app)
+      .post("/api/uploads/video")
+      .set(ADMIN)
+      .attach("video", Buffer.from("fake-mp4-bytes"), { filename: "clip.mp4", contentType: "video/mp4" });
+    expect(res.status).toBe(201);
+    expect(res.body.url).toMatch(/^\/uploads\/[0-9a-f-]+\.mp4$/);
+    uploadedRaw.push(res.body.url);
+    const served = await request(app).get(res.body.url);
+    expect(served.status).toBe(200);
+  });
+
+  it("rejects a non-video file", async () => {
+    const res = await request(app)
+      .post("/api/uploads/video")
+      .set(ADMIN)
+      .attach("video", PNG_1PX, { filename: "pixel.png", contentType: "image/png" });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toContain("MP4");
+  });
+
+  it("requires an admin token", async () => {
+    const res = await request(app)
+      .post("/api/uploads/video")
+      .attach("video", Buffer.from("x"), { filename: "clip.mp4", contentType: "video/mp4" });
+    expect(res.status).toBe(401);
   });
 });

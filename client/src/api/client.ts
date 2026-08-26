@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { AccessoryInput, AccessorySummary, AdminUser, DashboardStats, Feedback, GameType, MechDetail, MechInput, MechRank, MechSummary, ModuleDetail, ModuleInput, ModuleQuality, ModuleQualityInput, ModuleSummary, Pilot, PilotInput, PostedBuild, TypeInput, WeaponDetail, WeaponInput, WeaponSummary } from "./types";
+import type { AccessoryInput, AccessorySummary, AdminUser, DashboardStats, Drone, DroneInput, DroneType, DroneTypeInput, Feedback, GameType, MechDetail, MechInput, MechRank, MechSummary, ModuleDetail, ModuleInput, ModuleQuality, ModuleQualityInput, ModuleSummary, Pilot, PilotInput, PostedBuild, TypeInput, WeaponDetail, WeaponInput, WeaponSummary } from "./types";
 import { adminHeaders } from "../auth/adminSession";
 
 export const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
@@ -144,6 +144,20 @@ export async function uploadImage(file: File): Promise<string> {
   return data.url;
 }
 
+/** Upload a preview video (mp4/webm); returns its "/uploads/..." URL. Stored
+    as-is by the server (no processing), unlike images. */
+export async function uploadVideo(file: File): Promise<string> {
+  const form = new FormData();
+  form.append("video", file);
+  const res = await fetch(`${API_URL}/api/uploads/video`, { method: "POST", headers: adminHeaders(), body: form });
+  if (!res.ok) {
+    const data = await res.json().catch(() => null);
+    throw new Error(data?.error ?? `Upload failed (${res.status})`);
+  }
+  const data = (await res.json()) as { url: string };
+  return data.url;
+}
+
 export function usePilots() {
   return useQuery({ queryKey: ["pilots"], queryFn: () => fetchJson<Pilot[]>("/api/pilots") });
 }
@@ -227,6 +241,74 @@ export function useDeleteType() {
       }
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["types"] }),
+  });
+}
+
+export function useDrones() {
+  return useQuery({ queryKey: ["drones"], queryFn: () => fetchJson<Drone[]>("/api/drones") });
+}
+
+export function useCreateDrone() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: DroneInput) => sendJson<Drone>("/api/drones", "POST", input),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["drones"] }),
+  });
+}
+
+export function useUpdateDrone(id: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: DroneInput) => sendJson<Drone>(`/api/drones/${id}`, "PUT", input),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["drones"] }),
+  });
+}
+
+export function useDeleteDrone() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`${API_URL}/api/drones/${id}`, { method: "DELETE", headers: adminHeaders() });
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        throw new Error(data?.error ?? `API error ${res.status}`);
+      }
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["drones"] }),
+  });
+}
+
+export function useDroneTypes() {
+  return useQuery({ queryKey: ["drone-types"], queryFn: () => fetchJson<DroneType[]>("/api/drone-types") });
+}
+
+export function useCreateDroneType() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: DroneTypeInput) => sendJson<DroneType>("/api/drone-types", "POST", input),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["drone-types"] }),
+  });
+}
+
+export function useUpdateDroneType(id: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: DroneTypeInput) => sendJson<DroneType>(`/api/drone-types/${id}`, "PUT", input),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["drone-types"] }),
+  });
+}
+
+export function useDeleteDroneType() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`${API_URL}/api/drone-types/${id}`, { method: "DELETE", headers: adminHeaders() });
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        throw new Error(data?.error ?? `API error ${res.status}`);
+      }
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["drone-types"] }),
   });
 }
 
