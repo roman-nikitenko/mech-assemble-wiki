@@ -28,6 +28,13 @@ export const FULL_MAX_WIDTH = 1600;
 // upload; the files we WRITE are always WebP with names we generate.
 const ALLOWED = new Set(["image/png", "image/jpeg", "image/webp"]);
 
+// Video uploads (drone preview clips): stored as-is, no processing. mimetype ->
+// the extension we WRITE (never trust the uploaded filename).
+const ALLOWED_VIDEO: Record<string, string> = {
+  "video/mp4": "mp4",
+  "video/webm": "webm",
+};
+
 // Given an /uploads path, the variant name for a width. e.g.
 // "abc.webp" + 400 -> "abc-400.webp". Stripping the extension first means it
 // works whether the stored base is .png/.jpg/.webp (older uploads vary).
@@ -75,6 +82,16 @@ const upload = multer({
   },
 });
 
+// Videos are much larger than images and aren't re-encoded, so a bigger cap.
+const videoUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 20 * 1024 * 1024 }, // 20 MB
+  fileFilter: (_req, file, cb) => {
+    if (file.mimetype in ALLOWED_VIDEO) return cb(null, true);
+    cb(new Error("UNSUPPORTED_TYPE"));
+  },
+});
+
 export const uploadsRouter = Router();
 
 // POST /api/uploads — multipart form, field name "image".
@@ -101,6 +118,33 @@ uploadsRouter.post("/", requireAdmin, (req, res) => {
     } catch {
       // sharp throws on corrupt/unreadable images that passed the mimetype gate.
       res.status(400).json({ error: "Could not process that image." });
+    }
+  });
+});
+
+// POST /api/uploads/video — multipart form, field name "video". Stored as-is
+// (no processing), returns its public URL. For drone preview clips.
+uploadsRouter.post("/video", requireAdmin, (req, res) => {
+  videoUpload.single("video")(req, res, async (err: unknown) => {
+    if (err) {
+      const message =
+        err instanceof Error && err.message === "UNSUPPORTED_TYPE"
+          ? "Only MP4 or WebM videos are allowed."
+          : err instanceof multer.MulterError && err.code === "LIMIT_FILE_SIZE"
+            ? "Video must be 20 MB or smaller."
+            : "Upload failed.";
+      return res.status(400).json({ error: message });
+    }
+    if (!req.file) {
+      return res.status(400).json({ error: "No video file provided (field name: video)." });
+    }
+    try {
+      const ext = ALLOWED_VIDEO[req.file.mimetype];
+      const filename = `${randomUUID()}.${ext}`;
+      await fs.promises.writeFile(path.join(uploadsDir, filename), req.file.buffer);
+      res.status(201).json({ url: `/uploads/${filename}` });
+    } catch {
+      res.status(400).json({ error: "Could not store that video." });
     }
   });
 });

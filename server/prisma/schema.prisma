@@ -210,6 +210,38 @@ model Type {
   @@map("types")
 }
 
+// Drones — admin-managed catalog. Standard|S tier (reusing MechRank). Stats are
+// free text (game formatting like "54.00k"). previewVideoUrl is S-tier only by
+// convention (shown on S drones). levelUpBonuses ≤4, app-enforced.
+model Drone {
+  id              String     @id @default(uuid()) @db.Uuid
+  name            String     @unique
+  iconUrl         String?    @map("icon_url")
+  tier            MechRank   @default(Standard)
+  droneTypeId     String?    @map("drone_type_id") @db.Uuid
+  droneType       DroneType? @relation(fields: [droneTypeId], references: [id], onDelete: SetNull)
+  inheritAttack   String?    @map("inherit_attack")
+  atk             String?
+  hp              String?
+  def             String?
+  previewVideoUrl String?    @map("preview_video_url")
+  levelUpBonuses  String[]   @map("level_up_bonuses")
+
+  @@map("drones")
+}
+
+// Drone types — element catalog for drones (name + icon), separate from the
+// mech/weapon `types` catalog.
+model DroneType {
+  id      String  @id @default(uuid()) @db.Uuid
+  name    String  @unique
+  iconUrl String? @map("icon_url")
+
+  drones Drone[]
+
+  @@map("drone_types")
+}
+
 // ---------- Skills + upgrade tree ----------
 
 model MechSkill {

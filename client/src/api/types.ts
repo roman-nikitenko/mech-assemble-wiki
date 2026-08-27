@@ -16,6 +16,49 @@ export interface TypeInput {
   iconUrl?: string | null;
 }
 
+/** A drone in the admin catalog. Stats are free text; tier reuses the
+    Standard|S rank. levelUpBonuses holds up to 4 rows. */
+export interface Drone {
+  id: string;
+  name: string;
+  iconUrl: string | null;
+  tier: MechRank;
+  droneTypeId: string | null;
+  inheritAttack: string | null;
+  atk: string | null;
+  hp: string | null;
+  def: string | null;
+  previewVideoUrl: string | null;
+  levelUpBonuses: string[];
+}
+
+/** Payload for POST/PUT /api/drones. */
+export interface DroneInput {
+  name: string;
+  iconUrl?: string | null;
+  tier: MechRank;
+  droneTypeId?: string | null;
+  inheritAttack?: string | null;
+  atk?: string | null;
+  hp?: string | null;
+  def?: string | null;
+  previewVideoUrl?: string | null;
+  levelUpBonuses: string[];
+}
+
+/** A drone type in the admin catalog (name + icon) — separate from GameType. */
+export interface DroneType {
+  id: string;
+  name: string;
+  iconUrl: string | null;
+}
+
+/** Payload for POST/PUT /api/drone-types. */
+export interface DroneTypeInput {
+  name: string;
+  iconUrl?: string | null;
+}
+
 export type MechRank = "Standard" | "S";
 
 /** Shape returned by GET /api/mechs (browse page). */

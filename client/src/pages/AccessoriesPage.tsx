@@ -73,7 +73,7 @@ export function AccessoriesPage() {
       ) : (
         <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {visible.map((a) => (
-            <div key={a.id} className={`rounded-xl border border-edge`}>
+            <div key={a.id} className={`rounded-xl bg-surface border border-edge`}>
               <div
                 className="aspect-2/1 rounded-t-lg flex items-center justify-center bg-no-repeat bg-center bg-cover"
                 style={{ backgroundImage: `url(${cardBg})` }}

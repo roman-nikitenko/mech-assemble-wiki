@@ -3,7 +3,6 @@ import type { ReactNode } from "react";
 export interface ButtonGroupOption {
   value: string;
   label: string;
-  /** Small icon shown left of the label — e.g. a type <img>, an <STierIcon />. */
   icon?: ReactNode;
 }
 

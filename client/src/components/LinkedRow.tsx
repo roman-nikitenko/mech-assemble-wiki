@@ -26,7 +26,7 @@ export function LinkedRow({
       sizes="48px"
       alt={name}
       loading="lazy"
-      className="h-16 w-16 rounded-lg border border-edge object-cover"
+      className="h-16 w-16 rounded-lg border border-edge object-contain"
     />
   ) : (
     <span className="flex h-12 w-12 items-center justify-center rounded-lg border border-edge text-xs text-accent">
@@ -38,13 +38,13 @@ export function LinkedRow({
   
 
   return (
-    <div className="flex items-start gap-3">
+    <div className="flex items-start gap-3 bg-surface p-1 rounded-lg">
       {to ? (
         <Link to={to} title={name} className="shrink-0 transition hover:brightness-110">
           {icon}
         </Link>
       ) : (
-        <span className="shrink-0 rounded-full overflow-hidden">{icon}</span>
+        <span className="shrink-0">{icon}</span>
       )}
       <div className="min-w-0 flex-1">
         <p className="font-semibold">{name}</p>
