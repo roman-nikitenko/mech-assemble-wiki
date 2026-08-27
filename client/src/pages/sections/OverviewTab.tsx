@@ -20,7 +20,6 @@ export function OverviewTab({ mech }: { mech: MechDetail }) {
               />
             )}
             {mech.accessory && (
-              // No accessory detail page exists yet, so this icon is not a link.
               <LinkedRow
                 iconUrl={mech.accessory.iconUrl}
                 name={mech.accessory.name}
