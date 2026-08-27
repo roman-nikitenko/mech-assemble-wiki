@@ -1,3 +1,23 @@
+/* Gentle up/down float for the drone card hero art. */
+@keyframes drone-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+.animate-drone-float {
+  animation: drone-float 3s ease-in-out infinite;
+}
+/* Respect users who prefer no motion. */
+@media (prefers-reduced-motion: reduce) {
+  .animate-drone-float {
+    animation: none;
+  }
+}
+
 .blue-card {
   position: relative;
   background: radial-gradient(circle, #0f5195 0%, #061d3c 100%);

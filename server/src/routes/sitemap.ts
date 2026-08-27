@@ -13,7 +13,7 @@ const SITE_URL = (process.env.SITE_URL ?? "https://mech-assemble-wiki.online").r
 
 // Public list/landing pages that always exist (independent of the database).
 // Admin and per-user pages are intentionally excluded — see robots.txt.
-const STATIC_PATHS = ["/", "/weapons", "/accessories", "/pilots", "/builds"];
+const STATIC_PATHS = ["/", "/weapons", "/accessories", "/pilots", "/drones", "/builds"];
 
 /** GET /api/sitemap.xml — a fresh sitemap listing every public URL: the static
     pages plus one entry per mech and per weapon (the two systems with detail

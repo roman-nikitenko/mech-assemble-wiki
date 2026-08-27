@@ -75,7 +75,7 @@ export function MechDetailPage() {
           <img
             src={imageSrc(mech.imageUrl)}
             alt={mech.name}
-            className="mb-4 h-48 w-48 rounded-xl border border-edge object-cover"
+            className="mb-4 h-48 w-48 rounded-xl border bg-surface border-edge object-cover"
           />
         )}
         <div className="">

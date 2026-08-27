@@ -20,20 +20,21 @@ export function SkillNodeBranch({
           key={node.id}
           className={
             parentId
-              ? "relative before:absolute before:-left-4 before:-top-2 before:bottom-0 before:w-0.5 before:bg-edge before:content-[''] last:before:bottom-auto last:before:h-8 after:absolute after:-left-4 after:top-6 after:h-0.5 after:w-4 after:bg-edge after:content-['']"
+              ? "relative before:absolute before:-left-4 before:-top-2 before:bottom-0 before:w-0.5 before:bg-indigo-300/40 before:content-[''] last:before:bottom-auto last:before:h-8 after:absolute after:-left-4 after:top-6 after:h-0.5 after:w-4 after:bg-indigo-300/40 after:content-['']"
               : undefined
           }
         >
           <div
-            className={`rounded-lg border p-3 ${
+            className={`rounded-lg border p-3 backdrop-blur-md ${
               node.type === "Core"
                 ? "border-skill-core bg-skill-core/10"
                 : node.type === "Premium"
                   ? "border-skill-premium bg-skill-premium/10"
                   : "border-thunder bg-thunder/10"
             }`}
+       
           >
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="fle flex-wrap items-center gap-2">
               {node.name ? (
                 <span className="font-semibold">{node.name}</span>
               ) : (
@@ -44,7 +45,7 @@ export function SkillNodeBranch({
                   PREMIUM
                 </span>
               )}
-              <span className="text-sm bg-surface-2 px-2 rounded font-black">
+              <span className="text-sm bg-surface-2 px-2 ml-1 rounded font-black">
                 {node.appearanceLevel}/8
               </span>
             </div>

@@ -9,7 +9,7 @@ export function MechCard({ mech, priority = false }: { mech: MechSummary; priori
   return (
     <Link
       to={`/mechs/${mech.slug ?? mech.id}`}
-      className="@container block rounded-xl relative overflow-hidden border border-edge bg-surface transition hover:border-accent/60 hover:bg-surface-2 bg-no-repeat bg-cover bg-center"
+      className="@container block rounded-xl relative border border-edge bg-surface transition hover:border-accent/60 hover:bg-surface-2 bg-no-repeat bg-cover bg-center"
       style={{ backgroundImage: `url(${mechCardBg})` }}
     >
       {mech.imageUrl ? (
@@ -30,8 +30,11 @@ export function MechCard({ mech, priority = false }: { mech: MechSummary; priori
           🤖
         </div>
       )}
-      <div className="min-h-[50px] flex items-center absolute min-w-full bottom-0 left-1/2 -translate-x-1/2 z-10  justify-center py-2 gap-2 backdrop-blur-sm bg-black/10">
+      <div className="absolute -left-4 -top-4">
         {mech.rank !== 'Standard' && <RankBadge rank={mech.rank} />}
+      </div>
+      <div className="min-h-[50px] flex items-center absolute min-w-full bottom-0 rounded-b-lg left-1/2 -translate-x-1/2 z-10  justify-center py-2 gap-2 backdrop-blur-sm bg-black/10">
+
         <h2 className="font-bold text-[6cqw]">{mech.name}</h2>
         <div className="flex items-center gap-2">
           {mech.type && <TypeBadge type={mech.type} />}

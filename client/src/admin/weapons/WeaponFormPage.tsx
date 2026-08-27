@@ -240,7 +240,7 @@ export function WeaponFormPage() {
                   >
                     {/* S-tier gets the drawn gold badge; Standard is label-only,
                         mirroring how RankBadge renders the two ranks. */}
-                    {t === "S" && <STierIcon size={18} />}
+                    {t === "S" && <STierIcon size={45} />}
                     {t}
                   </button>
                 );

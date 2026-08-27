@@ -1,5 +1,6 @@
 import { Link, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "../auth/useAuth";
+import mainBg from "../assets/main-bg.png";
 
 const TABS = [
   { to: "/", label: "Mechs" },
@@ -7,16 +8,13 @@ const TABS = [
   { to: "/weapons", label: "Weapons" },
   { to: "/accessories", label: "Accessories" },
   { to: "/pilots", label: "Pilots" },
+  { to: "/drones", label: "Drones" },
   { to: "/modules", label: "Attack Module" },
   { to: "/feedback", label: "Feedback" },
 ];
 
 const buttonStyles = 'border rounded-lg border-accent px-2 py-1';
 
-// Small inline icons (no icon library in the project). They inherit color via
-// `currentColor` and size via the className passed in. The header shows the
-// account link and log out as these icons on every screen size (the readable
-// name/label is carried by each control's aria-label).
 function UserIcon({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden="true" className={className}>
@@ -33,20 +31,20 @@ function LogoutIcon({ className }: { className?: string }) {
   );
 }
 
-/** Public shell: site title + section tabs; pages render into the Outlet.
-    Styled like the detail page's Tabs component so the site feels uniform. */
 export function PublicLayout() {
   const { pathname } = useLocation();
   const { isAuthenticated, isLoading, me, logout } = useAuth();
-  // Mech detail pages (/mechs/:id) still belong to the Mechs tab.
+
   const isActive = (to: string) =>
     to === "/" ? pathname === "/" || pathname.startsWith("/mechs") : pathname.startsWith(to);
 
   return (
-    // Flex column so the footer is pushed to the bottom on short pages
-    // (the content wrapper grows to fill the remaining height).
-    <div className="flex min-h-screen flex-col">
-      <header className="mx-auto w-full max-w-6xl px-4 pt-6">
+    <div className="flex relative min-h-screen flex-col">
+      <div className="h-screen w-full fixed flex min-h-screen flex-col bg-bottom bg-no-repeat bg-size-[100%_auto] after:absolute after:inset-x-0 after:z-0 after:bottom-0 after:h-50 after:content-['']
+             after:bg-linear-to-t after:from-bg after:to-bg/0"
+        style={{ backgroundImage: `url(${mainBg})` }}
+      ></div>
+      <header className="mx-auto w-full z-10 max-w-6xl px-4 pt-6">
         <div className="flex items-center justify-between">
           <Link to="/">
             <h1 className="text-2xl font-black tracking-tight">
@@ -105,11 +103,11 @@ export function PublicLayout() {
         </nav>
       </header>
 
-      <div className="flex-1">
+      <div className="flex-1 z-10">
         <Outlet />
       </div>
 
-      <footer className="mt-16 border-t border-edge">
+      <footer className="mt-16 border-t border-edge bg-surface z-10">
         <div className="mx-auto max-w-6xl px-4 py-8 text-ink-dim">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <Link to="/" className="text-lg font-black tracking-tight text-ink">

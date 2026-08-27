@@ -145,7 +145,7 @@ export function DroneFormPage() {
                       : "border-edge text-ink-dim hover:border-accent/50"
                   }`}
                 >
-                  {t === "S" && <STierIcon size={18} />}
+                  {t === "S" && <STierIcon size={45} />}
                   {t}
                 </button>
               );

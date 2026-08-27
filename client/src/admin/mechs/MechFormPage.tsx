@@ -295,7 +295,7 @@ export function MechFormPage() {
                 >
                   {/* S-tier gets the drawn gold badge; Standard is label-only,
                       mirroring how RankBadge renders the two ranks. */}
-                  {r === "S" && <STierIcon size={18} />}
+                  {r === "S" && <STierIcon size={45} />}
                   {r}
                 </button>
               );
