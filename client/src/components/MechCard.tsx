@@ -30,11 +30,8 @@ export function MechCard({ mech, priority = false }: { mech: MechSummary; priori
           🤖
         </div>
       )}
-      <div className="absolute -left-4 -top-4">
+      <div className="min-h-12.5 flex items-center absolute min-w-full bottom-0 rounded-b-lg left-1/2 -translate-x-1/2 z-10  justify-center py-2 gap-2 backdrop-blur-sm bg-black/10">
         {mech.rank !== 'Standard' && <RankBadge rank={mech.rank} />}
-      </div>
-      <div className="min-h-[50px] flex items-center absolute min-w-full bottom-0 rounded-b-lg left-1/2 -translate-x-1/2 z-10  justify-center py-2 gap-2 backdrop-blur-sm bg-black/10">
-
         <h2 className="font-bold text-[6cqw]">{mech.name}</h2>
         <div className="flex items-center gap-2">
           {mech.type && <TypeBadge type={mech.type} />}
