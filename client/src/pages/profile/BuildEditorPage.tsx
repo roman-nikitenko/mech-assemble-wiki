@@ -5,6 +5,8 @@ import {
   imageSrc,
   srcSet,
   CARD_SIZES,
+  useDrones,
+  useDroneTypes,
   useMech,
   useMechs,
   useModuleQualities,
@@ -12,7 +14,7 @@ import {
   useTypes,
   useWeapons,
 } from "../../api/client";
-import type { MechRank, ModuleSelection, PostedBuild, QualityTier, SkillNodeRow, WeaponSummary } from "../../api/types";
+import type { DroneSelection, MechRank, ModuleSelection, PostedBuild, QualityTier, SkillNodeRow, WeaponSummary } from "../../api/types";
 import { QUALITY_TIERS } from "../../api/types";
 import { MAX_CORE_SLOTS, availableSkills, grantedSkills, resolvePicks } from "../../profile/buildRules";
 import { QualityIcon } from "../../components/QualityIcon";
@@ -27,6 +29,7 @@ import { RankBadge } from "../../components/RankBadge";
 import { FilterBar } from "../../components/FilterBar";
 import { LoadingSkeleton } from "../../components/LoadingSkeleton";
 import { BuildModuleCard } from "./BuildModuleCard";
+import { BuildDronesSection } from "./BuildDronesSection";
 
 export const MAX_WEAPONS = 4;
 
@@ -121,6 +124,10 @@ function BuildEditorContent({ existing }: { existing: PostedBuild | undefined })
   const [moduleSel, setModuleSel] = useState<Record<string, ModuleSelection>>(
     existing?.moduleSelections ?? {}
   );
+  // Per-drone-slot picks (drone + 0-9 quality gem), keyed by slot index "0".."5".
+  const [droneSel, setDroneSel] = useState<Record<string, DroneSelection>>(
+    existing?.droneSelections ?? {}
+  );
   // Weapon strip filters — each one narrows the strip; blank = show all.
   const [weaponName, setWeaponName] = useState("");
   const [weaponTypeId, setWeaponTypeId] = useState("");
@@ -142,6 +149,8 @@ function BuildEditorContent({ existing }: { existing: PostedBuild | undefined })
   const types = useTypes();
   const modules = useModules();
   const moduleQualities = useModuleQualities();
+  const drones = useDrones();
+  const droneTypes = useDroneTypes();
   const allWeapons = weapons.data ?? [];
 
   // Creating requires a logged-in user with a nickname (the author).
@@ -454,6 +463,10 @@ function BuildEditorContent({ existing }: { existing: PostedBuild | undefined })
         ? {}
         : Object.fromEntries(savedWeaponIds.map((id) => [id, weaponQualities[id] ?? "Blue"])),
       moduleSelections: moduleSel,
+      // Empty squares aren't stored — a cleared slot leaves no key behind.
+      droneSelections: Object.fromEntries(
+        Object.entries(droneSel).filter(([, s]) => s.droneId !== null)
+      ),
       weaponSkillIds: isWeaponBuild
         ? {}
         : Object.fromEntries(
@@ -513,6 +526,12 @@ function BuildEditorContent({ existing }: { existing: PostedBuild | undefined })
           ))}
         </div>
       </div>
+      <BuildDronesSection
+        drones={drones.data ?? []}
+        droneTypes={droneTypes.data ?? []}
+        selections={droneSel}
+        onChange={setDroneSel}
+      />
       <button
         type="button"
         onClick={save}

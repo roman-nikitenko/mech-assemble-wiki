@@ -20,6 +20,7 @@ function formatBuild(b: {
   quality: QualityTier;
   weaponQualities: unknown;
   moduleSelections: unknown;
+  droneSelections: unknown;
   createdAt: Date;
   updatedAt: Date;
   user: { nickname: string | null; server: string | null };
@@ -41,6 +42,10 @@ function formatBuild(b: {
       string,
       { quality: QualityTier; effect1: string | null; effect2: string | null; effect3: string | null }
     >,
+    droneSelections: b.droneSelections as Record<
+      string,
+      { droneId: string | null; quality: number }
+    >,
     createdAt: b.createdAt.toISOString(),
     updatedAt: b.updatedAt.toISOString(),
     author: { nickname: b.user.nickname, server: b.user.server },
@@ -59,7 +64,22 @@ function currentUser(req: Request) {
     Returns null when the name is missing (the one hard requirement). */
 const QUALITY_TIERS = ["Blue", "Purple", "Orange", "Red", "Turquoise", "Gold", "Mythic"];
 
-function parseBuildInput(body: unknown) {
+// The 6 drone squares are a fixed 2/2/2 layout, so a slot key is its index.
+const DRONE_SLOT_KEYS = ["0", "1", "2", "3", "4", "5"];
+// Drone quality is the 0-9 gem ladder — deliberately NOT the QualityTier names
+// used by mechs, weapons and modules.
+const MAX_DRONE_QUALITY = 9;
+
+/** Coerce a stored drone quality into the 0-9 gem range. Anything unusable
+    (a string, NaN, out of range) falls back to the lowest gem rather than
+    rejecting the whole slot. */
+function droneQuality(x: unknown): number {
+  if (typeof x !== "number" || !Number.isFinite(x)) return 0;
+  return Math.min(MAX_DRONE_QUALITY, Math.max(0, Math.floor(x)));
+}
+
+/** Exported for unit tests — the pure half of create/edit, no DB involved. */
+export function parseBuildInput(body: unknown) {
   const b = (body ?? {}) as Record<string, unknown>;
   if (typeof b.name !== "string" || b.name.trim() === "") return null;
   const quality =
@@ -86,6 +106,17 @@ function parseBuildInput(body: unknown) {
             })
         )
       : {};
+  const droneSelections =
+    b.droneSelections !== null && typeof b.droneSelections === "object"
+      ? Object.fromEntries(
+          Object.entries(b.droneSelections as Record<string, unknown>)
+            .filter(([slot, v]) => DRONE_SLOT_KEYS.includes(slot) && v !== null && typeof v === "object")
+            .map(([slot, v]) => {
+              const s = v as Record<string, unknown>;
+              return [slot, { droneId: pickId(s.droneId), quality: droneQuality(s.quality) }];
+            })
+        )
+      : {};
   return {
     name: b.name.trim(),
     description: typeof b.description === "string" ? b.description.trim() : "",
@@ -100,6 +131,7 @@ function parseBuildInput(body: unknown) {
     quality: quality as QualityTier,
     weaponQualities: weaponQualities as Record<string, QualityTier>,
     moduleSelections,
+    droneSelections,
   };
 }
 
