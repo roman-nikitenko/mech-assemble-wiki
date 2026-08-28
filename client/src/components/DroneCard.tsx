@@ -22,7 +22,7 @@ export function DroneCard({ drone, type }: { drone: Drone; type: DroneType | und
           className="absolute inset-0 bg-amber-500 z-0 bg-bottom bg-no-repeat bg-cover"
           style={{ backgroundImage: `url(${droneCardBg})` }}
         ></div>
-        <div className="bg-gradient-to-r absolute w-full px-3 py-2 text-center">
+        <div className="bg-gradient-to-r absolute w-full z-10 px-3 py-2 text-center">
           <h3 className="flex items-center justify-center gap-2 text-xl font-black ">
             {drone.tier === "S" && <STierIcon size={45} />}
             <span className="truncate">{drone.name}</span>
@@ -34,7 +34,7 @@ export function DroneCard({ drone, type }: { drone: Drone; type: DroneType | und
               src={imageSrc(drone.iconUrl)}
               alt={drone.name}
               loading="lazy"
-              className="animate-drone-float h-full z-10 w-full object-contain"
+              className="animate-drone-float h-full z-0 w-full object-contain"
             />
           ) : (
             <div className="h-44 w-full" aria-hidden />
