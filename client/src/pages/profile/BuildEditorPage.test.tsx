@@ -1,10 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type {
   BuildStatus,
+  Drone,
+  DroneType,
   GameType,
   MechDetail,
   MechSummary,
@@ -28,7 +30,7 @@ const postedBuild = (over: Partial<PostedBuild> = {}): PostedBuild => ({
   weaponIds: [],
   weaponSkillIds: {},
   status: "Draft" as BuildStatus,
-  hearts: 0, quality: "Blue", weaponQualities: {}, moduleSelections: {},
+  hearts: 0, quality: "Blue", weaponQualities: {}, moduleSelections: {}, droneSelections: {},
   createdAt: "2026-07-15T00:00:00.000Z",
   updatedAt: "2026-07-15T00:00:00.000Z",
   author: { nickname: "Tester", server: "" },
@@ -115,6 +117,38 @@ const moduleFixture: ModuleSummary = {
   bonuses: [],
 };
 
+// The three drone types the 6 slots are bound to, plus one drone per slot
+// group (Battle has two so the "already picked disappears" rule is testable).
+const droneTypesFixture: DroneType[] = [
+  { id: "dt1", name: "Battle", iconUrl: null },
+  { id: "dt2", name: "Bombardment", iconUrl: null },
+  { id: "dt3", name: "Support", iconUrl: null },
+];
+
+const droneFixture = (over: Partial<Drone>): Drone => ({
+  id: "d1",
+  name: "Buzz",
+  iconUrl: null,
+  tier: "S",
+  droneTypeId: "dt1",
+  inheritAttack: null,
+  atk: null,
+  hp: null,
+  def: null,
+  previewVideoUrl: null,
+  levelUpBonuses: [],
+  ...over,
+});
+
+const dronesFixture: Drone[] = [
+  droneFixture({ id: "d1", name: "Buzz", droneTypeId: "dt1" }),
+  droneFixture({ id: "d2", name: "Sting", droneTypeId: "dt1" }),
+  droneFixture({ id: "d3", name: "Boom", droneTypeId: "dt2" }),
+  droneFixture({ id: "d4", name: "Medic", droneTypeId: "dt3" }),
+  // No type set — must not appear in any picker.
+  droneFixture({ id: "d5", name: "Orphan", droneTypeId: null }),
+];
+
 const weaponFixture = (over: Partial<WeaponSummary>): WeaponSummary => ({
   id: "w1",
   slug: "blade-of-dawn",
@@ -190,6 +224,10 @@ function renderEditor(path = "/profile/builds/new") {
       body = [moduleQualityFixture];
     } else if (url.includes("/api/modules")) {
       body = [moduleFixture];
+    } else if (url.includes("/api/drone-types")) {
+      body = droneTypesFixture;
+    } else if (url.includes("/api/drones")) {
+      body = dronesFixture;
     } else {
       body = [summary];
     }
@@ -416,6 +454,86 @@ describe("BuildEditorPage (new build)", () => {
     // once a subject (mech or weapon) has been picked past step 1.
     await userEvent.click(await screen.findByRole("button", { name: /Iron Colossus/ }));
     expect(await screen.findByRole("heading", { name: "Attack Module" })).toBeInTheDocument();
+  });
+
+  it("shows six drone slots: two each for Battle, Bombardment and Support", async () => {
+    renderEditor();
+    await userEvent.click(await screen.findByRole("button", { name: /Iron Colossus/ }));
+    expect(await screen.findByRole("heading", { name: "Drones" })).toBeInTheDocument();
+    const slots = screen.getAllByRole("button", { name: /^Add a .* drone to slot/ });
+    expect(slots).toHaveLength(6);
+    const labels = slots.map((b) => b.getAttribute("aria-label"));
+    expect(labels.filter((l) => l?.includes("Battle"))).toHaveLength(2);
+    expect(labels.filter((l) => l?.includes("Bombardment"))).toHaveLength(2);
+    expect(labels.filter((l) => l?.includes("Support"))).toHaveLength(2);
+  });
+
+  it("a slot's picker lists only drones of that slot's type", async () => {
+    renderEditor();
+    await userEvent.click(await screen.findByRole("button", { name: /Iron Colossus/ }));
+    await userEvent.click(await screen.findByRole("button", { name: "Add a Battle drone to slot 1" }));
+    const dialog = await screen.findByRole("dialog");
+    expect(within(dialog).getByRole("button", { name: "Buzz" })).toBeInTheDocument();
+    expect(within(dialog).getByRole("button", { name: "Sting" })).toBeInTheDocument();
+    // Other types — and the type-less drone — stay out of a Battle picker.
+    expect(within(dialog).queryByRole("button", { name: "Boom" })).not.toBeInTheDocument();
+    expect(within(dialog).queryByRole("button", { name: "Medic" })).not.toBeInTheDocument();
+    expect(within(dialog).queryByRole("button", { name: "Orphan" })).not.toBeInTheDocument();
+  });
+
+  it("a drone picked in one slot disappears from the other slot's picker", async () => {
+    renderEditor();
+    await userEvent.click(await screen.findByRole("button", { name: /Iron Colossus/ }));
+    await userEvent.click(await screen.findByRole("button", { name: "Add a Battle drone to slot 1" }));
+    await userEvent.click(within(await screen.findByRole("dialog")).getByRole("button", { name: "Buzz" }));
+    // Picking closes the dialog and fills the square.
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Change the drone in slot 1 (Buzz)" })).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "Add a Battle drone to slot 2" }));
+    const second = await screen.findByRole("dialog");
+    expect(within(second).queryByRole("button", { name: "Buzz" })).not.toBeInTheDocument();
+    expect(within(second).getByRole("button", { name: "Sting" })).toBeInTheDocument();
+  });
+
+  it("a filled slot's own drone still shows in its own picker", async () => {
+    renderEditor();
+    await userEvent.click(await screen.findByRole("button", { name: /Iron Colossus/ }));
+    await userEvent.click(await screen.findByRole("button", { name: "Add a Battle drone to slot 1" }));
+    await userEvent.click(within(await screen.findByRole("dialog")).getByRole("button", { name: "Buzz" }));
+    // Re-opening the same square must not hide what's already equipped there —
+    // only drones taken by OTHER slots are filtered out.
+    await userEvent.click(screen.getByRole("button", { name: "Change the drone in slot 1 (Buzz)" }));
+    const dialog = await screen.findByRole("dialog");
+    expect(within(dialog).getByRole("button", { name: "Buzz" })).toBeInTheDocument();
+    expect(within(dialog).getByRole("button", { name: "Sting" })).toBeInTheDocument();
+  });
+
+  it("clearing a slot frees the drone for another slot again", async () => {
+    renderEditor();
+    await userEvent.click(await screen.findByRole("button", { name: /Iron Colossus/ }));
+    await userEvent.click(await screen.findByRole("button", { name: "Add a Battle drone to slot 1" }));
+    await userEvent.click(within(await screen.findByRole("dialog")).getByRole("button", { name: "Buzz" }));
+    await userEvent.click(screen.getByRole("button", { name: "Remove Buzz from slot 1" }));
+    expect(await screen.findByRole("button", { name: "Add a Battle drone to slot 1" })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Add a Battle drone to slot 2" }));
+    expect(within(await screen.findByRole("dialog")).getByRole("button", { name: "Buzz" })).toBeInTheDocument();
+  });
+
+  it("saves the picked drone and its quality under its slot index", async () => {
+    renderEditor();
+    await userEvent.click(await screen.findByRole("button", { name: /Iron Colossus/ }));
+    await userEvent.click(await screen.findByRole("button", { name: "Add a Battle drone to slot 1" }));
+    await userEvent.click(within(await screen.findByRole("dialog")).getByRole("button", { name: "Buzz" }));
+    // Drone quality has its own named ladder (Crude…Divine), stored as the
+    // 0-9 gem number — NOT the mech/weapon Blue…Mythic tiers.
+    await userEvent.click(screen.getByRole("button", { name: "Drone slot 1 quality" }));
+    await userEvent.click(screen.getByRole("option", { name: "Mythic" }));
+
+    await userEvent.type(screen.getByLabelText("Build name *"), "Drone rush");
+    await userEvent.click(screen.getByRole("button", { name: "Save build" }));
+    await screen.findByText("profile list");
+    expect(lastSavedInput().droneSelections).toEqual({ "0": { droneId: "d1", quality: 7 } });
   });
 
   it("filters the weapon strip by name and tier", async () => {

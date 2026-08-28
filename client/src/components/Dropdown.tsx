@@ -158,7 +158,7 @@ export function Dropdown({
       {open && (
         <ul
           role="listbox"
-          className="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-lg border border-edge bg-surface shadow-lg"
+          className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-lg border border-edge bg-surface shadow-lg"
         >
           {filtered.length === 0 ? (
             <li className="px-3 py-2 text-sm text-ink-dim">No matches</li>

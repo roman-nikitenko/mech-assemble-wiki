@@ -111,6 +111,55 @@ describe("POST /api/builds", () => {
     // malformed entries are dropped, not fatal
     expect(res.body.moduleSelections.bad).toBeUndefined();
   });
+
+  it("round-trips droneSelections", async () => {
+    authState.sub = "test|builds-a";
+    const res = await request(app)
+      .post("/api/builds")
+      .send({
+        ...BUILD,
+        name: "[test:builds] With Drones",
+        droneSelections: {
+          "0": { droneId: "drone-1", quality: 7 },
+          "5": { droneId: null, quality: 0 },
+        },
+      });
+    expect(res.status).toBe(201);
+    expect(res.body.droneSelections["0"]).toEqual({ droneId: "drone-1", quality: 7 });
+    expect(res.body.droneSelections["5"]).toEqual({ droneId: null, quality: 0 });
+  });
+
+  it("defaults droneSelections to {} when absent", async () => {
+    authState.sub = "test|builds-a";
+    const res = await request(app).post("/api/builds").send(BUILD);
+    expect(res.status).toBe(201);
+    expect(res.body.droneSelections).toEqual({});
+  });
+
+  it("drops drone slots outside 0-5 and clamps quality to 0-9", async () => {
+    authState.sub = "test|builds-a";
+    const res = await request(app)
+      .post("/api/builds")
+      .send({
+        ...BUILD,
+        name: "[test:builds] Bad Drones",
+        droneSelections: {
+          "0": { droneId: "drone-1", quality: 42 },
+          "1": { droneId: "drone-2", quality: -3 },
+          "2": { droneId: "drone-3", quality: 4.7 },
+          "6": { droneId: "drone-4", quality: 1 },
+          nope: { droneId: "drone-5", quality: 1 },
+          "3": "not-an-object",
+        },
+      });
+    expect(res.status).toBe(201);
+    expect(res.body.droneSelections["0"].quality).toBe(9);
+    expect(res.body.droneSelections["1"].quality).toBe(0);
+    expect(res.body.droneSelections["2"].quality).toBe(4);
+    expect(res.body.droneSelections["6"]).toBeUndefined();
+    expect(res.body.droneSelections.nope).toBeUndefined();
+    expect(res.body.droneSelections["3"]).toBeUndefined();
+  });
 });
 
 describe("GET /api/builds/mine", () => {

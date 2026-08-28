@@ -1,6 +1,7 @@
 import { Link, useParams } from "react-router-dom";
-import { imageSrc, useMech, useMechs, useModuleQualities, useModules, usePostedBuild, useTypes, useWeapons } from "../api/client";
+import { imageSrc, useDrones, useDroneTypes, useMech, useMechs, useModuleQualities, useModules, usePostedBuild, useTypes, useWeapons } from "../api/client";
 import { BuildModuleCard } from "./profile/BuildModuleCard";
+import { BuildDronesSection } from "./profile/BuildDronesSection";
 import type { WeaponSummary } from "../api/types";
 import { Seo } from "../components/Seo";
 import { AuthorTag } from "../profile/AuthorTag";
@@ -33,6 +34,8 @@ export function BuildDetailPage() {
   const modules = useModules();
   const moduleQualities = useModuleQualities();
   const types = useTypes();
+  const drones = useDrones();
+  const droneTypes = useDroneTypes();
 
   if (build.isPending) {
     return (
@@ -251,6 +254,19 @@ export function BuildDetailPage() {
             ))}
           </div>
         </>
+      )}
+
+      {/* Only worth showing once the author actually equipped a drone — an
+          all-empty 6-square grid is noise on a public build page. */}
+      {Object.values(b.droneSelections ?? {}).some((s) => s.droneId !== null) && (
+        <div className="mt-6">
+          <BuildDronesSection
+            drones={drones.data ?? []}
+            droneTypes={droneTypes.data ?? []}
+            selections={b.droneSelections ?? {}}
+            readOnly
+          />
+        </div>
       )}
     </main>
   );
