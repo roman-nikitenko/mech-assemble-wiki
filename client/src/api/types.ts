@@ -424,6 +424,8 @@ export interface PostedBuild {
   weaponQualities: Record<string, QualityTier>;
   // Attack-module picks, keyed by module id.
   moduleSelections: Record<string, ModuleSelection>;
+  // Drone picks, keyed by slot index "0".."5" (the fixed 2/2/2 layout).
+  droneSelections: Record<string, DroneSelection>;
   // Set by the client after a heart toggle — not included in GET responses.
   userHearted?: boolean;
   createdAt: string;
@@ -452,6 +454,13 @@ export interface ModuleSelection {
   effect3: string | null;
 }
 
+/** One drone square's pick within a build. `quality` is the QualityGem number
+    (0-9) — a DIFFERENT ladder from the mech/weapon/module QualityTier names. */
+export interface DroneSelection {
+  droneId: string | null;
+  quality: number;
+}
+
 /** Payload for POST /api/builds. */
 export interface BuildPostInput {
   name: string;
@@ -465,6 +474,8 @@ export interface BuildPostInput {
   quality?: QualityTier;
   weaponQualities?: Record<string, QualityTier>;
   moduleSelections?: Record<string, ModuleSelection>;
+  // Drone picks, keyed by slot index "0".."5".
+  droneSelections?: Record<string, DroneSelection>;
 }
 
 /** Payload for POST/PUT /api/accessories. */

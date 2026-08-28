@@ -10,6 +10,16 @@ const OPTIONS: DropdownOption[] = [
 ];
 
 describe("Dropdown", () => {
+  it("keeps its own classes when the caller passes a className", () => {
+    render(
+      <Dropdown options={OPTIONS} value={null} onChange={vi.fn()} ariaLabel="Type" className="max-w-xs" />
+    );
+    const root = screen.getByRole("button", { name: "Type" }).parentElement!;
+    // The caller's class must be space-separated from the component's own —
+    // concatenating yields "relativemax-w-xs", losing BOTH classes.
+    expect(root).toHaveClass("relative", "max-w-xs");
+  });
+
   it("shows the placeholder, opens on click, and selects an option", async () => {
     const onChange = vi.fn();
     render(<Dropdown options={OPTIONS} value={null} onChange={onChange} ariaLabel="Type" placeholder="Start type…" />);

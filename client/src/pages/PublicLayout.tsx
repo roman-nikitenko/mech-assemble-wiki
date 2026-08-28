@@ -103,7 +103,12 @@ export function PublicLayout() {
         </nav>
       </header>
 
-      <div className="flex-1 z-10">
+      {/* z-20, not z-10: the footer below is also a z-10 flex item, so at equal
+          z-index it would paint OVER the page content (later in DOM order) and
+          swallow anything that overflows downward — an open quality dropdown on
+          the last row of the build editor, for one. Both still clear the fixed
+          background image, which sits at z-auto. */}
+      <div className="flex-1 z-20">
         <Outlet />
       </div>
 

@@ -1,4 +1,6 @@
+import { useState } from "react";
 import { imageSrc } from "../api/client";
+import { useLockBodyScroll } from "../lib/useLockBodyScroll";
 import type { Drone, DroneType } from "../api/types";
 import { QualityGem } from "./QualityIcon";
 import { STierIcon } from "./STierIcon";
@@ -14,10 +16,35 @@ const STATS = [
   { key: "def", label: "DEF" },
 ] as const;
 
-export function DroneCard({ drone, type }: { drone: Drone; type: DroneType | undefined }) {
+export function DroneCard({
+  drone,
+  type,
+  quality,
+}: {
+  drone: Drone;
+  type: DroneType | undefined;
+  /** The equipped quality gem (0-9) when shown inside a build. Level-up
+      bonuses above it are dimmed. Omitted on the Drones browse page, where
+      no quality is chosen and every bonus reads at full strength. */
+  quality?: number;
+}) {
+  const [showVideo, setShowVideo] = useState(false);
+  useLockBodyScroll(showVideo);
+
   return (
     <div className="overflow-hidden rounded-xl border border-edge bg-surface">
       <div className="bg-bottom bg-no-repeat bg-contain relative">
+        {drone.previewVideoUrl && (
+          <button
+            type="button"
+            onClick={() => setShowVideo(true)}
+            aria-label="Play preview video"
+            title="Play preview video"
+            className="z-10 border w-10 h-10 absolute right-3 bottom-3 cursor-pointer rounded-lg border-edge bg-bg/60 text-lg text-white backdrop-blur-sm hover:border-accent hover:text-accent"
+          >
+            ▶
+          </button>
+        )}
         <div
           className="absolute inset-0 bg-amber-500 z-0 bg-bottom bg-no-repeat bg-cover"
           style={{ backgroundImage: `url(${droneCardBg})` }}
@@ -64,18 +91,61 @@ export function DroneCard({ drone, type }: { drone: Drone; type: DroneType | und
 
       {drone.levelUpBonuses.length > 0 && (
         <div className="space-y-2 px-3 pb-3">
-          {drone.levelUpBonuses.map((bonus, i) => (
-            <div key={i} className="flex items-center gap-3 bg-surface-2 px-3 py-2">
-              <QualityGem n={DRONE_BONUS_GEMS[i % DRONE_BONUS_GEMS.length]} />
-              <span className="text-sm font-semibold text-ink-dim">{bonus}</span>
-            </div>
-          ))}
+          {drone.levelUpBonuses.map((bonus, i) => {
+            const gem = DRONE_BONUS_GEMS[i % DRONE_BONUS_GEMS.length];
+            // In a build, a bonus above the equipped quality isn't active yet,
+            // so it's dimmed. On the browse page no quality is given and every
+            // row shows at full strength.
+            const locked = quality !== undefined && gem > quality;
+            return (
+              <div
+                key={i}
+                className={`flex items-center gap-3 bg-surface-2 px-3 py-2 ${locked ? "opacity-40" : ""}`}
+              >
+                <QualityGem n={gem} />
+                <span className="text-sm font-semibold text-ink-dim">{bonus}</span>
+              </div>
+            );
+          })}
         </div>
       )}
 
-      {drone.tier === "S" && drone.previewVideoUrl && (
-        <div className="px-3 pb-3">
-          <video src={imageSrc(drone.previewVideoUrl)} controls className="w-full rounded-lg border border-edge" />
+      {/* The <video> is mounted ONLY while the modal is open. Rendering it in
+          the card would make every card on the Drones page start fetching its
+          preview on load, which is the slow-page problem this replaces. */}
+      {showVideo && drone.previewVideoUrl && (
+        <div
+          className="fixed inset-0 z-30 flex items-center justify-center bg-bg/80 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-label={`${drone.name} preview`}
+          onClick={() => setShowVideo(false)}
+        >
+          {/* Half of the previous max-w-2xl (42rem) — the preview is a short
+              clip, not something you sit and watch full-width. */}
+          <div className="relative w-full max-w-[21rem]" onClick={(e) => e.stopPropagation()}>
+            <button
+              type="button"
+              onClick={() => setShowVideo(false)}
+              aria-label="Close"
+              className="absolute -right-3 -top-3 z-10 h-8 w-8 cursor-pointer rounded-full border border-edge bg-surface text-sm text-ink-dim hover:border-fire hover:text-fire"
+            >
+              ✕
+            </button>
+            {/* Loops while open; closing UNMOUNTS this element, which is what
+                stops playback — no manual pause needed. */}
+            <video
+              src={imageSrc(drone.previewVideoUrl)}
+              controls
+              autoPlay
+              loop
+              // w-auto + both maxes, so the browser scales on the video's own
+              // aspect ratio (as it does for an <img>) and a tall portrait clip
+              // is capped by height instead of running off a short phone
+              // screen. w-full here would clamp the height and letterbox.
+              className="mx-auto max-h-[80vh] w-auto max-w-full rounded-lg border border-edge"
+            />
+          </div>
         </div>
       )}
     </div>

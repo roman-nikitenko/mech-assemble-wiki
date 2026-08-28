@@ -552,6 +552,11 @@ model Build {
   // effect1 = element typeId; effect2/3 = the equipped bonus's target mech/weapon
   // id (both stable across module re-saves, so builds don't break).
   moduleSelections Json       @default("{}") @map("module_selections")
+  // Drone picks, keyed by slot index "0".."5" (fixed layout: 2 Battle,
+  // 2 Bombardment, 2 Support): {"0": {droneId, quality}}. `quality` is the
+  // 0-9 QualityGem number — a DIFFERENT ladder from the QualityTier enum
+  // used by mechs, weapons and modules.
+  droneSelections Json        @default("{}") @map("drone_selections")
   // Publication state. New builds start as Draft (private); the public feed
   // and share pages only surface Published rows.
   status    BuildStatus @default(Draft)
