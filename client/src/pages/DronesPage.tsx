@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { imageSrc, useDrones, useDroneTypes } from "../api/client";
+import type { MechRank } from "../api/types";
 import { LoadingSkeleton } from "../components/LoadingSkeleton";
 import { ErrorPanel } from "../components/ErrorPanel";
 import { DroneCard } from "../components/DroneCard";
 import { Seo } from "../components/Seo";
+import { STierIcon } from "../components/STierIcon";
 
 /** Public drone list: icon, tier, type, stats, level-up bonuses, and (S-tier)
     a preview clip. No per-drone detail page — everything shows on the card. */
@@ -12,6 +14,7 @@ export function DronesPage() {
   const droneTypes = useDroneTypes();
   const [search, setSearch] = useState("");
   const [typeIds, setTypeIds] = useState<string[]>([]);
+  const [tier, setTier] = useState<MechRank | "">("");
 
   const toggleType = (id: string) =>
     setTypeIds((list) => (list.includes(id) ? list.filter((v) => v !== id) : [...list, id]));
@@ -22,7 +25,8 @@ export function DronesPage() {
   const visible = (data ?? []).filter((d) => {
     const nameOk = !query || d.name.toLowerCase().includes(query);
     const typeOk = typeIds.length === 0 || (d.droneTypeId !== null && typeIds.includes(d.droneTypeId));
-    return nameOk && typeOk;
+    const tierOk = tier === "" || d.tier === tier;
+    return nameOk && typeOk && tierOk;
   });
 
   return (
@@ -68,6 +72,28 @@ export function DronesPage() {
             })}
           </div>
         )}
+        <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Filter by tier">
+          {(["Standard", "S"] as const).map((t) => {
+            const active = tier === t;
+            return (
+              <button
+                key={t}
+                type="button"
+                aria-pressed={active}
+                aria-label={`${t} tier`}
+                title={`${t} tier`}
+                onClick={() => setTier(active ? "" : t)}
+                className={`inline-flex min-h-11 cursor-pointer items-center gap-1.5 rounded-lg border px-3 text-sm font-semibold transition-colors ${
+                  active
+                    ? "border-accent bg-accent/15 text-accent"
+                    : "border-edge bg-surface text-ink-dim hover:text-ink"
+                }`}
+              >
+                {t === "S" ? <STierIcon size={28} /> : t}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {isPending ? (
