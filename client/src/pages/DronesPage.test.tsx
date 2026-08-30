@@ -62,4 +62,40 @@ describe("DronesPage", () => {
     expect(screen.getByText("Scout")).toBeInTheDocument();
     expect(screen.queryByText("Hunter")).not.toBeInTheDocument();
   });
+
+  it("filters by tier, one at a time, clearing on a second click", async () => {
+    renderPage();
+    await screen.findByText("Scout");
+    const standard = screen.getByRole("button", { name: "Standard tier" });
+    const sTier = screen.getByRole("button", { name: "S tier" });
+
+    await userEvent.click(standard);
+    expect(screen.getByText("Scout")).toBeInTheDocument();
+    expect(screen.queryByText("Hunter")).not.toBeInTheDocument();
+    expect(standard).toHaveAttribute("aria-pressed", "true");
+
+    // The tiers are mutually exclusive — picking S drops Standard.
+    await userEvent.click(sTier);
+    expect(screen.queryByText("Scout")).not.toBeInTheDocument();
+    expect(screen.getByText("Hunter")).toBeInTheDocument();
+    expect(standard).toHaveAttribute("aria-pressed", "false");
+    expect(sTier).toHaveAttribute("aria-pressed", "true");
+
+    // Clicking the active one again clears the filter.
+    await userEvent.click(sTier);
+    expect(screen.getByText("Scout")).toBeInTheDocument();
+    expect(screen.getByText("Hunter")).toBeInTheDocument();
+    expect(sTier).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("combines the tier filter with the type filter", async () => {
+    renderPage();
+    await screen.findByText("Scout");
+    // Fire holds only the Standard drone, so Fire + S-tier matches nothing.
+    await userEvent.click(screen.getByRole("button", { name: "S tier" }));
+    await userEvent.click(screen.getByRole("button", { name: "Fire" }));
+    expect(screen.queryByText("Scout")).not.toBeInTheDocument();
+    expect(screen.queryByText("Hunter")).not.toBeInTheDocument();
+    expect(screen.getByText("No drones match.")).toBeInTheDocument();
+  });
 });
