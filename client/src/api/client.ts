@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { AccessoryInput, AccessorySummary, AdminUser, DashboardStats, Drone, DroneInput, DroneType, DroneTypeInput, Feedback, GameType, MechDetail, MechInput, MechRank, MechSummary, ModuleDetail, ModuleInput, ModuleQuality, ModuleQualityInput, ModuleSummary, Pilot, PilotInput, PostedBuild, TypeInput, WeaponDetail, WeaponInput, WeaponSummary } from "./types";
+import type { AccessoryInput, AccessorySummary, AdminUser, AwakeningCostTier, AwakeningLevel, DashboardStats, Drone, DroneInput, DroneType, DroneTypeInput, Feedback, GameType, MechDetail, MechInput, MechRank, MechSummary, ModuleDetail, ModuleInput, ModuleQuality, ModuleQualityInput, ModuleSummary, Pilot, PilotInput, PostedBuild, TypeInput, WeaponDetail, WeaponInput, WeaponSummary } from "./types";
 import { adminHeaders } from "../auth/adminSession";
 
 export const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
@@ -658,5 +658,46 @@ export function useDeleteModule() {
       }
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["modules"] }),
+  });
+}
+
+// ---- Awakening ----
+
+/** One mech's awakening tree. Admin-facing, but the GET itself is public. */
+export function useAwakening(mechId: string) {
+  return useQuery({
+    queryKey: ["awakening", mechId],
+    queryFn: () => fetchJson<AwakeningLevel[]>(`/api/awakening/mechs/${mechId}`),
+    enabled: mechId !== "",
+  });
+}
+
+/** Replace-the-set save: the editor always submits the whole tree. */
+export function useSaveAwakening(mechId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (levels: unknown[]) =>
+      sendJson<AwakeningLevel[]>(`/api/awakening/mechs/${mechId}`, "PUT", { levels }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["awakening", mechId] });
+      // The mech detail read embeds awakeningLevels, so it is stale now too.
+      qc.invalidateQueries({ queryKey: ["mech"] });
+    },
+  });
+}
+
+export function useAwakeningCostTiers() {
+  return useQuery({
+    queryKey: ["awakening-cost-tiers"],
+    queryFn: () => fetchJson<AwakeningCostTier[]>("/api/awakening/cost-tiers"),
+  });
+}
+
+export function useSaveAwakeningCostTiers() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (tiers: AwakeningCostTier[]) =>
+      sendJson<AwakeningCostTier[]>("/api/awakening/cost-tiers", "PUT", { tiers }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["awakening-cost-tiers"] }),
   });
 }
