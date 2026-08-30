@@ -2,8 +2,6 @@ import { Link, NavLink, Navigate, Outlet, useNavigate } from "react-router-dom";
 import { clearAdminToken, getAdminToken } from "../auth/adminSession";
 import { useUnreadFeedbackCount } from "../api/client";
 
-// Inline SVG (no icon library in the project — same convention as the public
-// header icons). Inherits color via currentColor, size via className.
 function BellIcon({ className }: { className?: string }) {
   return (
     <svg
@@ -35,15 +33,10 @@ const NAV = [
   { to: "/admin/modules", label: "Modules", end: false },
   { to: "/admin/module-qualities", label: "Module Qualities", end: false },
   { to: "/admin/drones", label: "Drones", end: false },
+  { to: "/admin/awakening/cost-tiers", label: "Awakening costs", end: false },
   { to: "/admin/settings", label: "Settings", end: false },
 ];
 
-/** Admin shell: left sidebar on lg+ screens, horizontal scrollable nav bar
-    on phones. Child pages render into the <Outlet/>.
-    The sidebar is STICKY: h-screen (not min-h) caps it at the viewport so
-    top-0 pins it while the main column scrolls past — and mt-auto on the
-    "Back to site" link then means "bottom of the screen", not "bottom of
-    however tall the page content is". */
 export function AdminLayout() {
   const navigate = useNavigate();
   const unread = useUnreadFeedbackCount();

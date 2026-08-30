@@ -321,6 +321,14 @@ export function MechFormPage() {
             <p className="mt-1 text-xs text-ink-dim">
               Assigning a pilot moves them from any other mech.
             </p>
+            {isEdit && (
+              <Link
+                to={`/admin/mechs/${id}/awakening`}
+                className="mt-3 inline-flex min-h-11 items-center rounded-lg border border-edge px-4 text-sm hover:border-accent/60"
+              >
+                Edit awakening →
+              </Link>
+            )}
           </div>
         )}
         <div className="grid gap-4 sm:grid-cols-2">

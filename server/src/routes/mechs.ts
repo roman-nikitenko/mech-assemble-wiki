@@ -142,7 +142,7 @@ const detailInclude = {
   traits: { include: { trait: true } },
   awakeningLevels: {
     orderBy: { level: "asc" },
-    include: { nodes: { orderBy: { position: "asc" } }, unlocks: true },
+    include: { nodes: { orderBy: { position: "asc" } } },
   },
   weapon: {
     include: {

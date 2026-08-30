@@ -41,6 +41,8 @@ const AdminMessagesPage = lazyNamed(() => import("./admin/AdminMessagesPage"), "
 const SettingsPage = lazyNamed(() => import("./admin/SettingsPage"), "SettingsPage");
 const AdminMechsPage = lazyNamed(() => import("./admin/mechs/AdminMechsPage"), "AdminMechsPage");
 const MechFormPage = lazyNamed(() => import("./admin/mechs/MechFormPage"), "MechFormPage");
+const AwakeningPage = lazyNamed(() => import("./admin/awakening/AwakeningPage"), "AwakeningPage");
+const AwakeningCostTiersPage = lazyNamed(() => import("./admin/awakening/AwakeningCostTiersPage"), "AwakeningCostTiersPage");
 const AdminWeaponsPage = lazyNamed(() => import("./admin/weapons/AdminWeaponsPage"), "AdminWeaponsPage");
 const WeaponFormPage = lazyNamed(() => import("./admin/weapons/WeaponFormPage"), "WeaponFormPage");
 const AdminAccessoriesPage = lazyNamed(() => import("./admin/accessories/AdminAccessoriesPage"), "AdminAccessoriesPage");
@@ -98,6 +100,8 @@ export default function App() {
         <Route path="mechs" element={<AdminMechsPage />} />
         <Route path="mechs/new" element={<MechFormPage />} />
         <Route path="mechs/:id/edit" element={<MechFormPage />} />
+        <Route path="mechs/:id/awakening" element={<AwakeningPage />} />
+        <Route path="awakening/cost-tiers" element={<AwakeningCostTiersPage />} />
         <Route path="weapons" element={<AdminWeaponsPage />} />
         <Route path="weapons/new" element={<WeaponFormPage />} />
         <Route path="weapons/:id/edit" element={<WeaponFormPage />} />
