@@ -22,6 +22,7 @@ import { authRouter } from "./routes/auth";
 import { sitemapRouter } from "./routes/sitemap";
 import { pageMetaRouter } from "./routes/pageMeta";
 import { feedbackRouter } from "./routes/feedback";
+import { awakeningRouter } from "./routes/awakening";
 
 export const app = express();
 
@@ -52,6 +53,7 @@ app.use("/api/modules", modulesRouter);
 app.use("/api/me", meRouter);
 app.use("/api/builds", buildsRouter);
 app.use("/api/feedback", feedbackRouter);
+app.use("/api/awakening", awakeningRouter);
 app.use("/api/admin", adminRouter);
 app.use("/api/uploads", uploadsRouter);
 // GET /api/sitemap.xml — generated from the DB for search engines.

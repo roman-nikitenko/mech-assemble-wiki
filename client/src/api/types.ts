@@ -261,23 +261,44 @@ export interface WeaponInput {
 export interface AwakeningNode {
   id: string;
   position: number;
-  attribute: string;
-}
-
-export interface AwakeningUnlock {
-  id: string;
-  name: string;
-  description: string | null;
+  /** Sprite key, e.g. "UI_Attr_hp" — resolved by <AwakeningIcon />. */
+  icon: string | null;
+  mechStat: string | null;
+  enhText: string | null;
+  enhModes: number[];
+  condEntry: string | null;
+  condTargetId: number | null;
+  condThreshold: number | null;
+  /** Human-readable unlock condition — this is what the wiki shows. */
+  condText: string | null;
+  condRaw: string | null;
 }
 
 export interface AwakeningLevel {
   id: string;
   level: number;
-  statBonus: Stats | null;
-  specialEffect: string | null;
-  requirement: string | null;
+  /** Levels 4-6 are authored but not enabled in build 2.2.22. */
+  isLive: boolean;
+  coreAttr: string[];
+  coreSkill: string | null;
+  coreInfo: string | null;
+  /** Raw cooldown pair — semantics unverified, so never labelled in the UI. */
+  coreCd: number[];
+  corePower: number | null;
+  coreLuckyId: number | null;
+  coreReward: string | null;
+  coreSkin: string | null;
   nodes: AwakeningNode[];
-  unlocks: AwakeningUnlock[];
+}
+
+/** One rung of the global cost ladder (identical for all 19 awakening mechs). */
+export interface AwakeningCostTier {
+  level: number;
+  outerPoints: number;
+  outerShards: number;
+  coreMajor: number;
+  coreShards: number;
+  acctStats: string[];
 }
 
 /** Shape returned by GET /api/mechs/:id (detail page). */

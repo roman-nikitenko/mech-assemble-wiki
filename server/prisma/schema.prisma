@@ -307,45 +307,78 @@ model MechTrait {
 
 // ---------- Awakening (S-tier only) ----------
 
-model AwakeningLevel {
-  id            String  @id @default(uuid()) @db.Uuid
-  mechId        String  @map("mech_id") @db.Uuid
-  level         Int
-  statBonus     Json?   @map("stat_bonus") // e.g. {"atk": 120, "hp": 800}
-  specialEffect String? @map("special_effect")
-  requirement   String? // e.g. "Shadow Warrior Shard x30"
+// The global cost ladder. Costs and account-wide stat grants are IDENTICAL for
+// all 19 awakening mechs and vary only by level (verified across all 684 nodes),
+// so they live here once instead of being repeated on every node row. Admin-
+// editable rather than hardcoded, so a balance patch is a data edit.
+model AwakeningCostTier {
+  level       Int      @id // 1-6
+  outerPoints Int      @map("outer_points")
+  outerShards Int      @map("outer_shards")
+  coreMajor   Int      @map("core_major")
+  coreShards  Int      @map("core_shards")
+  // Account-wide grant per OUTER node at this level, e.g. ["HP +3,000","ATK +600"].
+  acctStats   String[] @map("acct_stats")
 
-  mech    Mech              @relation(fields: [mechId], references: [id], onDelete: Cascade)
-  // "Exactly 5 nodes per level" is an app-level rule (enforced by the seed /
-  // future admin code), not a DB constraint — kept simple by design.
-  nodes   AwakeningNode[]
-  unlocks AwakeningUnlock[]
+  @@map("awakening_cost_tiers")
+}
+
+model AwakeningLevel {
+  id     String  @id @default(uuid()) @db.Uuid
+  mechId String  @map("mech_id") @db.Uuid
+  level  Int
+  // Levels 4-6 are fully authored but NOT enabled in build 2.2.22 (every mech's
+  // pattern is live=1,1,1,0,0,0). The wiki must not present them as current.
+  isLive Boolean @default(false) @map("is_live")
+
+  // The CORE node — exactly one per level, so it folds in here rather than
+  // taking its own 1:1 table.
+  coreAttr    String[] @map("core_attr") // ["HP +5%","ATK +5%","DEF +5%"]
+  coreSkill   String?  @map("core_skill")
+  coreInfo    String?  @map("core_info")
+  // Raw _SkillinfoCd pair. Its semantics are UNKNOWN — the "cooldown/duration"
+  // reading was retracted as unverified. Store raw; never label it in the UI.
+  coreCd      Int[]    @map("core_cd")
+  corePower   Int?     @map("core_power")
+  coreLuckyId Int?     @map("core_lucky_id")
+  // Lv3 core grants a one-off item on all 19 mechs; Lv6 core grants a skin on 7.
+  coreReward  String?  @map("core_reward")
+  coreSkin    String?  @map("core_skin")
+
+  mech  Mech            @relation(fields: [mechId], references: [id], onDelete: Cascade)
+  nodes AwakeningNode[]
 
   @@unique([mechId, level])
   @@map("awakening_levels")
 }
 
 model AwakeningNode {
-  id        String @id @default(uuid()) @db.Uuid
-  levelId   String @map("level_id") @db.Uuid
-  position  Int // 1-5
-  attribute String // e.g. "ATK", "Crit Rate"
+  id       String @id @default(uuid()) @db.Uuid
+  levelId  String @map("level_id") @db.Uuid
+  position Int // 1-5, the outer nodes; the core node lives on the level
+  // Sprite key, e.g. "UI_Attr_hp" — matches a file in
+  // client/src/assets/awaking-icons/<icon>.png.
+  icon     String?
+
+  mechStat String? @map("mech_stat") // "HP +15%", null on many nodes
+  enhText  String? @map("enh_text")
+  // Gameplay-mode exclusions. Always [22,23,24] wherever present — stored for
+  // fidelity, not variability, so there is deliberately no lookup table.
+  enhModes Int[]   @map("enh_modes")
+
+  // Unlock condition. cond_text is what the wiki renders; the parsed parts are
+  // kept so a LATER cycle can link conditions to real accessory/pilot/skin rows.
+  // No FK: game ids are not our ids.
+  condEntry     String? @map("cond_entry")
+  condTargetId  Int?    @map("cond_target_id")
+  condThreshold Int?    @map("cond_threshold")
+  condText      String? @map("cond_text")
+  condRaw       String? @map("cond_raw")
 
   level AwakeningLevel @relation(fields: [levelId], references: [id], onDelete: Cascade)
 
   @@unique([levelId, position])
   @@map("awakening_nodes")
-}
-
-model AwakeningUnlock {
-  id          String  @id @default(uuid()) @db.Uuid
-  levelId     String  @map("level_id") @db.Uuid
-  name        String
-  description String?
-
-  level AwakeningLevel @relation(fields: [levelId], references: [id], onDelete: Cascade)
-
-  @@map("awakening_unlocks")
 }
 
 // ---------- Unique weapon (S-tier only) + upgrade tree ----------
