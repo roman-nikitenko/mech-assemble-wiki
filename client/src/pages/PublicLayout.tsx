@@ -5,6 +5,7 @@ import mainBg from "../assets/main-bg.png";
 const TABS = [
   { to: "/", label: "Mechs" },
   { to: "/builds", label: "Builds" },
+  { to: "/calculator", label: "Calculator" },
   { to: "/weapons", label: "Weapons" },
   { to: "/accessories", label: "Accessories" },
   { to: "/pilots", label: "Pilots" },

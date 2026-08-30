@@ -15,14 +15,12 @@ import {
   useWeapons,
 } from "../../api/client";
 import type { DroneSelection, MechRank, ModuleSelection, PostedBuild, QualityTier, SkillNodeRow, WeaponSummary } from "../../api/types";
-import { QUALITY_TIERS } from "../../api/types";
 import { MAX_CORE_SLOTS, availableSkills, grantedSkills, resolvePicks } from "../../profile/buildRules";
-import { QualityIcon } from "../../components/QualityIcon";
 import { STierIcon } from "../../components/STierIcon";
-import { Dropdown } from "../../components/Dropdown";
 import { ButtonGroup } from "../../components/ButtonGroup";
 import { PickedSlot, SkillsBlock } from "../../profile/SkillsBlock";
 import { NotesField } from "../../profile/NotesField";
+import { QualitySelect } from "../../profile/QualitySelect";
 import { useMe } from "../../auth/useMe";
 import { useCreateBuild, useMyBuilds, useUpdateBuild } from "../../auth/useBuilds";
 import { RankBadge } from "../../components/RankBadge";
@@ -32,34 +30,6 @@ import { BuildModuleCard } from "./BuildModuleCard";
 import { BuildDronesSection } from "./BuildDronesSection";
 
 export const MAX_WEAPONS = 4;
-
-/** Quality tier picker for a build subject/weapon — the reusable Dropdown with
-    a colored hexagon icon per tier. */
-function QualitySelect({
-  label,
-  value,
-  onChange,
-}: {
-  label: string;
-  value: QualityTier;
-  onChange: (tier: QualityTier) => void;
-}) {
-  return (
-    <div className="mt-5 max-w-[220px]">
-      <span className="mb-1 block text-sm font-semibold text-ink-dim">{label}</span>
-      <Dropdown
-        ariaLabel={label}
-        value={value}
-        onChange={(v) => onChange(v as QualityTier)}
-        options={QUALITY_TIERS.map((t) => ({
-          value: t,
-          label: t,
-          icon: <QualityIcon tier={t} size={16} />,
-        }))}
-      />
-    </div>
-  );
-}
 
 // The 4 weapon squares sit at the corners of an invisible square centered
 // on the mech art (layout chosen by the user from mockups).

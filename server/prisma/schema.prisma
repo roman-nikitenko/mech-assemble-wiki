@@ -664,3 +664,20 @@ model ModuleBonus {
 
   @@map("module_bonuses")
 }
+
+// A short share link for the Skill Calculator. The calculator itself needs no
+// server — its state lives in the query string — so this table exists only to
+// trade a 400-character URL for a 7-character one.
+model CalcLink {
+  // The public code (/c/x7k2p9); also the primary key, so lookups are direct.
+  code String @id
+  // sha256 of `state`. UNIQUE so sharing the same build twice reuses one row
+  // instead of adding another — the main thing keeping an anonymous,
+  // unauthenticated endpoint from growing without bound.
+  hash String @unique
+  // The calculator query string, exactly as encodeCalcLink produced it.
+  state String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("calc_links")
+}

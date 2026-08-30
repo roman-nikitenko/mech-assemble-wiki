@@ -80,6 +80,17 @@ describe("PublicLayout", () => {
     expect(within(nav).getByRole("link", { name: "Builds" })).toHaveAttribute("aria-current", "page");
   });
 
+  it("links to the skill calculator", () => {
+    renderAt("/");
+    // Scoped to the section-tabs nav — the footer repeats this link too, so
+    // an unscoped query matches both and throws.
+    const nav = screen.getByRole("navigation", { name: "Site sections" });
+    expect(within(nav).getByRole("link", { name: "Calculator" })).toHaveAttribute(
+      "href",
+      "/calculator"
+    );
+  });
+
   it("shows a Log in link to /login when logged out", () => {
     renderAt("/");
     expect(screen.getByRole("link", { name: "Log in" })).toHaveAttribute("href", "/login");
