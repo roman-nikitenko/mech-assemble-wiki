@@ -4,6 +4,7 @@ import { useAwakening, useAwakeningCostTiers, useMech, useSaveAwakening } from "
 import type { AwakeningLevel, AwakeningNode } from "../../api/types";
 import { AwakeningLevelPanel } from "./AwakeningLevelPanel";
 import { ImportAwakeningDialog } from "./ImportAwakeningDialog";
+import { CodexFormatHint } from "./CodexFormatHint";
 import { importCodexMech, type ImportedLevel, type ImportedNode } from "./awakeningImport";
 
 const LEVELS = [1, 2, 3, 4, 5, 6];
@@ -117,6 +118,8 @@ export function AwakeningPage() {
           )
         }
       />
+
+      <CodexFormatHint />
 
       {levels.map((l) => (
         <AwakeningLevelPanel

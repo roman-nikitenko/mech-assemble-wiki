@@ -3,6 +3,7 @@ import { useAwakeningCostTiers, useSaveAwakeningCostTiers } from "../../api/clie
 import type { AwakeningCostTier } from "../../api/types";
 import { ImportAwakeningDialog } from "./ImportAwakeningDialog";
 import { importCostTiers } from "./costTiersImport";
+import { CodexFormatHint } from "./CodexFormatHint";
 
 const LEVELS = [1, 2, 3, 4, 5, 6];
 
@@ -96,6 +97,8 @@ export function AwakeningCostTiersPage() {
           setAcctText(Object.fromEntries(imported.map((t) => [t.level, t.acctStats.join(", ")])));
         }}
       />
+
+      <CodexFormatHint />
 
       <div className="mt-4 overflow-x-auto">
         <table className="text-sm">
