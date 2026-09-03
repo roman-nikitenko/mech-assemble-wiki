@@ -74,6 +74,11 @@ export function CodexFormatHint() {
           <code className="font-mono">null</code>. Nothing is written to the database
           until you press Save.
         </p>
+        <p className="mt-2 text-xs text-ink-dim">
+          The block above is annotated for reading — those{" "}
+          <code className="font-mono">//</code> comments are not valid JSON. Paste a
+          real codex file rather than this example.
+        </p>
       </div>
     </details>
   );

@@ -468,6 +468,7 @@ model Accessory {
   iconUrl  String? @map("icon_url")
 
   mech Mech? @relation(fields: [mechId], references: [id], onDelete: SetNull)
+  setMemberships AccessorySetMember[]
 
   @@map("accessories")
 }
@@ -696,4 +697,41 @@ model ModuleBonus {
   weapon Weapon? @relation(fields: [weaponId], references: [id], onDelete: SetNull)
 
   @@map("module_bonuses")
+}
+
+// A named group of accessories that grants an extra effect when the player has
+// every piece. Piece count is deliberately NOT fixed — the game has sets of
+// different sizes, and hard-coding three would mean a migration to add a fourth.
+model AccessorySet {
+  id   String @id @default(uuid()) @db.Uuid
+  name String @unique
+  // The effect granted once ALL pieces are equipped. Free text by the same
+  // reasoning as mechs.special_bonus: the game states it as a sentence, and
+  // splitting it into structured stat/value fields has not survived contact
+  // with real data before.
+  bonus String?
+  // Admin-controlled display order on the public page.
+  sortOrder Int      @default(0) @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  members AccessorySetMember[]
+
+  @@map("accessory_sets")
+}
+
+// Join table: an accessory may belong to SEVERAL sets, so this cannot be a
+// column on `accessories`.
+model AccessorySetMember {
+  setId       String @map("set_id") @db.Uuid
+  accessoryId String @map("accessory_id") @db.Uuid
+  // Order the piece is shown within its set.
+  position    Int
+
+  set       AccessorySet @relation(fields: [setId], references: [id], onDelete: Cascade)
+  // Cascade, not Restrict: a deleted accessory is gone from the game, so the
+  // set simply gets shorter rather than blocking the delete.
+  accessory Accessory    @relation(fields: [accessoryId], references: [id], onDelete: Cascade)
+
+  @@id([setId, accessoryId])
+  @@map("accessory_set_members")
 }

@@ -51,10 +51,17 @@ function strArray(v: unknown): string[] {
     : [];
 }
 
-/** Parses the awakening PUT body. Partial trees are allowed on purpose: an
-    admin may fill one level today and the rest next week. What is NOT allowed
-    is a shape the UI could not have produced — a level outside 1-6, a repeated
-    level, more than 5 outer nodes, or a repeated node position. */
+/** Parses the awakening PUT body. Rejects any shape the editor could not have
+    produced — a level outside 1-6, a repeated level, more than 5 outer nodes,
+    a repeated node position, or a null entry.
+
+    CAUTION on partial bodies: this parser accepts fewer than six levels, but
+    the PUT route REPLACES the mech's whole tree (delete-then-recreate), so a
+    body carrying one level DELETES the other five. That is safe only because
+    the editor always submits all six — it seeds six panels and sends every
+    one, filled or blank. Any new caller must do the same, or send a merge
+    through a different endpoint. Do not treat "the parser allowed it" as
+    "the write preserved it". */
 export function parseAwakeningInput(body: unknown): Result {
   const levels = (body as { levels?: unknown } | null)?.levels;
   if (!Array.isArray(levels)) return { ok: false, message: "levels must be an array." };
@@ -63,6 +70,11 @@ export function parseAwakeningInput(body: unknown): Result {
   const seenLevels = new Set<number>();
 
   for (const raw of levels) {
+    // A null or primitive entry would throw on the first field access, turning
+    // a bad request into a 500 — reject it as the 400 it is.
+    if (raw === null || typeof raw !== "object") {
+      return { ok: false, message: "Each level must be an object." };
+    }
     const l = raw as Record<string, unknown>;
     const level = intOrNull(l.level);
     if (level === null || level < 1 || level > 6) {
@@ -84,6 +96,10 @@ export function parseAwakeningInput(body: unknown): Result {
     const nodes: AwakeningNodeInput[] = [];
     const seenPos = new Set<number>();
     for (const rn of rawNodes) {
+      // Same guard as the level loop above: a null entry must 400, not throw.
+      if (rn === null || typeof rn !== "object") {
+        return { ok: false, message: `Level ${level}: each node must be an object.` };
+      }
       const n = rn as Record<string, unknown>;
       const position = intOrNull(n.position);
       if (position === null || position < 1 || position > 5) {
