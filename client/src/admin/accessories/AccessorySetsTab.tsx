@@ -71,11 +71,15 @@ function SetBlock({
   draft,
   options,
   onChange,
+  onSaved,
   onRemove,
 }: {
   draft: Draft;
   options: AccessorySetPiece[];
   onChange: (next: Draft) => void;
+  /** Applied functionally against the LATEST draft, so a save cannot clobber
+      edits typed while it was in flight. */
+  onSaved: (saved: AccessorySet) => void;
   onRemove: () => void;
 }) {
   const create = useCreateAccessorySet();
@@ -107,7 +111,11 @@ function SetBlock({
       // effect from treating the newly created row as a second, unrelated
       // set with no matching draft.
       onSuccess: (saved) => {
-        onChange({ ...draftFrom(saved), key: draft.key });
+        // Adopt ONLY the id and the new saved-baseline, never the server's copy
+        // of the content: a save is not instant, and anything typed while it
+        // was in flight would be silently reverted to the echoed body. Applied
+        // against the latest draft, not the one captured when save() ran.
+        onSaved(saved);
         setJustSaved(true);
       },
       onError: (e) => setError(e.message),
@@ -316,6 +324,21 @@ export function AccessorySetsTab() {
           draft={d}
           options={options}
           onChange={(next) => setDrafts((prev) => prev.map((x) => (x.key === d.key ? next : x)))}
+          onSaved={(saved) =>
+            setDrafts((prev) =>
+              prev.map((x) =>
+                x.key === d.key
+                  ? {
+                      // Keep the live content; take only the server-assigned id
+                      // and the new baseline the dirty check compares against.
+                      ...x,
+                      id: saved.id,
+                      savedSnapshot: JSON.stringify(payloadOfServer(saved)),
+                    }
+                  : x
+              )
+            )
+          }
           onRemove={() => setDrafts((prev) => prev.filter((x) => x.key !== d.key))}
         />
       ))}

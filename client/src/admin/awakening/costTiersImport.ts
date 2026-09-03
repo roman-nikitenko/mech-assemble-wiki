@@ -4,8 +4,12 @@ type Result =
   | { ok: true; tiers: AwakeningCostTier[] }
   | { ok: false; message: string };
 
+/** A cost figure: a non-negative safe integer, or null if it is anything else.
+    Costs cannot be negative, and beyond Number.MAX_SAFE_INTEGER the value has
+    already lost precision — the cost-ladder page clamps typed input the same
+    way, so a paste and a keystroke agree. */
 function int(v: unknown): number | null {
-  return typeof v === "number" && Number.isInteger(v) ? v : null;
+  return typeof v === "number" && Number.isSafeInteger(v) && v >= 0 ? v : null;
 }
 
 function strs(v: unknown): string[] {

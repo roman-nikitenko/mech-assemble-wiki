@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useAwakening, useAwakeningCostTiers, useMech, useSaveAwakening } from "../../api/client";
 import type { AwakeningLevel, AwakeningNode } from "../../api/types";
@@ -71,10 +71,19 @@ export function AwakeningPage() {
   const [levels, setLevels] = useState<ImportedLevel[]>(() => LEVELS.map(emptyLevel));
   const [importing, setImporting] = useState(false);
 
-  // Seed once the server rows arrive. Keyed on the query data so a refetch after
-  // save re-seeds from the truth rather than leaving edits floating.
+  // Seed from the server ONCE, when the tree first arrives. Deliberately not
+  // on every change to `saved.data`: saving invalidates this very query, so the
+  // refetch would re-seed all six levels from the server's copy and silently
+  // revert anything typed since Save was pressed — six panels of node fields,
+  // rolled back with no error to explain it. After the first load the admin is
+  // the only writer, so the form owns its state and the save round-trip has
+  // nothing to teach it.
+  const seeded = useRef(false);
   useEffect(() => {
-    if (saved.data) setLevels(fromServer(saved.data));
+    if (saved.data && !seeded.current) {
+      seeded.current = true;
+      setLevels(fromServer(saved.data));
+    }
   }, [saved.data]);
 
   function setLevel(next: ImportedLevel) {

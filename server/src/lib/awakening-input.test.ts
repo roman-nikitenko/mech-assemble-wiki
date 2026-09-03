@@ -35,9 +35,8 @@ describe("parseAwakeningInput", () => {
     if (r.ok) expect(r.value).toHaveLength(6);
   });
 
-  // NB: the PARSER accepts a partial body, but the PUT route replaces the whole
-  // tree, so sending one level deletes the other five. See the caution on
-  // parseAwakeningInput. This pins parser behaviour only, not a safe workflow.
+  // The parser validates shape only — completeness is the PUT route's rule,
+  // and it rejects anything short of six. This pins the parser's half.
   it("accepts a body carrying fewer than six levels", () => {
     const r = parseAwakeningInput({ levels: [level(1)] });
     expect(r.ok).toBe(true);

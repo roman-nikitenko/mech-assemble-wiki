@@ -98,6 +98,21 @@ awakeningRouter.put("/mechs/:mechId", requireAdmin, async (req, res) => {
   const parsed = parseAwakeningInput(req.body);
   if (!parsed.ok) return res.status(400).json({ error: parsed.message });
 
+  // This PUT REPLACES the mech's whole tree, so a body carrying fewer than six
+  // levels would delete the ones it omits — an empty array would wipe the lot.
+  // The editor always submits all six (filled or blank), so anything shorter is
+  // a mistake, and refusing it is safer than honouring it. Completeness is
+  // checked here rather than in the parser: the parser validates SHAPE, and this
+  // rule belongs to the replace-everything write, not to the data itself.
+  const missing = [1, 2, 3, 4, 5, 6].filter(
+    (n) => !parsed.value.some((l) => l.level === n)
+  );
+  if (missing.length > 0) {
+    return res.status(400).json({
+      error: `An awakening save must carry all six levels; missing ${missing.join(", ")}.`,
+    });
+  }
+
   // Replace-the-set, same contract as mech skins: the editor always submits the
   // whole tree, so a delete-then-recreate keeps write logic trivial. Nodes
   // cascade from their level, so deleting levels is enough.

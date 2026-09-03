@@ -55,13 +55,12 @@ function strArray(v: unknown): string[] {
     produced — a level outside 1-6, a repeated level, more than 5 outer nodes,
     a repeated node position, or a null entry.
 
-    CAUTION on partial bodies: this parser accepts fewer than six levels, but
-    the PUT route REPLACES the mech's whole tree (delete-then-recreate), so a
-    body carrying one level DELETES the other five. That is safe only because
-    the editor always submits all six — it seeds six panels and sends every
-    one, filled or blank. Any new caller must do the same, or send a merge
-    through a different endpoint. Do not treat "the parser allowed it" as
-    "the write preserved it". */
+    Scope: this validates SHAPE only. It accepts a body carrying fewer than six
+    levels, because completeness is a rule of the WRITE, not of the data — the
+    PUT route replaces a mech's whole tree, so it separately requires all six
+    and rejects anything shorter (which would otherwise delete the levels it
+    omitted). Keep that check there, not here, so this stays reusable by a
+    future merge endpoint that legitimately takes one level at a time. */
 export function parseAwakeningInput(body: unknown): Result {
   const levels = (body as { levels?: unknown } | null)?.levels;
   if (!Array.isArray(levels)) return { ok: false, message: "levels must be an array." };
