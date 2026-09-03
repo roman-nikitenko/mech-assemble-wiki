@@ -5,7 +5,9 @@ import type { AccessorySummary } from "../../api/types";
 import { LoadingSkeleton } from "../../components/LoadingSkeleton";
 import { ErrorPanel } from "../../components/ErrorPanel";
 import { RankBadge } from "../../components/RankBadge";
+import { Tabs } from "../../components/Tabs";
 import { AdminTableFilters } from "../AdminTableFilters";
+import { AccessorySetsTab } from "./AccessorySetsTab";
 
 export function AdminAccessoriesPage() {
   const { data, isPending, isError, refetch } = useAccessories();
@@ -14,6 +16,7 @@ export function AdminAccessoriesPage() {
   // Client-side filters ("" = no filter). Accessories have no type.
   const [search, setSearch] = useState("");
   const [tier, setTier] = useState("");
+  const [tab, setTab] = useState("Accessories");
 
   const filtered = (data ?? []).filter(
     (accessory) =>
@@ -23,94 +26,104 @@ export function AdminAccessoriesPage() {
 
   return (
     <div>
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-black tracking-tight">Accessories</h1>
-        <AdminTableFilters
-          search={search}
-          onSearch={setSearch}
-          showType={false}
-          tier={tier}
-          onTier={setTier}
-          tierLabel="Tier"
-        />
-        <Link
-          to="/admin/accessories/new"
-          className="rounded-lg bg-accent px-4 py-2 font-semibold text-bg hover:brightness-110"
-        >
-          + New accessory
-        </Link>
+      <h1 className="text-2xl font-black tracking-tight">Accessories</h1>
+      <div className="mt-3">
+        <Tabs tabs={["Accessories", "Sets"]} active={tab} onChange={setTab} />
       </div>
 
-      {isPending ? (
-        <LoadingSkeleton variant="detail" />
-      ) : isError ? (
-        <ErrorPanel onRetry={() => refetch()} />
+      {tab === "Sets" ? (
+        <AccessorySetsTab />
       ) : (
-        <div className="mt-6 overflow-x-auto rounded-xl border border-edge">
-          <table className="w-full min-w-[640px] text-left text-sm">
-            <thead className="bg-surface text-ink-dim">
-              <tr>
-                <th className="px-4 py-3">Image</th>
-                <th className="px-4 py-3">Name</th>
-                <th className="px-4 py-3">Tier</th>
-                <th className="px-4 py-3">Linked mech</th>
-                <th className="px-4 py-3">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.length === 0 && (
-                <tr className="border-t border-edge">
-                  <td colSpan={5} className="px-4 py-6 text-center text-ink-dim">
-                    No accessories match your filters.
-                  </td>
+        <>
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+          <AdminTableFilters
+            search={search}
+            onSearch={setSearch}
+            showType={false}
+            tier={tier}
+            onTier={setTier}
+            tierLabel="Tier"
+          />
+          <Link
+            to="/admin/accessories/new"
+            className="rounded-lg bg-accent px-4 py-2 font-semibold text-bg hover:brightness-110"
+          >
+            + New accessory
+          </Link>
+        </div>
+
+        {isPending ? (
+          <LoadingSkeleton variant="detail" />
+        ) : isError ? (
+          <ErrorPanel onRetry={() => refetch()} />
+        ) : (
+          <div className="mt-6 overflow-x-auto rounded-xl border border-edge">
+            <table className="w-full min-w-[640px] text-left text-sm">
+              <thead className="bg-surface text-ink-dim">
+                <tr>
+                  <th className="px-4 py-3">Image</th>
+                  <th className="px-4 py-3">Name</th>
+                  <th className="px-4 py-3">Tier</th>
+                  <th className="px-4 py-3">Linked mech</th>
+                  <th className="px-4 py-3">Actions</th>
                 </tr>
-              )}
-              {filtered.map((accessory) => (
-                <tr key={accessory.id} className="border-t border-edge">
-                  <td className="px-4 py-2">
-                    {accessory.imageUrl ? (
-                      <img
-                        src={imageSrc(accessory.imageUrl)}
-                        alt={accessory.name}
-                        className="h-10 w-10 rounded object-cover"
-                      />
-                    ) : (
-                      <div className="h-10 w-10 rounded bg-surface-2" aria-hidden />
-                    )}
-                  </td>
-                  <td className="px-4 py-2 font-semibold">
-                    <Link
-                      to={`/admin/accessories/${accessory.id}/edit`}
-                      className="hover:text-accent hover:underline"
-                    >
-                      {accessory.name}
-                    </Link>
-                  </td>
-                  <td className="px-4 py-2">
-                    <RankBadge rank={accessory.tier} />
-                  </td>
-                  <td className="px-4 py-2 text-ink-dim">{accessory.mech?.name ?? "—"}</td>
-                  <td className="px-4 py-2">
-                    <div className="flex gap-2">
+              </thead>
+              <tbody>
+                {filtered.length === 0 && (
+                  <tr className="border-t border-edge">
+                    <td colSpan={5} className="px-4 py-6 text-center text-ink-dim">
+                      No accessories match your filters.
+                    </td>
+                  </tr>
+                )}
+                {filtered.map((accessory) => (
+                  <tr key={accessory.id} className="border-t border-edge">
+                    <td className="px-4 py-2">
+                      {accessory.imageUrl ? (
+                        <img
+                          src={imageSrc(accessory.imageUrl)}
+                          alt={accessory.name}
+                          className="h-10 w-10 rounded object-cover"
+                        />
+                      ) : (
+                        <div className="h-10 w-10 rounded bg-surface-2" aria-hidden />
+                      )}
+                    </td>
+                    <td className="px-4 py-2 font-semibold">
                       <Link
                         to={`/admin/accessories/${accessory.id}/edit`}
-                        className="rounded border border-edge px-2 py-1 text-xs hover:border-accent/60"
+                        className="hover:text-accent hover:underline"
                       >
-                        Edit
+                        {accessory.name}
                       </Link>
-                      <button
-                        onClick={() => setConfirming(accessory)}
-                        className="rounded border border-fire/40 px-2 py-1 text-xs text-fire hover:bg-fire/10"
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                    </td>
+                    <td className="px-4 py-2">
+                      <RankBadge rank={accessory.tier} />
+                    </td>
+                    <td className="px-4 py-2 text-ink-dim">{accessory.mech?.name ?? "—"}</td>
+                    <td className="px-4 py-2">
+                      <div className="flex gap-2">
+                        <Link
+                          to={`/admin/accessories/${accessory.id}/edit`}
+                          className="rounded border border-edge px-2 py-1 text-xs hover:border-accent/60"
+                        >
+                          Edit
+                        </Link>
+                        <button
+                          onClick={() => setConfirming(accessory)}
+                          className="rounded border border-fire/40 px-2 py-1 text-xs text-fire hover:bg-fire/10"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+        </>
       )}
 
       {confirming && (

@@ -35,7 +35,9 @@ describe("parseAwakeningInput", () => {
     if (r.ok) expect(r.value).toHaveLength(6);
   });
 
-  it("accepts a partial tree — an admin may enter one level at a time", () => {
+  // The parser validates shape only — completeness is the PUT route's rule,
+  // and it rejects anything short of six. This pins the parser's half.
+  it("accepts a body carrying fewer than six levels", () => {
     const r = parseAwakeningInput({ levels: [level(1)] });
     expect(r.ok).toBe(true);
   });
@@ -76,5 +78,22 @@ describe("parseAwakeningInput", () => {
 
   it("rejects a non-array levels field", () => {
     expect(parseAwakeningInput({ levels: "nope" }).ok).toBe(false);
+  });
+
+  it("rejects a null level entry instead of throwing", () => {
+    // Previously this threw a TypeError on the first field access, turning a
+    // bad request into a 500 rather than the 400 it is.
+    const r = parseAwakeningInput({ levels: [null] });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.message).toMatch(/must be an object/i);
+  });
+
+  it("rejects a null node entry instead of throwing", () => {
+    const bad = level(1);
+    // @ts-expect-error deliberately corrupting the fixture
+    bad.nodes[0] = null;
+    const r = parseAwakeningInput({ levels: [bad] });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.message).toMatch(/must be an object/i);
   });
 });

@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useAwakening, useAwakeningCostTiers, useMech, useSaveAwakening } from "../../api/client";
 import type { AwakeningLevel, AwakeningNode } from "../../api/types";
 import { AwakeningLevelPanel } from "./AwakeningLevelPanel";
 import { ImportAwakeningDialog } from "./ImportAwakeningDialog";
+import { CodexFormatHint } from "./CodexFormatHint";
 import { importCodexMech, type ImportedLevel, type ImportedNode } from "./awakeningImport";
 
 const LEVELS = [1, 2, 3, 4, 5, 6];
@@ -70,11 +71,24 @@ export function AwakeningPage() {
   const [levels, setLevels] = useState<ImportedLevel[]>(() => LEVELS.map(emptyLevel));
   const [importing, setImporting] = useState(false);
 
-  // Seed once the server rows arrive. Keyed on the query data so a refetch after
-  // save re-seeds from the truth rather than leaving edits floating.
+  // Seed from the server ONCE, when the tree first arrives. Deliberately not
+  // on every change to `saved.data`: saving invalidates this very query, so the
+  // refetch would re-seed all six levels from the server's copy and silently
+  // revert anything typed since Save was pressed — six panels of node fields,
+  // rolled back with no error to explain it. After the first load the admin is
+  // the only writer, so the form owns its state and the save round-trip has
+  // nothing to teach it.
+  // Tracks WHICH mech the form currently holds, not merely that it was seeded:
+  // React Router reuses this element when only :id changes, so a boolean flag
+  // would leave mech B showing mech A's tree — and saving would then write A's
+  // levels onto B under B's id.
+  const seededFor = useRef<string | null>(null);
   useEffect(() => {
-    if (saved.data) setLevels(fromServer(saved.data));
-  }, [saved.data]);
+    if (saved.data && seededFor.current !== id) {
+      seededFor.current = id;
+      setLevels(fromServer(saved.data));
+    }
+  }, [saved.data, id]);
 
   function setLevel(next: ImportedLevel) {
     setLevels((prev) => prev.map((l) => (l.level === next.level ? next : l)));
@@ -117,6 +131,8 @@ export function AwakeningPage() {
           )
         }
       />
+
+      <CodexFormatHint />
 
       {levels.map((l) => (
         <AwakeningLevelPanel

@@ -7,11 +7,16 @@ import { RankBadge } from "../components/RankBadge";
 import { LoadingSkeleton } from "../components/LoadingSkeleton";
 import { ErrorPanel } from "../components/ErrorPanel";
 import { Seo } from "../components/Seo";
+import { Tabs } from "../components/Tabs";
+import { AccessorySetsTab } from "./sections/AccessorySetsTab";
 import cardBg from "../assets/acessery-card-bg.jpeg";
+
+const TABS = ["Accessories", "Accessory sets"];
 
 export function AccessoriesPage() {
   const { data, isPending, isError, refetch } = useAccessories();
 
+  const [tab, setTab] = useState(TABS[0]);
   const [tiers, setTiers] = useState<MechRank[]>([]);
   const [attrs, setAttrs] = useState<string[]>([]);
   const [search, setSearch] = useState("");
@@ -43,36 +48,41 @@ export function AccessoriesPage() {
         description="Every accessory in Mech Assemble: Zombie Swarm — attributes and the exclusive effects unlocked when bound to a mech."
         path="/accessories"
       />
-      <FilterBar
-        types={[]}
-        selectedTypeIds={[]}
-        selectedRanks={tiers}
-        search={search}
-        onToggleType={() => {}}
-        onToggleRank={toggleTier}
-        onSearchChange={setSearch}
-        onClear={() => {
-          setTiers([]);
-          setAttrs([]);
-        }}
-        rankGroupLabel="tier"
-        searchPlaceholder="Search accessories or mech..."
-        showAttributes
-        attributes={attrNames}
-        selectedAttributes={attrs}
-        onToggleAttribute={toggleAttr}
-      />
-      {isPending ? (
-        <LoadingSkeleton variant="cards" />
-      ) : isError ? (
-        <ErrorPanel onRetry={() => refetch()} />
-      ) : (data ?? []).length === 0 ? (
-        <p className="mt-8 text-center text-ink-dim">No accessories recorded yet.</p>
-      ) : visible.length === 0 ? (
-        <p className="mt-8 text-center text-ink-dim">No accessories match.</p>
+      <Tabs tabs={TABS} active={tab} onChange={setTab} />
+      {tab === "Accessory sets" ? (
+        <AccessorySetsTab />
       ) : (
-        <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {visible.map((a) => (
+        <>
+          <FilterBar
+            types={[]}
+            selectedTypeIds={[]}
+            selectedRanks={tiers}
+            search={search}
+            onToggleType={() => {}}
+            onToggleRank={toggleTier}
+            onSearchChange={setSearch}
+            onClear={() => {
+              setTiers([]);
+              setAttrs([]);
+            }}
+            rankGroupLabel="tier"
+            searchPlaceholder="Search accessories or mech..."
+            showAttributes
+            attributes={attrNames}
+            selectedAttributes={attrs}
+            onToggleAttribute={toggleAttr}
+          />
+          {isPending ? (
+            <LoadingSkeleton variant="cards" />
+          ) : isError ? (
+            <ErrorPanel onRetry={() => refetch()} />
+          ) : (data ?? []).length === 0 ? (
+            <p className="mt-8 text-center text-ink-dim">No accessories recorded yet.</p>
+          ) : visible.length === 0 ? (
+            <p className="mt-8 text-center text-ink-dim">No accessories match.</p>
+          ) : (
+            <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {visible.map((a) => (
             <div key={a.id} className={`rounded-xl bg-surface border border-edge`}>
               <div
                 className="aspect-2/1 rounded-t-lg flex items-center justify-center bg-no-repeat bg-center bg-cover"
@@ -137,7 +147,9 @@ export function AccessoriesPage() {
               </div>
             </div>
           ))}
-        </div>
+            </div>
+          )}
+        </>
       )}
     </main>
   );

@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { Link, MemoryRouter, Route, Routes } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AwakeningPage } from "./AwakeningPage";
 
@@ -90,5 +90,123 @@ describe("AwakeningPage", () => {
     await userEvent.clear(textarea);
     await userEvent.type(textarea, "HP +5%{enter}ATK +10%");
     expect(textarea).toHaveValue("HP +5%\nATK +10%");
+  });
+
+  it("keeps edits made while a save is still in flight", async () => {
+    // Hold the PUT open so we can type during it, the way a slow network lets
+    // an admin keep working after pressing Save. The GET keeps answering with
+    // the ORIGINAL tree, so a naive re-hydration would revert the typing.
+    let release!: (v: Response) => void;
+    const pending = new Promise<Response>((r) => { release = r; });
+
+    vi.spyOn(globalThis, "fetch").mockImplementation((input, init) => {
+      const url = String(input);
+      if ((init?.method ?? "GET") !== "GET") return pending;
+      const body = url.includes("/api/awakening/cost-tiers") ? tiers
+        : url.includes("/api/awakening/mechs/") ? levels
+        : url.includes("/api/mechs/m1") ? mech
+        : [];
+      return Promise.resolve(new Response(JSON.stringify(body), {
+        status: 200, headers: { "Content-Type": "application/json" },
+      }));
+    });
+
+    const qc = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    });
+    render(
+      <QueryClientProvider client={qc}>
+        <MemoryRouter initialEntries={["/admin/mechs/m1/awakening"]}>
+          <Routes>
+            <Route path="/admin/mechs/:id/awakening" element={<AwakeningPage />} />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>
+    );
+
+    await userEvent.click(await screen.findByRole("button", { name: /Awakening Lv\.1/ }));
+    const skill = screen.getByLabelText("Level 1 core skill");
+    await userEvent.click(screen.getByRole("button", { name: /save awakening/i }));
+
+    // Still typing while the request is out.
+    await userEvent.type(skill, " Reforged");
+    const typed = (skill as HTMLInputElement).value;
+    expect(typed).toMatch(/Reforged$/);
+
+    // The refetch answers with a CHANGED body, so React Query's structural
+    // sharing cannot dedupe it into the same reference — the seeding effect
+    // genuinely re-runs, which is the condition the race needs.
+    const serverEcho = [{ ...levels[0], coreSkill: "Server Copy" }];
+    (globalThis.fetch as ReturnType<typeof vi.fn>).mockImplementation(
+      (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input);
+        if ((init?.method ?? "GET") !== "GET") return pending;
+        const body = url.includes("/api/awakening/cost-tiers") ? tiers
+          : url.includes("/api/awakening/mechs/") ? serverEcho
+          : url.includes("/api/mechs/m1") ? mech
+          : [];
+        return Promise.resolve(new Response(JSON.stringify(body), {
+          status: 200, headers: { "Content-Type": "application/json" },
+        }));
+      }
+    );
+    release(new Response(JSON.stringify(serverEcho), {
+      status: 200, headers: { "Content-Type": "application/json" },
+    }));
+
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: /save awakening/i })).not.toBeDisabled()
+    );
+    // The refetch must not roll the form back to the server's copy.
+    expect(skill).toHaveValue(typed);
+  });
+
+  it("re-seeds when navigating to a different mech", async () => {
+    // React Router REUSES the element when only :id changes, so a seeded-once
+    // flag that never resets would leave mech B showing mech A's tree — and
+    // saving would then write A's levels onto B. Silent cross-mech corruption.
+    const treeA = [{ ...levels[0], coreSkill: "Fire Field" }];
+    const treeB = [{ ...levels[0], id: "lB", coreSkill: "Frost Field" }];
+
+    vi.spyOn(globalThis, "fetch").mockImplementation((input) => {
+      const url = String(input);
+      const body = url.includes("/api/awakening/cost-tiers") ? tiers
+        : url.includes("/api/awakening/mechs/m2") ? treeB
+        : url.includes("/api/awakening/mechs/") ? treeA
+        : url.includes("/api/mechs/") ? mech
+        : [];
+      return Promise.resolve(new Response(JSON.stringify(body), {
+        status: 200, headers: { "Content-Type": "application/json" },
+      }));
+    });
+
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    function Harness() {
+      return (
+        <MemoryRouter initialEntries={["/admin/mechs/m1/awakening"]}>
+          <Routes>
+            <Route
+              path="/admin/mechs/:id/awakening"
+              element={
+                <>
+                  <Link to="/admin/mechs/m2/awakening">other mech</Link>
+                  <AwakeningPage />
+                </>
+              }
+            />
+          </Routes>
+        </MemoryRouter>
+      );
+    }
+    render(<QueryClientProvider client={qc}><Harness /></QueryClientProvider>);
+
+    await userEvent.click(await screen.findByRole("button", { name: /Awakening Lv\.1/ }));
+    expect(screen.getByLabelText("Level 1 core skill")).toHaveValue("Fire Field");
+
+    await userEvent.click(screen.getByRole("link", { name: "other mech" }));
+    await userEvent.click(await screen.findByRole("button", { name: /Awakening Lv\.1/ }));
+    await waitFor(() =>
+      expect(screen.getByLabelText("Level 1 core skill")).toHaveValue("Frost Field")
+    );
   });
 });
