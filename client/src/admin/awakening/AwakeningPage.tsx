@@ -78,13 +78,17 @@ export function AwakeningPage() {
   // rolled back with no error to explain it. After the first load the admin is
   // the only writer, so the form owns its state and the save round-trip has
   // nothing to teach it.
-  const seeded = useRef(false);
+  // Tracks WHICH mech the form currently holds, not merely that it was seeded:
+  // React Router reuses this element when only :id changes, so a boolean flag
+  // would leave mech B showing mech A's tree — and saving would then write A's
+  // levels onto B under B's id.
+  const seededFor = useRef<string | null>(null);
   useEffect(() => {
-    if (saved.data && !seeded.current) {
-      seeded.current = true;
+    if (saved.data && seededFor.current !== id) {
+      seededFor.current = id;
       setLevels(fromServer(saved.data));
     }
-  }, [saved.data]);
+  }, [saved.data, id]);
 
   function setLevel(next: ImportedLevel) {
     setLevels((prev) => prev.map((l) => (l.level === next.level ? next : l)));
