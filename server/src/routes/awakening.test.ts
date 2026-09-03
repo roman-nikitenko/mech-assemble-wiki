@@ -124,25 +124,78 @@ describe("/api/awakening/mechs/:mechId", () => {
               },
             ],
           },
+          // A save must carry all six levels — the write replaces the whole
+          // tree — so the five we do not care about here ride along blank.
+          ...[2, 3, 4, 5, 6].map((n) => ({ level: n, nodes: [] })),
         ],
       });
     expect(put.status).toBe(200);
 
     const read = await request(app).get(`/api/awakening/mechs/${mech.id}`);
     expect(read.status).toBe(200);
-    expect(read.body).toHaveLength(1);
-    expect(read.body[0]).toMatchObject({ level: 1, isLive: true, coreSkill: "Fire Field DMG +100%" });
-    expect(read.body[0].nodes[0]).toMatchObject({ position: 1, icon: "UI_Attr_hp", condTargetId: 230006 });
+    expect(read.body).toHaveLength(6);
+    const one = read.body.find((l: { level: number }) => l.level === 1);
+    expect(one).toMatchObject({ level: 1, isLive: true, coreSkill: "Fire Field DMG +100%" });
+    expect(one.nodes[0]).toMatchObject({ position: 1, icon: "UI_Attr_hp", condTargetId: 230006 });
   });
 
   it("replaces the whole tree — a second PUT wins", async () => {
     const mech = await makeMech("S");
+    const six = (withNode: boolean) =>
+      [1, 2, 3, 4, 5, 6].map((n) => ({
+        level: n,
+        nodes: n === 1 && withNode ? [{ position: 1, icon: "UI_Attr_hp" }] : [],
+      }));
+
     await request(app).put(`/api/awakening/mechs/${mech.id}`).set(ADMIN)
-      .send({ levels: [{ level: 1, nodes: [{ position: 1, icon: "UI_Attr_hp" }] }] });
+      .send({ levels: six(true) });
     await request(app).put(`/api/awakening/mechs/${mech.id}`).set(ADMIN)
-      .send({ levels: [{ level: 2, nodes: [] }] });
+      .send({ levels: six(false) });
+
+    // The second body wins wholesale: level 1's node is gone, not merged.
     const read = await request(app).get(`/api/awakening/mechs/${mech.id}`);
-    expect(read.body).toHaveLength(1);
-    expect(read.body[0].level).toBe(2);
+    expect(read.body).toHaveLength(6);
+    expect(read.body.find((l: { level: number }) => l.level === 1).nodes).toEqual([]);
+  });
+
+  it("rejects a body carrying fewer than six levels", async () => {
+    // The PUT replaces the whole tree, so a one-level body would DELETE the
+    // other five. The editor always sends six; anything else is a mistake we
+    // refuse rather than silently honour.
+    const mech = await makeMech("S");
+    const res = await request(app)
+      .put(`/api/awakening/mechs/${mech.id}`)
+      .set(ADMIN)
+      .send({ levels: [{ level: 1, nodes: [] }] });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/all six levels/i);
+  });
+
+  it("rejects an empty levels array rather than wiping the tree", async () => {
+    const mech = await makeMech("S");
+    await request(app)
+      .put(`/api/awakening/mechs/${mech.id}`)
+      .set(ADMIN)
+      .send({ levels: [1, 2, 3, 4, 5, 6].map((n) => ({ level: n, nodes: [] })) });
+
+    const res = await request(app)
+      .put(`/api/awakening/mechs/${mech.id}`)
+      .set(ADMIN)
+      .send({ levels: [] });
+    expect(res.status).toBe(400);
+
+    // And the tree it would have wiped is still there.
+    const read = await request(app).get(`/api/awakening/mechs/${mech.id}`);
+    expect(read.body).toHaveLength(6);
+  });
+
+  it("accepts a complete six-level body", async () => {
+    const mech = await makeMech("S");
+    const res = await request(app)
+      .put(`/api/awakening/mechs/${mech.id}`)
+      .set(ADMIN)
+      .send({ levels: [1, 2, 3, 4, 5, 6].map((n) => ({ level: n, isLive: n <= 3, nodes: [] })) });
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveLength(6);
   });
 });

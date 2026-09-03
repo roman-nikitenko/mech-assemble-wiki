@@ -164,8 +164,16 @@ accessorySetsRouter.put("/:id", requireAdmin, async (req, res) => {
     });
     res.json(formatSet(updated));
   } catch (err) {
-    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
-      return res.status(409).json({ error: "A set with that name already exists." });
+    if (err instanceof Prisma.PrismaClientKnownRequestError) {
+      if (err.code === "P2002") {
+        return res.status(409).json({ error: "A set with that name already exists." });
+      }
+      // P2025 = the row vanished between the existence check above and this
+      // update — someone deleted the set from another tab mid-save. Narrow
+      // race, but it is still a "gone", not a server fault, so say so.
+      if (err.code === "P2025") {
+        return res.status(404).json({ error: "Set not found." });
+      }
     }
     throw err;
   }

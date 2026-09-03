@@ -75,4 +75,16 @@ describe("importCostTiers", () => {
     expect(importCostTiers(null).ok).toBe(false);
     expect(importCostTiers({ mechs: [] }).ok).toBe(false);
   });
+
+  it("rejects a negative or unsafe cost rather than importing it", () => {
+    // The cost-ladder page clamps typed input to >= 0; a paste must not be a
+    // way around that.
+    const negative = structuredClone(mech) as typeof mech;
+    negative.lv[0].nodes[0].pts = -100;
+    expect(importCostTiers(negative).ok).toBe(false);
+
+    const unsafe = structuredClone(mech) as typeof mech;
+    unsafe.lv[0].big.major = Number.MAX_SAFE_INTEGER + 2;
+    expect(importCostTiers(unsafe).ok).toBe(false);
+  });
 });

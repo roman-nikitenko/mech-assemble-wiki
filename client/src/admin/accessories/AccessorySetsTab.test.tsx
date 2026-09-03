@@ -197,4 +197,58 @@ describe("AccessorySetsTab", () => {
     // React remounts SetBlock and this indicator never appears.
     expect(await screen.findByText("Saved.")).toBeInTheDocument();
   });
+
+  it("keeps edits made while a save is still in flight", async () => {
+    // Hold the PUT open so we can type during it, the way a slow network lets
+    // an admin keep working after pressing Save.
+    let release!: (v: Response) => void;
+    const pending = new Promise<Response>((r) => { release = r; });
+
+    vi.spyOn(globalThis, "fetch").mockImplementation((input, init) => {
+      const url = String(input);
+      const method = init?.method ?? "GET";
+      if (method === "GET") {
+        return Promise.resolve(
+          new Response(JSON.stringify(url.includes("/api/accessory-sets") ? sets : accessories), {
+            status: 200, headers: { "Content-Type": "application/json" },
+          })
+        );
+      }
+      return pending;
+    });
+
+    const qc = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    });
+    render(
+      <QueryClientProvider client={qc}>
+        <AccessorySetsTab />
+      </QueryClientProvider>
+    );
+
+    const nameField = await screen.findByDisplayValue("Abyssal Regalia");
+    await userEvent.click(screen.getByRole("button", { name: /save set/i }));
+
+    // Still typing while the request is out.
+    await userEvent.type(nameField, " Prime");
+    expect(nameField).toHaveValue("Abyssal Regalia Prime");
+
+    // The server echoes back what it received — the PRE-edit name.
+    release(
+      new Response(JSON.stringify({ ...sets[0], name: "Abyssal Regalia" }), {
+        status: 200, headers: { "Content-Type": "application/json" },
+      })
+    );
+
+    // Wait for the save to actually settle before asserting — otherwise the
+    // check passes simply because the response has not been processed yet, and
+    // proves nothing.
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: /save set/i })).not.toBeDisabled()
+    );
+
+    // The later typing must survive; adopting the server echo wholesale would
+    // silently revert it.
+    expect(nameField).toHaveValue("Abyssal Regalia Prime");
+  });
 });
