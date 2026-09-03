@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { Link, MemoryRouter, Route, Routes } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AwakeningPage } from "./AwakeningPage";
 
@@ -159,5 +159,54 @@ describe("AwakeningPage", () => {
     );
     // The refetch must not roll the form back to the server's copy.
     expect(skill).toHaveValue(typed);
+  });
+
+  it("re-seeds when navigating to a different mech", async () => {
+    // React Router REUSES the element when only :id changes, so a seeded-once
+    // flag that never resets would leave mech B showing mech A's tree — and
+    // saving would then write A's levels onto B. Silent cross-mech corruption.
+    const treeA = [{ ...levels[0], coreSkill: "Fire Field" }];
+    const treeB = [{ ...levels[0], id: "lB", coreSkill: "Frost Field" }];
+
+    vi.spyOn(globalThis, "fetch").mockImplementation((input) => {
+      const url = String(input);
+      const body = url.includes("/api/awakening/cost-tiers") ? tiers
+        : url.includes("/api/awakening/mechs/m2") ? treeB
+        : url.includes("/api/awakening/mechs/") ? treeA
+        : url.includes("/api/mechs/") ? mech
+        : [];
+      return Promise.resolve(new Response(JSON.stringify(body), {
+        status: 200, headers: { "Content-Type": "application/json" },
+      }));
+    });
+
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    function Harness() {
+      return (
+        <MemoryRouter initialEntries={["/admin/mechs/m1/awakening"]}>
+          <Routes>
+            <Route
+              path="/admin/mechs/:id/awakening"
+              element={
+                <>
+                  <Link to="/admin/mechs/m2/awakening">other mech</Link>
+                  <AwakeningPage />
+                </>
+              }
+            />
+          </Routes>
+        </MemoryRouter>
+      );
+    }
+    render(<QueryClientProvider client={qc}><Harness /></QueryClientProvider>);
+
+    await userEvent.click(await screen.findByRole("button", { name: /Awakening Lv\.1/ }));
+    expect(screen.getByLabelText("Level 1 core skill")).toHaveValue("Fire Field");
+
+    await userEvent.click(screen.getByRole("link", { name: "other mech" }));
+    await userEvent.click(await screen.findByRole("button", { name: /Awakening Lv\.1/ }));
+    await waitFor(() =>
+      expect(screen.getByLabelText("Level 1 core skill")).toHaveValue("Frost Field")
+    );
   });
 });
