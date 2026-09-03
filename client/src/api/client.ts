@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { AccessoryInput, AccessorySummary, AdminUser, AwakeningCostTier, AwakeningLevel, DashboardStats, Drone, DroneInput, DroneType, DroneTypeInput, Feedback, GameType, MechDetail, MechInput, MechRank, MechSummary, ModuleDetail, ModuleInput, ModuleQuality, ModuleQualityInput, ModuleSummary, Pilot, PilotInput, PostedBuild, TypeInput, WeaponDetail, WeaponInput, WeaponSummary } from "./types";
+import type { AccessoryInput, AccessorySet, AccessorySetInput, AccessorySummary, AdminUser, AwakeningCostTier, AwakeningLevel, DashboardStats, Drone, DroneInput, DroneType, DroneTypeInput, Feedback, GameType, MechDetail, MechInput, MechRank, MechSummary, ModuleDetail, ModuleInput, ModuleQuality, ModuleQualityInput, ModuleSummary, Pilot, PilotInput, PostedBuild, TypeInput, WeaponDetail, WeaponInput, WeaponSummary } from "./types";
 import { adminHeaders } from "../auth/adminSession";
 
 export const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
@@ -414,6 +414,40 @@ export function useDeleteAccessory() {
       qc.invalidateQueries({ queryKey: ["mech"] });
       qc.invalidateQueries({ queryKey: ["mechs"] });
     },
+  });
+}
+
+export function useAccessorySets() {
+  return useQuery({ queryKey: ["accessory-sets"], queryFn: () => fetchJson<AccessorySet[]>("/api/accessory-sets") });
+}
+
+export function useCreateAccessorySet() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: AccessorySetInput) => sendJson<AccessorySet>("/api/accessory-sets", "POST", input),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["accessory-sets"] }),
+  });
+}
+
+export function useUpdateAccessorySet(id: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: AccessorySetInput) => sendJson<AccessorySet>(`/api/accessory-sets/${id}`, "PUT", input),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["accessory-sets"] }),
+  });
+}
+
+export function useDeleteAccessorySet() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`${API_URL}/api/accessory-sets/${id}`, { method: "DELETE", headers: adminHeaders() });
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        throw new Error(data?.error ?? `API error ${res.status}`);
+      }
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["accessory-sets"] }),
   });
 }
 

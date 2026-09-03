@@ -195,18 +195,19 @@ function LevelBlock({
           Awakening Lv.{level.level}
         </h2>
 
+        {/* Costs come from the global ladder and vanish when it's empty. Power
+            is the LEVEL's own figure, so it must not disappear with them. */}
         {tier && (
           <span className="font-mono text-xs text-ink-dim">
             outer <span className="text-ink">{tier.outerPoints.toLocaleString()}</span> pts +{" "}
             <span className="text-ink">{tier.outerShards}</span> shards each · core{" "}
             <span className="text-ink">{tier.coreMajor}</span> major +{" "}
             <span className="text-ink">{tier.coreShards}</span> shards
-            {level.corePower !== null && (
-              <>
-                {" · "}
-                <span className="text-ink">+{level.corePower.toLocaleString()}</span> power
-              </>
-            )}
+          </span>
+        )}
+        {level.corePower !== null && (
+          <span className="font-mono text-xs text-ink-dim">
+            <span className="text-ink">+{level.corePower.toLocaleString()}</span> power
           </span>
         )}
       </header>

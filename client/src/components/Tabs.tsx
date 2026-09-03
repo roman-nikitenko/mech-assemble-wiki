@@ -8,7 +8,7 @@ interface TabsProps {
     overflow-x-auto lets it scroll sideways on narrow phones. */
 export function Tabs({ tabs, active, onChange }: TabsProps) {
   return (
-    <div role="tablist" className="flex gap-1 overflow-x-auto border-b border-edge">
+    <div role="tablist" className="flex gap-1 overflow-x-auto border-b border-edge mb-2">
       {tabs.map((tab) => (
         <button
           key={tab}

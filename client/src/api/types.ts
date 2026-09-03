@@ -424,6 +424,37 @@ export interface AccessorySummary {
   mech: { id: string; slug: string | null; name: string; iconUrl: string | null } | null;
 }
 
+/** One accessory as it appears inside a set — GET /api/accessory-sets sends a
+    trimmed row (not the full AccessorySummary), since a set only needs to
+    render a chip: no attributes, exclusiveEffect, or mech link. */
+export interface AccessorySetPiece {
+  id: string;
+  name: string;
+  tier: MechRank;
+  iconUrl: string | null;
+  imageUrl: string | null;
+  /** Stat rows shown in the public tile's popover, e.g. [{DEF, 15%}, {DEF, 450}]. */
+  attributes: AccessoryAttribute[];
+}
+
+/** A named group of accessories granting `bonus` once every piece is held. */
+export interface AccessorySet {
+  id: string;
+  name: string;
+  bonus: string | null;
+  sortOrder: number;
+  accessories: AccessorySetPiece[];
+}
+
+/** Payload for POST/PUT /api/accessory-sets — members are sent as an ordered
+    id list, and the server replaces the whole membership with it. */
+export interface AccessorySetInput {
+  name: string;
+  bonus: string | null;
+  sortOrder?: number;
+  accessoryIds: string[];
+}
+
 /** A build's publication state (mirrors the server BuildStatus enum). */
 export type BuildStatus = "Draft" | "Published" | "Unposted";
 

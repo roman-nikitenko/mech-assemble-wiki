@@ -24,6 +24,11 @@ function parseTiers(body: unknown): { ok: true; value: TierInput[] } | { ok: fal
   if (!Array.isArray(tiers)) return { ok: false, message: "tiers must be an array." };
   const out: TierInput[] = [];
   for (const raw of tiers) {
+    // A null or primitive entry would throw on the first field access, turning
+    // a bad request into a 500 — reject it as the 400 it is.
+    if (raw === null || typeof raw !== "object" || Array.isArray(raw)) {
+      return { ok: false, message: "Every tier must be an object." };
+    }
     const t = raw as Partial<TierInput>;
     const nums = [t.level, t.outerPoints, t.outerShards, t.coreMajor, t.coreShards];
     if (nums.some((n) => typeof n !== "number" || !Number.isInteger(n) || n < 0)) {
