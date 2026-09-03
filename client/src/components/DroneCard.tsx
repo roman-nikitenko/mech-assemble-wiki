@@ -46,7 +46,7 @@ export function DroneCard({
           </button>
         )}
         <div
-          className="absolute inset-0 bg-amber-500 z-0 bg-bottom bg-no-repeat bg-cover"
+          className="absolute inset-0 z-0 bg-bottom bg-no-repeat bg-cover"
           style={{ backgroundImage: `url(${droneCardBg})` }}
         ></div>
         <div className="bg-gradient-to-r absolute w-full z-10 px-3 py-2 text-center">
