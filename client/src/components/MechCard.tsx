@@ -9,7 +9,7 @@ export function MechCard({ mech, priority = false }: { mech: MechSummary; priori
   return (
     <Link
       to={`/mechs/${mech.slug ?? mech.id}`}
-      className="@container block rounded-xl relative border border-edge bg-surface transition hover:border-accent/60 hover:bg-surface-2 bg-no-repeat bg-cover bg-center"
+      className="@container block rounded-xl relative overflow-hidden border border-edge bg-surface transition hover:border-accent/60 hover:bg-surface-2 bg-no-repeat bg-cover bg-center after:absolute after:inset-0 after:bg-black/30 after:z-0"
       style={{ backgroundImage: `url(${mechCardBg})` }}
     >
       {mech.imageUrl ? (
@@ -20,7 +20,7 @@ export function MechCard({ mech, priority = false }: { mech: MechSummary; priori
           alt={mech.name}
           loading={priority ? "eager" : "lazy"}
           fetchPriority={priority ? "high" : "auto"}
-          className=" h-62 w-full rounded-lg object-cover"
+          className=" h-62 w-full rounded-lg object-contain z-10 relative"
         />
       ) : (
         <div
