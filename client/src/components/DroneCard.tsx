@@ -23,9 +23,6 @@ export function DroneCard({
 }: {
   drone: Drone;
   type: DroneType | undefined;
-  /** The equipped quality gem (0-9) when shown inside a build. Level-up
-      bonuses above it are dimmed. Omitted on the Drones browse page, where
-      no quality is chosen and every bonus reads at full strength. */
   quality?: number;
 }) {
   const [showVideo, setShowVideo] = useState(false);
@@ -93,9 +90,7 @@ export function DroneCard({
         <div className="space-y-2 px-3 pb-3">
           {drone.levelUpBonuses.map((bonus, i) => {
             const gem = DRONE_BONUS_GEMS[i % DRONE_BONUS_GEMS.length];
-            // In a build, a bonus above the equipped quality isn't active yet,
-            // so it's dimmed. On the browse page no quality is given and every
-            // row shows at full strength.
+
             const locked = quality !== undefined && gem > quality;
             return (
               <div
@@ -110,9 +105,6 @@ export function DroneCard({
         </div>
       )}
 
-      {/* The <video> is mounted ONLY while the modal is open. Rendering it in
-          the card would make every card on the Drones page start fetching its
-          preview on load, which is the slow-page problem this replaces. */}
       {showVideo && drone.previewVideoUrl && (
         <div
           className="fixed inset-0 z-30 flex items-center justify-center bg-bg/80 p-4"
@@ -121,8 +113,7 @@ export function DroneCard({
           aria-label={`${drone.name} preview`}
           onClick={() => setShowVideo(false)}
         >
-          {/* Half of the previous max-w-2xl (42rem) — the preview is a short
-              clip, not something you sit and watch full-width. */}
+
           <div className="relative w-full max-w-[21rem]" onClick={(e) => e.stopPropagation()}>
             <button
               type="button"
@@ -132,17 +123,12 @@ export function DroneCard({
             >
               ✕
             </button>
-            {/* Loops while open; closing UNMOUNTS this element, which is what
-                stops playback — no manual pause needed. */}
+
             <video
               src={imageSrc(drone.previewVideoUrl)}
               controls
               autoPlay
               loop
-              // w-auto + both maxes, so the browser scales on the video's own
-              // aspect ratio (as it does for an <img>) and a tall portrait clip
-              // is capped by height instead of running off a short phone
-              // screen. w-full here would clamp the height and letterbox.
               className="mx-auto max-h-[80vh] w-auto max-w-full rounded-lg border border-edge"
             />
           </div>
