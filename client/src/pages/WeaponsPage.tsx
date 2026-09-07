@@ -67,7 +67,7 @@ export function WeaponsPage() {
             <Link
               key={w.id}
               to={`/weapons/${w.slug ?? w.id}`}
-              className="@container  block rounded-xl relative overflow-hidden border border-edge bg-surface transition hover:border-accent/60 hover:bg-surface-2 bg-no-repeat bg-cover bg-center"
+              className="@container  block rounded-xl relative overflow-hidden border border-edge bg-surface transition hover:border-accent/60 hover:bg-surface-2 bg-no-repeat bg-cover bg-center after:absolute after:inset-0 after:bg-black/30 after:z-0"
               style={{ backgroundImage: `url(${cardBg})` }}
             >
               {w.imageUrl ? (
@@ -77,11 +77,14 @@ export function WeaponsPage() {
                   sizes={CARD_SIZES}
                   alt={w.name}
                   loading="lazy"
-                  className=" w-full rounded-lg object-contain"
+                  className=" w-full rounded-lg object-contain z-10 relative"
                 />
               ) : (
                 <div
-                  className="mb-3 flex h-32 w-full items-center justify-center rounded-lg bg-surface-2 text-3xl"
+                  // relative z-10 like the <img> branch: the card's ::after scrim is a
+          // positioned pseudo-element, so a static placeholder paints UNDER it and
+          // renders dimmed next to full-brightness neighbours.
+          className="relative z-10 mb-3 flex h-32 w-full items-center justify-center rounded-lg bg-surface-2 text-3xl"
                   aria-hidden
                 >
                   ⚔️

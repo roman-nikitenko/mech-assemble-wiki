@@ -24,7 +24,10 @@ export function MechCard({ mech, priority = false }: { mech: MechSummary; priori
         />
       ) : (
         <div
-          className="mb-3 flex h-32 w-full items-center justify-center rounded-lg bg-surface-2 text-3xl"
+          // relative z-10 like the <img> branch: the card's ::after scrim is a
+          // positioned pseudo-element, so a static placeholder paints UNDER it and
+          // renders dimmed next to full-brightness neighbours.
+          className="relative z-10 mb-3 flex h-32 w-full items-center justify-center rounded-lg bg-surface-2 text-3xl"
           aria-hidden
         >
           🤖

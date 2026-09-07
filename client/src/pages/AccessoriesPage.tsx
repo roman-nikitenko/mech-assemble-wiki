@@ -83,9 +83,15 @@ export function AccessoriesPage() {
           ) : (
             <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {visible.map((a) => (
-            <div key={a.id} className={`rounded-xl bg-surface border border-edge`}>
+            <div
+              key={a.id}
+              // overflow-hidden clips the art div's ::after scrim to the card's
+              // rounded corners — without it the 30% black fills the square
+              // corners outside the radius. MechCard/WeaponsPage do the same.
+              className="overflow-hidden rounded-xl bg-surface border border-edge"
+            >
               <div
-                className="aspect-2/1 rounded-t-lg flex items-center justify-center bg-no-repeat bg-center bg-cover"
+                className="aspect-2/1 rounded-t-xl flex items-center justify-center bg-no-repeat bg-center bg-cover relative after:absolute after:inset-0 after:bg-black/30 after:z-0" 
                 style={{ backgroundImage: `url(${cardBg})` }}
               >
                 {a.imageUrl && (
@@ -95,7 +101,7 @@ export function AccessoriesPage() {
                     sizes={CARD_SIZES}
                     alt={a.name}
                     loading="lazy"
-                    className="h-24 object-cover"
+                    className="h-24 object-cover z-10"
                   />
                 )}
               </div>
