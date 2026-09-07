@@ -59,6 +59,36 @@ export interface DroneTypeInput {
   iconUrl?: string | null;
 }
 
+/** An aircraft in the admin catalog. Stats are free text; tier reuses the
+    Standard|S rank. rankUpPreview holds up to 5 POSITIONAL rows — index = the
+    colour rank (see AIRCRAFT_RANK_TIERS), so an interior blank keeps its slot. */
+export interface Aircraft {
+  id: string;
+  name: string;
+  description: string | null;
+  imageUrl: string | null;
+  tier: MechRank;
+  hp: string | null;
+  atk: string | null;
+  def: string | null;
+  /** Free text like "ATK +10%" — deliberately unstructured, as on mechs. */
+  specialBonus: string | null;
+  rankUpPreview: string[];
+}
+
+/** Payload for POST/PUT /api/aircraft. */
+export interface AircraftInput {
+  name: string;
+  description?: string | null;
+  imageUrl?: string | null;
+  tier: MechRank;
+  hp?: string | null;
+  atk?: string | null;
+  def?: string | null;
+  specialBonus?: string | null;
+  rankUpPreview: string[];
+}
+
 export type MechRank = "Standard" | "S";
 
 /** Shape returned by GET /api/mechs (browse page). */
