@@ -9,6 +9,7 @@ const TABS = [
   { to: "/accessories", label: "Accessories" },
   { to: "/pilots", label: "Pilots" },
   { to: "/drones", label: "Drones" },
+  { to: "/aircraft", label: "Aircraft" },
   { to: "/modules", label: "Attack Module" },
   { to: "/feedback", label: "Feedback" },
 ];

@@ -33,6 +33,7 @@ const NAV = [
   { to: "/admin/modules", label: "Modules", end: false },
   { to: "/admin/module-qualities", label: "Module Qualities", end: false },
   { to: "/admin/drones", label: "Drones", end: false },
+  { to: "/admin/aircraft", label: "Aircraft", end: false },
   { to: "/admin/awakening/cost-tiers", label: "Awakening costs", end: false },
   { to: "/admin/settings", label: "Settings", end: false },
 ];
