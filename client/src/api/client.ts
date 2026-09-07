@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { AccessoryInput, AccessorySet, AccessorySetInput, AccessorySummary, AdminUser, AwakeningCostTier, AwakeningLevel, DashboardStats, Drone, DroneInput, DroneType, DroneTypeInput, Feedback, GameType, MechDetail, MechInput, MechRank, MechSummary, ModuleDetail, ModuleInput, ModuleQuality, ModuleQualityInput, ModuleSummary, Pilot, PilotInput, PostedBuild, TypeInput, WeaponDetail, WeaponInput, WeaponSummary } from "./types";
+import type { AccessoryInput, AccessorySet, AccessorySetInput, AccessorySummary, AdminUser, Aircraft, AircraftInput, AwakeningCostTier, AwakeningLevel, DashboardStats, Drone, DroneInput, DroneType, DroneTypeInput, Feedback, GameType, MechDetail, MechInput, MechRank, MechSummary, ModuleDetail, ModuleInput, ModuleQuality, ModuleQualityInput, ModuleSummary, Pilot, PilotInput, PostedBuild, TypeInput, WeaponDetail, WeaponInput, WeaponSummary } from "./types";
 import { adminHeaders } from "../auth/adminSession";
 
 export const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
@@ -275,6 +275,42 @@ export function useDeleteDrone() {
       }
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["drones"] }),
+  });
+}
+
+// "aircraft" is both singular and plural — this is the LIST hook (the drone
+// equivalent is useDrones). There is no "aircrafts" anywhere in the codebase.
+export function useAircraft() {
+  return useQuery({ queryKey: ["aircraft"], queryFn: () => fetchJson<Aircraft[]>("/api/aircraft") });
+}
+
+export function useCreateAircraft() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: AircraftInput) => sendJson<Aircraft>("/api/aircraft", "POST", input),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["aircraft"] }),
+  });
+}
+
+export function useUpdateAircraft(id: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: AircraftInput) => sendJson<Aircraft>(`/api/aircraft/${id}`, "PUT", input),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["aircraft"] }),
+  });
+}
+
+export function useDeleteAircraft() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`${API_URL}/api/aircraft/${id}`, { method: "DELETE", headers: adminHeaders() });
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        throw new Error(data?.error ?? `API error ${res.status}`);
+      }
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["aircraft"] }),
   });
 }
 

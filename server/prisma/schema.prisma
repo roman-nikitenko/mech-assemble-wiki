@@ -242,6 +242,26 @@ model DroneType {
   @@map("drone_types")
 }
 
+// Aircraft — admin-managed catalog. Standard|S tier (reusing MechRank). Stats are
+// free text (game formatting like "54.00k"). rankUpPreview ≤5 and POSITIONAL like
+// the mech field (index = colour rank Orange→Mythic), not the weapon one.
+model Aircraft {
+  id            String   @id @default(uuid()) @db.Uuid
+  name          String   @unique
+  description   String?
+  imageUrl      String?  @map("image_url")
+  tier          MechRank @default(Standard)
+  hp            String?
+  atk           String?
+  def           String?
+  // Free text like "ATK +10%", same deliberate choice as mechs.special_bonus:
+  // not split into structured stat/value/percent fields.
+  specialBonus  String?  @map("special_bonus")
+  rankUpPreview String[] @map("rank_up_preview")
+
+  @@map("aircraft")
+}
+
 // ---------- Skills + upgrade tree ----------
 
 model MechSkill {
