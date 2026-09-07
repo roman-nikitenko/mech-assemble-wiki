@@ -3,7 +3,6 @@ import type { Aircraft } from "../api/types";
 import { AIRCRAFT_RANK_TIERS, RankUpPreview } from "./RankUpPreview";
 import { STierIcon } from "./STierIcon";
 import aircraftBg from "../assets/aircraft_bg.webp";
-import aircraftLevelBg from "../assets/Aircraft_Level_BG.webp";
 
 const STATS = [
   { key: "hp", label: "HP" },
