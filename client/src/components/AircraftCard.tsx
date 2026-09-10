@@ -1,5 +1,5 @@
 import { imageSrc, srcSet, CARD_SIZES } from "../api/client";
-import type { Aircraft } from "../api/types";
+import type { Aircraft, QualityTier } from "../api/types";
 import { AIRCRAFT_RANK_TIERS, RankUpPreview } from "./RankUpPreview";
 import { STierIcon } from "./STierIcon";
 import aircraftBg from "../assets/aircraft_bg.webp";
@@ -10,7 +10,15 @@ const STATS = [
   { key: "def", label: "DEF" },
 ] as const;
 
-export function AircraftCard({ aircraft }: { aircraft: Aircraft }) {
+export function AircraftCard({
+  aircraft,
+  quality,
+}: {
+  aircraft: Aircraft;
+  /** The quality this aircraft is set to inside a build — rank-up rows above it
+      are dimmed. Omitted on the public Aircraft page, where nothing is locked. */
+  quality?: QualityTier;
+}) {
   return (
     <div className="overflow-hidden border border-edge bg-surface relative">
       <div 
@@ -62,7 +70,11 @@ export function AircraftCard({ aircraft }: { aircraft: Aircraft }) {
         )}
 
         <div className="mt-3">
-          <RankUpPreview steps={aircraft.rankUpPreview} tiers={AIRCRAFT_RANK_TIERS} />
+          <RankUpPreview
+            steps={aircraft.rankUpPreview}
+            tiers={AIRCRAFT_RANK_TIERS}
+            quality={quality}
+          />
         </div>
       </div>
     </div>

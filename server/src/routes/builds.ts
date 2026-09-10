@@ -21,6 +21,7 @@ function formatBuild(b: {
   weaponQualities: unknown;
   moduleSelections: unknown;
   droneSelections: unknown;
+  aircraftSelections: unknown;
   createdAt: Date;
   updatedAt: Date;
   user: { nickname: string | null; server: string | null };
@@ -45,6 +46,14 @@ function formatBuild(b: {
     droneSelections: b.droneSelections as Record<
       string,
       { droneId: string | null; quality: number }
+    >,
+    aircraftSelections: b.aircraftSelections as Record<
+      string,
+      {
+        aircraftId: string | null;
+        quality: string;
+        resetSlots: Record<string, { attributeId: string | null; grade: string }>;
+      }
     >,
     createdAt: b.createdAt.toISOString(),
     updatedAt: b.updatedAt.toISOString(),
@@ -76,6 +85,35 @@ const MAX_DRONE_QUALITY = 9;
 function droneQuality(x: unknown): number {
   if (typeof x !== "number" || !Number.isFinite(x)) return 0;
   return Math.min(MAX_DRONE_QUALITY, Math.max(0, Math.floor(x)));
+}
+
+// A build carries two aircraft, and each one has a 5-roll Reset Effect panel.
+const AIRCRAFT_SLOT_KEYS = ["0", "1"];
+const RESET_SLOT_KEYS = ["0", "1", "2", "3", "4"];
+// Duplicated from client/src/lib/aircraftGrade.ts on purpose: the server must
+// not import client code — the same reason QUALITY_TIERS above is spelled out
+// rather than shared.
+const AIRCRAFT_GRADES = ["G", "F", "E", "D", "C", "B", "A", "S", "SS"];
+// Aircraft use the TOP FIVE QualityTier steps (the colour ladder on the
+// aircraft cards), not the whole Blue→Mythic run and not the Q1-Q13 table.
+const AIRCRAFT_QUALITIES = ["Orange", "Red", "Turquoise", "Gold", "Mythic"];
+
+/** One aircraft's 5 Reset Effect rolls. Drops unknown slot keys and non-object
+    entries; coerces an unknown grade to the lowest rather than rejecting. */
+function resetSlots(x: unknown): Record<string, { attributeId: string | null; grade: string }> {
+  if (x === null || typeof x !== "object") return {};
+  return Object.fromEntries(
+    Object.entries(x as Record<string, unknown>)
+      .filter(([slot, v]) => RESET_SLOT_KEYS.includes(slot) && v !== null && typeof v === "object")
+      .map(([slot, v]) => {
+        const s = v as Record<string, unknown>;
+        const grade =
+          typeof s.grade === "string" && AIRCRAFT_GRADES.includes(s.grade) ? s.grade : "G";
+        // No number is stored: the grade implies a range the client derives
+        // from the catalog's caps, so there is nothing here to clamp.
+        return [slot, { attributeId: typeof s.attributeId === "string" ? s.attributeId : null, grade }];
+      })
+  );
 }
 
 /** Exported for unit tests — the pure half of create/edit, no DB involved. */
@@ -117,6 +155,25 @@ export function parseBuildInput(body: unknown) {
             })
         )
       : {};
+  // The two aircraft, each nesting its own quality and its own 5 rolls.
+  const aircraftSelections =
+    b.aircraftSelections !== null && typeof b.aircraftSelections === "object"
+      ? Object.fromEntries(
+          Object.entries(b.aircraftSelections as Record<string, unknown>)
+            .filter(([slot, v]) => AIRCRAFT_SLOT_KEYS.includes(slot) && v !== null && typeof v === "object")
+            .map(([slot, v]) => {
+              const s = v as Record<string, unknown>;
+              const quality =
+                typeof s.quality === "string" && AIRCRAFT_QUALITIES.includes(s.quality)
+                  ? s.quality
+                  : "Orange";
+              return [
+                slot,
+                { aircraftId: pickId(s.aircraftId), quality, resetSlots: resetSlots(s.resetSlots) },
+              ];
+            })
+        )
+      : {};
   return {
     name: b.name.trim(),
     description: typeof b.description === "string" ? b.description.trim() : "",
@@ -132,6 +189,7 @@ export function parseBuildInput(body: unknown) {
     weaponQualities: weaponQualities as Record<string, QualityTier>,
     moduleSelections,
     droneSelections,
+    aircraftSelections,
   };
 }
 

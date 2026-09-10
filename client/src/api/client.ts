@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { AccessoryInput, AccessorySet, AccessorySetInput, AccessorySummary, AdminUser, Aircraft, AircraftInput, AwakeningCostTier, AwakeningLevel, DashboardStats, Drone, DroneInput, DroneType, DroneTypeInput, Feedback, GameType, MechDetail, MechInput, MechRank, MechSummary, ModuleDetail, ModuleInput, ModuleQuality, ModuleQualityInput, ModuleSummary, Pilot, PilotInput, PostedBuild, TypeInput, WeaponDetail, WeaponInput, WeaponSummary } from "./types";
+import type { AccessoryInput, AccessorySet, AccessorySetInput, AccessorySummary, AdminUser, Aircraft, AircraftAttributeGroup, AircraftInput, AwakeningCostTier, AwakeningLevel, DashboardStats, Drone, DroneInput, DroneType, DroneTypeInput, Feedback, GameType, MechDetail, MechInput, MechRank, MechSummary, ModuleDetail, ModuleInput, ModuleQuality, ModuleQualityInput, ModuleSummary, Pilot, PilotInput, PostedBuild, TypeInput, WeaponDetail, WeaponInput, WeaponSummary } from "./types";
 import { adminHeaders } from "../auth/adminSession";
 
 export const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
@@ -311,6 +311,15 @@ export function useDeleteAircraft() {
       }
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["aircraft"] }),
+  });
+}
+
+/** The aircraft Reset-Effect attribute catalog, grouped by shared caps. Seeded
+    server-side and read-only, so there is no create/update/delete counterpart. */
+export function useAircraftAttributes() {
+  return useQuery({
+    queryKey: ["aircraft-attributes"],
+    queryFn: () => fetchJson<AircraftAttributeGroup[]>("/api/aircraft-attributes"),
   });
 }
 

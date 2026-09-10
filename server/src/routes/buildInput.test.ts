@@ -63,3 +63,122 @@ describe("parseBuildInput — droneSelections", () => {
     expect(parsed?.droneSelections["3"].quality).toBe(0);
   });
 });
+
+describe("parseBuildInput — aircraft", () => {
+  const roll = { attributeId: "attr-1", grade: "SS" };
+
+  it("defaults to no aircraft at all", () => {
+    expect(parseBuildInput(BASE)?.aircraftSelections).toEqual({});
+  });
+
+  it("keeps two aircraft, each with its own quality and its own rolls", () => {
+    const parsed = parseBuildInput({
+      ...BASE,
+      aircraftSelections: {
+        "0": { aircraftId: "air-1", quality: "Mythic", resetSlots: { "0": roll } },
+        "1": { aircraftId: "air-2", quality: "Gold", resetSlots: {} },
+      },
+    });
+    expect(parsed?.aircraftSelections).toEqual({
+      "0": { aircraftId: "air-1", quality: "Mythic", resetSlots: { "0": roll } },
+      "1": { aircraftId: "air-2", quality: "Gold", resetSlots: {} },
+    });
+  });
+
+  it("drops a third aircraft — a build carries exactly two", () => {
+    const parsed = parseBuildInput({
+      ...BASE,
+      aircraftSelections: {
+        "0": { aircraftId: "air-1", quality: "Gold", resetSlots: {} },
+        "2": { aircraftId: "air-3", quality: "Gold", resetSlots: {} },
+        nope: { aircraftId: "air-4", quality: "Gold", resetSlots: {} },
+      },
+    });
+    expect(Object.keys(parsed!.aircraftSelections)).toEqual(["0"]);
+  });
+
+  it("drops entries that aren't objects", () => {
+    const parsed = parseBuildInput({
+      ...BASE,
+      aircraftSelections: { "0": "not-an-object", "1": null },
+    });
+    expect(parsed?.aircraftSelections).toEqual({});
+  });
+
+  // Aircraft use the colour ladder's top five, not Blue/Purple and not Q1-Q13.
+  it("falls back to Orange for a quality off the aircraft ladder", () => {
+    for (const bad of ["Blue", "Purple", "Q8", "Supreme", 7]) {
+      const parsed = parseBuildInput({
+        ...BASE,
+        aircraftSelections: { "0": { aircraftId: "a", quality: bad, resetSlots: {} } },
+      });
+      expect(parsed?.aircraftSelections["0"].quality, String(bad)).toBe("Orange");
+    }
+  });
+
+  it("drops reset rolls outside slots 0-4", () => {
+    const parsed = parseBuildInput({
+      ...BASE,
+      aircraftSelections: {
+        "0": {
+          aircraftId: "a",
+          quality: "Gold",
+          resetSlots: { "4": roll, "5": roll, nope: roll },
+        },
+      },
+    });
+    expect(Object.keys(parsed!.aircraftSelections["0"].resetSlots)).toEqual(["4"]);
+  });
+
+  it("falls back to the lowest grade for anything off the whitelist", () => {
+    const parsed = parseBuildInput({
+      ...BASE,
+      aircraftSelections: {
+        "0": {
+          aircraftId: "a",
+          quality: "Gold",
+          // Case-sensitive by design: the dropdown only ever emits "SS".
+          resetSlots: {
+            "0": { attributeId: "x", grade: "Z" },
+            "1": { attributeId: "y", grade: "ss" },
+            "2": { attributeId: "z" },
+          },
+        },
+      },
+    });
+    const rolls = parsed!.aircraftSelections["0"].resetSlots;
+    expect(rolls["0"].grade).toBe("G");
+    expect(rolls["1"].grade).toBe("G");
+    expect(rolls["2"].grade).toBe("G");
+  });
+
+  // No number is stored: the grade implies the range.
+  it("ignores a stray value field on a roll", () => {
+    const parsed = parseBuildInput({
+      ...BASE,
+      aircraftSelections: {
+        "0": {
+          aircraftId: "a",
+          quality: "Gold",
+          resetSlots: { "0": { attributeId: "x", grade: "S", value: 91.89 } },
+        },
+      },
+    });
+    expect(parsed!.aircraftSelections["0"].resetSlots["0"]).toEqual({
+      attributeId: "x",
+      grade: "S",
+    });
+  });
+
+  it("nulls a non-string aircraftId and defaults missing rolls", () => {
+    const parsed = parseBuildInput({
+      ...BASE,
+      aircraftSelections: { "0": { aircraftId: 42, quality: "Red" } },
+    });
+    expect(parsed?.aircraftSelections["0"]).toEqual({
+      aircraftId: null,
+      quality: "Red",
+      resetSlots: {},
+    });
+  });
+});

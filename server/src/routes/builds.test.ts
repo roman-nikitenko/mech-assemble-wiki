@@ -129,6 +129,43 @@ describe("POST /api/builds", () => {
     expect(res.body.droneSelections["5"]).toEqual({ droneId: null, quality: 0 });
   });
 
+  it("round-trips two aircraft, each with its own quality and rolls", async () => {
+    authState.sub = "test|builds-a";
+    const res = await request(app)
+      .post("/api/builds")
+      .send({
+        ...BUILD,
+        name: "[test:builds] With Aircraft",
+        aircraftSelections: {
+          "0": {
+            aircraftId: "air-1",
+            quality: "Mythic",
+            resetSlots: { "0": { attributeId: "attr-1", grade: "SS" } },
+          },
+          "1": { aircraftId: "air-2", quality: "Gold", resetSlots: {} },
+          // A build carries exactly two aircraft.
+          "2": { aircraftId: "air-3", quality: "Gold", resetSlots: {} },
+        },
+      });
+    expect(res.status).toBe(201);
+    expect(res.body.aircraftSelections["0"]).toEqual({
+      aircraftId: "air-1",
+      quality: "Mythic",
+      resetSlots: { "0": { attributeId: "attr-1", grade: "SS" } },
+    });
+    expect(res.body.aircraftSelections["1"].quality).toBe("Gold");
+    expect(res.body.aircraftSelections["2"]).toBeUndefined();
+  });
+
+  it("defaults the aircraft selections when absent", async () => {
+    authState.sub = "test|builds-a";
+    const res = await request(app)
+      .post("/api/builds")
+      .send({ ...BUILD, name: "[test:builds] No Aircraft" });
+    expect(res.status).toBe(201);
+    expect(res.body.aircraftSelections).toEqual({});
+  });
+
   it("defaults droneSelections to {} when absent", async () => {
     authState.sub = "test|builds-a";
     const res = await request(app).post("/api/builds").send(BUILD);

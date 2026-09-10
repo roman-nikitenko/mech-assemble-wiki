@@ -23,6 +23,7 @@ const build = (over: Partial<PostedBuild> = {}): PostedBuild => ({
   weaponSkillIds: {},
   status: "Draft" as BuildStatus,
   hearts: 0, quality: "Blue", weaponQualities: {}, moduleSelections: {}, droneSelections: {},
+  aircraftSelections: {},
   createdAt: "2026-07-15T00:00:00.000Z",
   updatedAt: "2026-07-15T00:00:00.000Z",
   author: { nickname: "Tester", server: "EU-1" },

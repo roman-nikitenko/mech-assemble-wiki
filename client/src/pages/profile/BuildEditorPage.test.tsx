@@ -16,6 +16,7 @@ import type {
   WeaponSummary,
 } from "../../api/types";
 import { BuildEditorPage } from "./BuildEditorPage";
+import type { Aircraft, AircraftAttributeGroup } from "../../api/types";
 
 // Builds the editor can load in edit mode (GET /api/builds/mine).
 let myBuilds: PostedBuild[] = [];
@@ -31,6 +32,7 @@ const postedBuild = (over: Partial<PostedBuild> = {}): PostedBuild => ({
   weaponSkillIds: {},
   status: "Draft" as BuildStatus,
   hearts: 0, quality: "Blue", weaponQualities: {}, moduleSelections: {}, droneSelections: {},
+  aircraftSelections: {},
   createdAt: "2026-07-15T00:00:00.000Z",
   updatedAt: "2026-07-15T00:00:00.000Z",
   author: { nickname: "Tester", server: "" },
@@ -140,6 +142,33 @@ const droneFixture = (over: Partial<Drone>): Drone => ({
   ...over,
 });
 
+const aircraftFixture: Aircraft[] = [
+  {
+    id: "a1", name: "Sky Fang", description: null, imageUrl: null, tier: "S",
+    hp: null, atk: null, def: null, specialBonus: null, rankUpPreview: [],
+  },
+  {
+    id: "a2", name: "Nimbus", description: null, imageUrl: null, tier: "Standard",
+    hp: null, atk: null, def: null, specialBonus: null, rankUpPreview: [],
+  },
+];
+
+const aircraftAttrsFixture: AircraftAttributeGroup[] = [
+  {
+    id: "g1", name: "Element DMG", unit: "Percent",
+    q1Max: 5, q8Max: 80, q13Max: 100, sortOrder: 1,
+    attributes: [
+      { id: "attr1", name: "Thunder DMG", sortOrder: 1 },
+      { id: "attr2", name: "Fire DMG", sortOrder: 2 },
+    ],
+  },
+  {
+    id: "g2", name: "Flat HP", unit: "Flat",
+    q1Max: 1000, q8Max: 15000, q13Max: 20000, sortOrder: 2,
+    attributes: [{ id: "attr3", name: "HP", sortOrder: 1 }],
+  },
+];
+
 const dronesFixture: Drone[] = [
   droneFixture({ id: "d1", name: "Buzz", droneTypeId: "dt1" }),
   droneFixture({ id: "d2", name: "Sting", droneTypeId: "dt1" }),
@@ -224,6 +253,11 @@ function renderEditor(path = "/profile/builds/new") {
       body = [moduleQualityFixture];
     } else if (url.includes("/api/modules")) {
       body = [moduleFixture];
+    } else if (url.includes("/api/aircraft-attributes")) {
+      // Checked BEFORE "/api/aircraft" — that prefix also matches this URL.
+      body = aircraftAttrsFixture;
+    } else if (url.includes("/api/aircraft")) {
+      body = aircraftFixture;
     } else if (url.includes("/api/drone-types")) {
       body = droneTypesFixture;
     } else if (url.includes("/api/drones")) {
@@ -534,6 +568,188 @@ describe("BuildEditorPage (new build)", () => {
     await userEvent.click(screen.getByRole("button", { name: "Save build" }));
     await screen.findByText("profile list");
     expect(lastSavedInput().droneSelections).toEqual({ "0": { droneId: "d1", quality: 7 } });
+  });
+
+  // ---------- Aircraft + Reset Effect ----------
+
+  /** Equip aircraft `slot` (1 or 2) so its 5 Reset Effect rows appear. */
+  async function equipAircraft(slot = 1, name = "Sky Fang") {
+    await userEvent.click(await screen.findByRole("button", { name: `Add aircraft ${slot}` }));
+    await userEvent.click(
+      within(await screen.findByRole("dialog", { name: `Choose aircraft ${slot}` })).getByRole(
+        "button",
+        { name }
+      )
+    );
+  }
+
+  it("offers two aircraft slots, each with its own five reset rows", async () => {
+    renderEditor();
+    await userEvent.click(await screen.findByRole("button", { name: /Iron Colossus/ }));
+    // Both slots exist up front; a third does not.
+    expect(await screen.findByRole("button", { name: "Add aircraft 1" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Add aircraft 2" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Add aircraft 3" })).not.toBeInTheDocument();
+
+    await equipAircraft(1);
+    expect(
+      await screen.findByRole("button", { name: "Change aircraft 1 (Sky Fang)" })
+    ).toBeInTheDocument();
+    // Rolls belong to an aircraft: five rows for slot 1, none for empty slot 2.
+    expect(screen.getAllByRole("button", { name: /^Reset effect \d attribute$/ })).toHaveLength(5);
+  });
+
+  it("hides an aircraft equipped in one slot from the other's picker", async () => {
+    renderEditor();
+    await userEvent.click(await screen.findByRole("button", { name: /Iron Colossus/ }));
+    await equipAircraft(1, "Sky Fang");
+
+    await userEvent.click(screen.getByRole("button", { name: "Add aircraft 2" }));
+    const chooser = await screen.findByRole("dialog", { name: "Choose aircraft 2" });
+    expect(within(chooser).queryByRole("button", { name: "Sky Fang" })).not.toBeInTheDocument();
+    expect(within(chooser).getByRole("button", { name: "Nimbus" })).toBeInTheDocument();
+  });
+
+  it("shows the exact band for SS and marks the middle grades approximate", async () => {
+    renderEditor();
+    await userEvent.click(await screen.findByRole("button", { name: /Iron Colossus/ }));
+    await equipAircraft(1);
+    await userEvent.click(screen.getByRole("button", { name: "Reset effect 1 attribute" }));
+    await userEvent.click(screen.getByRole("option", { name: "Thunder DMG" }));
+    await userEvent.click(screen.getByRole("button", { name: "Reset effect 1 grade" }));
+    await userEvent.click(screen.getByRole("option", { name: "SS" }));
+    // SS = above Q8, so its band runs from the Q8 cap to the Q13 cap.
+    expect(screen.getByText("80 – 100%")).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "Reset effect 1 grade" }));
+    await userEvent.click(screen.getByRole("option", { name: "A" }));
+    // A sits between two unpublished rungs, so it reads as approximate.
+    expect(screen.getByText("~5 – 80%")).toBeInTheDocument();
+  });
+
+  it("hides an attribute picked in one row from the others, but not from its own", async () => {
+    renderEditor();
+    await userEvent.click(await screen.findByRole("button", { name: /Iron Colossus/ }));
+    await equipAircraft(1);
+    await userEvent.click(screen.getByRole("button", { name: "Reset effect 1 attribute" }));
+    await userEvent.click(screen.getByRole("option", { name: "Thunder DMG" }));
+
+    await userEvent.click(screen.getByRole("button", { name: "Reset effect 2 attribute" }));
+    expect(screen.queryByRole("option", { name: "Thunder DMG" })).not.toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "Fire DMG" })).toBeInTheDocument();
+    await userEvent.keyboard("{Escape}");
+
+    // Row 1 still lists its own pick, so re-opening it doesn't blank the value.
+    await userEvent.click(screen.getByRole("button", { name: "Reset effect 1 attribute" }));
+    expect(screen.getByRole("option", { name: "Thunder DMG" })).toBeInTheDocument();
+  });
+
+  it("filters the attribute list from the search box", async () => {
+    renderEditor();
+    await userEvent.click(await screen.findByRole("button", { name: /Iron Colossus/ }));
+    await equipAircraft(1);
+    await userEvent.click(screen.getByRole("button", { name: "Reset effect 1 attribute" }));
+    // Opening a searchable Dropdown swaps the trigger for an input carrying the
+    // same accessible name, so query by that rather than a bare "textbox".
+    await userEvent.type(screen.getByRole("textbox", { name: "Reset effect 1 attribute" }), "thun");
+    expect(screen.getByRole("option", { name: "Thunder DMG" })).toBeInTheDocument();
+    expect(screen.queryByRole("option", { name: "Fire DMG" })).not.toBeInTheDocument();
+  });
+
+  it("saves both aircraft, their colour qualities and their own rolls", async () => {
+    renderEditor();
+    await userEvent.click(await screen.findByRole("button", { name: /Iron Colossus/ }));
+    await equipAircraft(1, "Sky Fang");
+    await equipAircraft(2, "Nimbus");
+
+    // Aircraft quality is the colour ladder (Orange…Mythic), NOT Q1-Q13.
+    await userEvent.click(screen.getByRole("button", { name: "Aircraft 1 quality" }));
+    await userEvent.click(screen.getByRole("option", { name: "Mythic" }));
+    await userEvent.click(screen.getAllByRole("button", { name: "Reset effect 1 attribute" })[0]);
+    await userEvent.click(screen.getByRole("option", { name: "Thunder DMG" }));
+    await userEvent.click(screen.getAllByRole("button", { name: "Reset effect 1 grade" })[0]);
+    await userEvent.click(screen.getByRole("option", { name: "SS" }));
+
+    await userEvent.type(screen.getByLabelText("Build name *"), "Aircraft rush");
+    await userEvent.click(screen.getByRole("button", { name: "Save build" }));
+    await screen.findByText("profile list");
+    // lastSavedInput is intentionally loosely typed; narrow just this field.
+    const saved = lastSavedInput().aircraftSelections as Record<string, unknown>;
+    expect(saved["0"]).toEqual({
+      aircraftId: "a1",
+      quality: "Mythic",
+      // Empty rows leave no key, and no number is stored — the grade implies it.
+      resetSlots: { "0": { attributeId: "attr1", grade: "SS" } },
+    });
+    expect(saved["1"]).toEqual({
+      aircraftId: "a2",
+      quality: "Orange",
+      resetSlots: {},
+    });
+  });
+
+  it("swapping to a different aircraft starts its rolls from empty", async () => {
+    renderEditor();
+    await userEvent.click(await screen.findByRole("button", { name: /Iron Colossus/ }));
+    await equipAircraft(1, "Sky Fang");
+    await userEvent.click(screen.getByRole("button", { name: "Reset effect 1 attribute" }));
+    await userEvent.click(screen.getByRole("option", { name: "Thunder DMG" }));
+
+    // Swap slot 1 to a different aircraft: the rolls belonged to the old one.
+    await userEvent.click(screen.getByRole("button", { name: "Change aircraft 1 (Sky Fang)" }));
+    await userEvent.click(
+      within(await screen.findByRole("dialog", { name: "Choose aircraft 1" })).getByRole("button", {
+        name: "Nimbus",
+      })
+    );
+
+    await userEvent.type(screen.getByLabelText("Build name *"), "Swapped");
+    await userEvent.click(screen.getByRole("button", { name: "Save build" }));
+    await screen.findByText("profile list");
+    const saved = lastSavedInput().aircraftSelections as Record<string, unknown>;
+    expect(saved["0"]).toEqual({ aircraftId: "a2", quality: "Orange", resetSlots: {} });
+  });
+
+  it("clearing an aircraft drops its rolls", async () => {
+    renderEditor();
+    await userEvent.click(await screen.findByRole("button", { name: /Iron Colossus/ }));
+    await equipAircraft(1);
+    await userEvent.click(screen.getByRole("button", { name: "Reset effect 1 attribute" }));
+    await userEvent.click(screen.getByRole("option", { name: "Thunder DMG" }));
+    await userEvent.click(screen.getByRole("button", { name: "Remove Sky Fang" }));
+
+    await userEvent.type(screen.getByLabelText("Build name *"), "No aircraft");
+    await userEvent.click(screen.getByRole("button", { name: "Save build" }));
+    await screen.findByText("profile list");
+    expect(lastSavedInput().aircraftSelections).toEqual({});
+  });
+
+  it("drops an aircraft id the catalog no longer has, and its rolls with it", async () => {
+    // Edit a saved build whose aircraft was since deleted from the wiki. The
+    // stale id must not be written back — same rule as savedWeaponIds.
+    myBuilds = [
+      postedBuild({
+        id: "b9",
+        aircraftSelections: {
+          "0": {
+            aircraftId: "deleted-1",
+            quality: "Gold",
+            resetSlots: { "0": { attributeId: "attr1", grade: "SS" } },
+          },
+        },
+      }),
+    ];
+    renderEditor("/profile/builds/b9/edit");
+    await screen.findByDisplayValue("Saved rush");
+    // Open a picker and wait for a real aircraft: the stale id is only pruned
+    // once the catalog has loaded, so saving before that would keep it and the
+    // test would pass for the wrong reason.
+    await userEvent.click(screen.getByRole("button", { name: "Add aircraft 2" }));
+    await screen.findByRole("button", { name: "Sky Fang" });
+    await userEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    await userEvent.click(screen.getByRole("button", { name: "Save build" }));
+    await screen.findByText("profile list");
+    expect(lastSavedInput().aircraftSelections).toEqual({});
   });
 
   it("filters the weapon strip by name and tier", async () => {
