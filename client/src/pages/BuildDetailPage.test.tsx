@@ -1,9 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { render, screen, within } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import type { Drone, DroneType, MechDetail, MechSummary, PostedBuild, WeaponSummary } from "../api/types";
+import type { Aircraft, AircraftAttributeGroup, Drone, DroneType, MechDetail, MechSummary, PostedBuild, WeaponSummary } from "../api/types";
 import { BuildDetailPage } from "./BuildDetailPage";
 
 const mechSummary: MechSummary = {
@@ -43,6 +43,7 @@ const mechDetail: MechDetail = {
 const GRANT_ON: PostedBuild = {
   id: "bgon", name: "Golden", description: "", mechId: "m1", weaponId: null,
   skillIds: [], weaponIds: [], weaponSkillIds: {}, hearts: 0, quality: "Gold", weaponQualities: {}, moduleSelections: {}, droneSelections: {},
+  aircraftSelections: {},
   status: "Published", createdAt: "2026-08-12T00:00:00.000Z",
   updatedAt: "2026-08-12T00:00:00.000Z", author: { nickname: null, server: null },
 };
@@ -72,6 +73,7 @@ const WITH_DRONES: PostedBuild = {
 const LINKED_ON: PostedBuild = {
   id: "bon", name: "Combo", description: "", mechId: "m1", weaponId: null,
   skillIds: ["s1", "ls1"], weaponIds: ["w1"], weaponSkillIds: {}, hearts: 0, quality: "Blue", weaponQualities: {}, moduleSelections: {}, droneSelections: {},
+  aircraftSelections: {},
   status: "Published", createdAt: "2026-07-20T00:00:00.000Z",
   updatedAt: "2026-07-20T00:00:00.000Z", author: { nickname: null, server: null },
 };
@@ -103,6 +105,7 @@ const weapon: WeaponSummary = {
 const WEAPON_ONLY: PostedBuild = {
   id: "bwo", name: "Weapon only", description: "", mechId: null, weaponId: "w1",
   skillIds: ["ws1", "wls1"], weaponIds: [], weaponSkillIds: {}, hearts: 0, quality: "Blue", weaponQualities: {}, moduleSelections: {}, droneSelections: {},
+  aircraftSelections: {},
   status: "Published", createdAt: "2026-08-10T00:00:00.000Z",
   updatedAt: "2026-08-10T00:00:00.000Z", author: { nickname: null, server: null },
 };
@@ -117,10 +120,47 @@ const BUILD: PostedBuild = {
   weaponIds: ["w1"],
   weaponSkillIds: { w1: ["ws1"] },
   hearts: 0, quality: "Blue", weaponQualities: {}, moduleSelections: {}, droneSelections: {},
+  aircraftSelections: {},
   status: "Published",
   createdAt: "2026-07-20T00:00:00.000Z",
   updatedAt: "2026-07-20T00:00:00.000Z",
   author: { nickname: null, server: null },
+};
+
+const aircraftCatalog: Aircraft[] = [
+  {
+    id: "a1", name: "Sky Fang", description: null, imageUrl: null, tier: "S",
+    hp: null, atk: null, def: null, specialBonus: null, rankUpPreview: [],
+  },
+];
+
+const aircraftAttrs: AircraftAttributeGroup[] = [
+  {
+    id: "g1", name: "Element DMG", unit: "Percent",
+    q1Max: 5, q8Max: 80, q13Max: 100, sortOrder: 1,
+    attributes: [{ id: "attr1", name: "Thunder DMG", sortOrder: 1 }],
+  },
+];
+
+// Points at an aircraft the catalog no longer has (deleted from the wiki).
+const GHOST_AIRCRAFT: PostedBuild = {
+  ...BUILD,
+  id: "bghost",
+  aircraftSelections: {
+    "0": { aircraftId: "deleted-1", quality: "Gold", resetSlots: {} },
+  },
+};
+
+const WITH_AIRCRAFT: PostedBuild = {
+  ...BUILD,
+  id: "bair",
+  aircraftSelections: {
+    "0": {
+      aircraftId: "a1",
+      quality: "Mythic",
+      resetSlots: { "0": { attributeId: "attr1", grade: "SS" } },
+    },
+  },
 };
 
 function renderPage(path: string) {
@@ -140,8 +180,14 @@ function renderPage(path: string) {
       });
     }
     else if (url.match(/\/api\/builds\/bdr$/)) body = WITH_DRONES;
+    else if (url.match(/\/api\/builds\/bair$/)) body = WITH_AIRCRAFT;
+    else if (url.match(/\/api\/builds\/bghost$/)) body = GHOST_AIRCRAFT;
     else if (url.includes("/api/mechs/m1")) body = mechDetail;
     else if (url.includes("/api/weapons")) body = [weapon];
+    // "/api/aircraft" also matches "/api/aircraft-attributes", so the more
+    // specific path is tested first.
+    else if (url.includes("/api/aircraft-attributes")) body = aircraftAttrs;
+    else if (url.includes("/api/aircraft")) body = aircraftCatalog;
     else if (url.includes("/api/drone-types")) body = droneTypes;
     else if (url.includes("/api/drones")) body = drones;
     else body = [mechSummary];
@@ -251,5 +297,37 @@ describe("BuildDetailPage", () => {
     renderPage("/builds/bgoff");
     await screen.findByRole("heading", { level: 1, name: "Golden" });
     expect(screen.queryByText("Freeze")).not.toBeInTheDocument();
+  });
+
+  it("renders the aircraft and its reset rolls read-only", async () => {
+    renderPage("/builds/bair");
+    expect(await screen.findByRole("heading", { level: 2, name: "Aircraft" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "More about Sky Fang" })).toBeInTheDocument();
+    expect(screen.getByText("Thunder DMG")).toBeInTheDocument();
+    // SS runs from the Q8 cap to the Q13 cap — an exact band, no "~" marker.
+    expect(screen.getByText("80 – 100%")).toBeInTheDocument();
+    expect(screen.getAllByRole("img", { name: "SS" }).length).toBeGreaterThan(0);
+    // Read-only: no editing controls anywhere.
+    expect(screen.queryByRole("button", { name: "Reset effect 1 attribute" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Aircraft quality" })).not.toBeInTheDocument();
+  });
+
+  it("omits the aircraft section when the build has none", async () => {
+    renderPage("/builds/b1");
+    await screen.findByRole("heading", { level: 1, name: "Zap rush" });
+    expect(screen.queryByRole("heading", { level: 2, name: "Aircraft" })).not.toBeInTheDocument();
+  });
+
+  it("omits the section when the equipped aircraft no longer exists", async () => {
+    // A dangling id would otherwise render a bare "Aircraft" heading with
+    // nothing under it, since the id resolves to no aircraft.
+    renderPage("/builds/bghost");
+    await screen.findByRole("heading", { level: 1, name: "Zap rush" });
+    // waitFor, not a bare assertion: the section is deliberately shown while the
+    // catalog is still fetching (better than flickering), so its absence is only
+    // meaningful once that request has resolved.
+    await waitFor(() =>
+      expect(screen.queryByRole("heading", { level: 2, name: "Aircraft" })).not.toBeInTheDocument()
+    );
   });
 });

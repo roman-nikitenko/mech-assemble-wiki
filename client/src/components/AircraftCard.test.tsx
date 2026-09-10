@@ -29,13 +29,14 @@ describe("AircraftCard", () => {
     expect(screen.queryByText("DEF")).not.toBeInTheDocument();
   });
 
+  // The card shows the bonus as a bare accent-coloured value with no "Special
+  // bonus" label, so assert on the value itself rather than a caption.
   it("shows the special bonus only when one is set", () => {
     const { unmount } = render(<AircraftCard aircraft={base} />);
-    expect(screen.queryByText("Special bonus")).not.toBeInTheDocument();
+    expect(screen.queryByText("ATK +10%")).not.toBeInTheDocument();
     unmount();
 
     render(<AircraftCard aircraft={{ ...base, specialBonus: "ATK +10%" }} />);
-    expect(screen.getByText("Special bonus")).toBeInTheDocument();
     expect(screen.getByText("ATK +10%")).toBeInTheDocument();
   });
 
