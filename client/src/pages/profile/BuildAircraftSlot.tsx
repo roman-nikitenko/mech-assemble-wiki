@@ -9,8 +9,8 @@ import type {
 } from "../../api/types";
 import { AircraftCard } from "../../components/AircraftCard";
 import { Dropdown } from "../../components/Dropdown";
+import { Modal } from "../../components/Modal";
 import { QualityIcon } from "../../components/QualityIcon";
-import { useLockBodyScroll } from "../../lib/useLockBodyScroll";
 import { aircraftQualityBg } from "../../lib/aircraftQualityBg";
 import {
   AIRCRAFT_QUALITIES,
@@ -46,7 +46,6 @@ export function BuildAircraftSlot({
   const slotNo = index + 1;
   const [picking, setPicking] = useState(false);
   const [showInfo, setShowInfo] = useState(false);
-  useLockBodyScroll(picking || showInfo);
 
   const equipped =
     selection.aircraftId === null
@@ -177,13 +176,12 @@ export function BuildAircraftSlot({
       )}
 
       {picking && (
-        <div
-          className="fixed inset-0 z-10 flex items-center justify-center bg-bg/80 p-4"
-          role="dialog"
-          aria-modal="true"
-          aria-label={`Choose aircraft ${slotNo}`}
+        <Modal
+          label={`Choose aircraft ${slotNo}`}
+          onClose={() => setPicking(false)}
+          panelClassName="max-h-[80vh] w-full max-w-2xl overflow-y-auto rounded-xl border border-edge bg-surface p-6"
         >
-          <div className="max-h-[80vh] w-full max-w-2xl overflow-y-auto rounded-xl border border-edge bg-surface p-6">
+          <div>
             <div className="mb-4 flex items-center justify-between gap-2">
               <h3 className="font-bold">Choose aircraft {slotNo}</h3>
               <button
@@ -234,18 +232,17 @@ export function BuildAircraftSlot({
               </div>
             )}
           </div>
-        </div>
+        </Modal>
       )}
 
       {showInfo && equipped && (
-        <div
-          className="fixed inset-0 z-30 flex items-center justify-center bg-bg/80 p-4"
-          role="dialog"
-          aria-modal="true"
-          aria-label={equipped.name}
-          onClick={() => setShowInfo(false)}
+        <Modal
+          label={equipped.name}
+          onClose={() => setShowInfo(false)}
+          closeOnBackdrop
+          panelClassName="relative w-full max-w-sm"
         >
-          <div className="relative w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
+          <div className="relative">
             <button
               type="button"
               onClick={() => setShowInfo(false)}
@@ -258,7 +255,7 @@ export function BuildAircraftSlot({
               <AircraftCard aircraft={equipped} quality={selection.quality} />
             </div>
           </div>
-        </div>
+        </Modal>
       )}
     </div>
   );
