@@ -5,6 +5,8 @@ import {
   imageSrc,
   srcSet,
   CARD_SIZES,
+  useAircraft,
+  useAircraftAttributes,
   useDrones,
   useDroneTypes,
   useMech,
@@ -14,7 +16,7 @@ import {
   useTypes,
   useWeapons,
 } from "../../api/client";
-import type { DroneSelection, MechRank, ModuleSelection, PostedBuild, QualityTier, SkillNodeRow, WeaponSummary } from "../../api/types";
+import type { AircraftSelection, DroneSelection, MechRank, ModuleSelection, PostedBuild, QualityTier, SkillNodeRow, WeaponSummary } from "../../api/types";
 import { QUALITY_TIERS } from "../../api/types";
 import { MAX_CORE_SLOTS, availableSkills, grantedSkills, resolvePicks } from "../../profile/buildRules";
 import { QualityIcon } from "../../components/QualityIcon";
@@ -30,6 +32,7 @@ import { FilterBar } from "../../components/FilterBar";
 import { LoadingSkeleton } from "../../components/LoadingSkeleton";
 import { BuildModuleCard } from "./BuildModuleCard";
 import { BuildDronesSection } from "./BuildDronesSection";
+import { BuildAircraftSection } from "./BuildAircraftSection";
 
 export const MAX_WEAPONS = 4;
 
@@ -128,6 +131,11 @@ function BuildEditorContent({ existing }: { existing: PostedBuild | undefined })
   const [droneSel, setDroneSel] = useState<Record<string, DroneSelection>>(
     existing?.droneSelections ?? {}
   );
+  // The build's two aircraft, keyed by aircraft slot "0" / "1" — each nesting
+  // its own quality and its own 5 Reset Effect rolls.
+  const [aircraftSel, setAircraftSel] = useState<Record<string, AircraftSelection>>(
+    existing?.aircraftSelections ?? {}
+  );
   // Weapon strip filters — each one narrows the strip; blank = show all.
   const [weaponName, setWeaponName] = useState("");
   const [weaponTypeId, setWeaponTypeId] = useState("");
@@ -151,6 +159,8 @@ function BuildEditorContent({ existing }: { existing: PostedBuild | undefined })
   const moduleQualities = useModuleQualities();
   const drones = useDrones();
   const droneTypes = useDroneTypes();
+  const aircraft = useAircraft();
+  const aircraftAttributes = useAircraftAttributes();
   const allWeapons = weapons.data ?? [];
 
   // Creating requires a logged-in user with a nickname (the author).
@@ -451,6 +461,15 @@ function BuildEditorContent({ existing }: { existing: PostedBuild | undefined })
     const subjectPickable = isWeaponBuild ? buildWeaponPickable : mechPickable;
     const subjectGranted = isWeaponBuild ? buildWeaponGranted : mechGranted;
     const savedWeaponIds = isWeaponBuild ? [] : weapons.data ? equipped.map((w) => w.id) : weaponIds;
+    // Same rule for the aircraft: drop an id whose aircraft was deleted from
+    // the wiki (and its rolls with it), but only once the live list has loaded.
+    const savedAircraft = Object.fromEntries(
+      Object.entries(aircraftSel).filter(
+        ([, s]) =>
+          s.aircraftId !== null &&
+          (!aircraft.data || aircraft.data.some((a) => a.id === s.aircraftId))
+      )
+    );
     const input = {
       name: name.trim(),
       description: description.trim(),
@@ -466,6 +485,18 @@ function BuildEditorContent({ existing }: { existing: PostedBuild | undefined })
       // Empty squares aren't stored — a cleared slot leaves no key behind.
       droneSelections: Object.fromEntries(
         Object.entries(droneSel).filter(([, s]) => s.droneId !== null)
+      ),
+      // Empty rolls leave no key behind, same rule as the drone squares.
+      aircraftSelections: Object.fromEntries(
+        Object.entries(savedAircraft).map(([slot, sel]) => [
+          slot,
+          {
+            ...sel,
+            resetSlots: Object.fromEntries(
+              Object.entries(sel.resetSlots).filter(([, r]) => r.attributeId !== null)
+            ),
+          },
+        ])
       ),
       weaponSkillIds: isWeaponBuild
         ? {}
@@ -531,6 +562,12 @@ function BuildEditorContent({ existing }: { existing: PostedBuild | undefined })
         droneTypes={droneTypes.data ?? []}
         selections={droneSel}
         onChange={setDroneSel}
+      />
+      <BuildAircraftSection
+        aircraft={aircraft.data ?? []}
+        attributeGroups={aircraftAttributes.data ?? []}
+        selections={aircraftSel}
+        onChange={setAircraftSel}
       />
       <button
         type="button"

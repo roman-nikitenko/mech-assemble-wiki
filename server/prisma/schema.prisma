@@ -55,6 +55,13 @@ enum ModuleTargetKind {
   Mech
 }
 
+// Unit of an aircraft reset-effect attribute: a raw number ("HP +1000") or a
+// percentage ("Thunder DMG +91.89%"). Drives formatting, nothing else.
+enum AircraftAttributeUnit {
+  Flat
+  Percent
+}
+
 // ---------- The hub ----------
 
 model Mech {
@@ -611,6 +618,18 @@ model Build {
   // 0-9 QualityGem number — a DIFFERENT ladder from the QualityTier enum
   // used by mechs, weapons and modules.
   droneSelections Json        @default("{}") @map("drone_selections")
+  // The build's TWO aircraft, keyed by slot index "0" and "1":
+  //   {"0": {aircraftId, quality, resetSlots: {"0".."4": {attributeId, grade}}}}
+  // Each aircraft carries its own quality AND its own 5-roll Reset Effect
+  // panel, which is why this nests rather than sitting in parallel columns.
+  // aircraftId is a bare id with NO foreign key, exactly like mechId/weaponId:
+  // deleting an aircraft from the wiki must not cascade-delete community
+  // builds — the build just degrades to "that aircraft is gone".
+  // `quality` is the aircraft colour ladder (Orange→Mythic — the top five
+  // QualityTier steps, as shown on the aircraft cards), NOT the Q1-Q13 table.
+  // A roll stores NO number: its grade letter implies a range, derived at
+  // display time from the attribute group's caps.
+  aircraftSelections Json     @default("{}") @map("aircraft_selections")
   // Publication state. New builds start as Draft (private); the public feed
   // and share pages only surface Published rows.
   status    BuildStatus @default(Draft)
@@ -754,4 +773,47 @@ model AccessorySetMember {
 
   @@id([setId, accessoryId])
   @@map("accessory_set_members")
+}
+
+// ---------- Aircraft reset-effect attributes ----------
+
+// The aircraft "Reset Effect" panel rolls 5 slots; each slot shows a letter
+// grade (G…SS) plus one attribute. Attributes that share the same roll ceilings
+// are grouped, so the caps are stored ONCE per group instead of on all 29 rows.
+// SEEDED BY MIGRATION (add_aircraft_attributes) — there is no admin CRUD, so a
+// wrong value is corrected by a NEW migration with UPDATEs, never by editing an
+// applied one (that would break `migrate deploy` with a checksum error).
+model AircraftAttributeGroup {
+  id   String                @id @default(uuid()) @db.Uuid
+  name String                @unique
+  unit AircraftAttributeUnit
+  // Roll ceilings at the three quality rungs the game publishes (Q1, Q8, Q13);
+  // the rungs in between are unknown. Float rather than the Int/String used
+  // everywhere else in this schema: one cap is fractional (2.5), and the free-
+  // text String convention is for values that carry their own units ("54.00k"),
+  // which these don't — the unit is its own column. A future build editor also
+  // needs to compare `value <= cap` without parsing.
+  q1Max     Float @map("q1_max")
+  q8Max     Float @map("q8_max")
+  q13Max    Float @map("q13_max")
+  sortOrder Int   @default(0) @map("sort_order")
+
+  attributes AircraftAttribute[]
+
+  @@map("aircraft_attribute_groups")
+}
+
+// One pickable attribute, e.g. "Thunder DMG". Names are unique across the whole
+// catalog, which also gives the seed a conflict target.
+model AircraftAttribute {
+  id        String @id @default(uuid()) @db.Uuid
+  groupId   String @map("group_id") @db.Uuid
+  name      String @unique
+  sortOrder Int    @default(0) @map("sort_order")
+
+  // Restrict: a group can't be deleted out from under its attributes.
+  group AircraftAttributeGroup @relation(fields: [groupId], references: [id], onDelete: Restrict)
+
+  @@index([groupId])
+  @@map("aircraft_attributes")
 }

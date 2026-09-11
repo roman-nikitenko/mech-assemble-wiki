@@ -2,6 +2,10 @@
 // server/src/routes/mechs.ts). Kept deliberately in sync by hand — sharing
 // types with the server would need npm workspaces; not worth it yet.
 
+// `import type` is erased at build time, so this does NOT pull aircraftGrade's
+// asset glob into every module that imports these types.
+import type { AircraftGrade } from "../lib/aircraftGrade";
+
 /** An element type from the admin-managed catalog (name + icon).
     Named GameType because "Type" collides with too much in TS-land. */
 export interface GameType {
@@ -87,6 +91,30 @@ export interface AircraftInput {
   def?: string | null;
   specialBonus?: string | null;
   rankUpPreview: string[];
+}
+
+/** How an aircraft reset-effect value reads: "HP +1000" vs "Thunder DMG +91%". */
+export type AircraftAttributeUnit = "Flat" | "Percent";
+
+/** One pickable Reset-Effect attribute, e.g. "Thunder DMG". */
+export interface AircraftAttribute {
+  id: string;
+  name: string;
+  sortOrder: number;
+}
+
+/** Attributes that share one set of roll ceilings. The caps are plain numbers
+    (one of them is 2.5) — they carry no unit suffix, because `unit` says how to
+    render them. Seeded server-side; read-only, so there is no Input twin. */
+export interface AircraftAttributeGroup {
+  id: string;
+  name: string;
+  unit: AircraftAttributeUnit;
+  q1Max: number;
+  q8Max: number;
+  q13Max: number;
+  sortOrder: number;
+  attributes: AircraftAttribute[];
 }
 
 export type MechRank = "Standard" | "S";
@@ -508,6 +536,8 @@ export interface PostedBuild {
   moduleSelections: Record<string, ModuleSelection>;
   // Drone picks, keyed by slot index "0".."5" (the fixed 2/2/2 layout).
   droneSelections: Record<string, DroneSelection>;
+  // The build's two aircraft, keyed by aircraft slot "0" / "1".
+  aircraftSelections: Record<string, AircraftSelection>;
   // Set by the client after a heart toggle — not included in GET responses.
   userHearted?: boolean;
   createdAt: string;
@@ -543,6 +573,23 @@ export interface DroneSelection {
   quality: number;
 }
 
+/** One Reset-Effect roll: which attribute rolled and the letter grade the game
+    gave it. NO number is stored — the grade implies a range, derived from the
+    attribute group's caps at display time. */
+export interface AircraftResetSlot {
+  attributeId: string | null;
+  grade: AircraftGrade;
+}
+
+/** One of a build's two aircraft: which one, its colour-ladder quality
+    (Orange→Mythic — NOT the Q1-Q13 table), and its own 5 Reset Effect rolls
+    keyed by roll index "0".."4". */
+export interface AircraftSelection {
+  aircraftId: string | null;
+  quality: QualityTier;
+  resetSlots: Record<string, AircraftResetSlot>;
+}
+
 /** Payload for POST /api/builds. */
 export interface BuildPostInput {
   name: string;
@@ -558,6 +605,8 @@ export interface BuildPostInput {
   moduleSelections?: Record<string, ModuleSelection>;
   // Drone picks, keyed by slot index "0".."5".
   droneSelections?: Record<string, DroneSelection>;
+  // Optional like the fields above — the server defaults it to {}.
+  aircraftSelections?: Record<string, AircraftSelection>;
 }
 
 /** Payload for POST/PUT /api/accessories. */

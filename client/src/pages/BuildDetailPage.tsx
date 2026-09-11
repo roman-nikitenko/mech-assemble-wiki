@@ -1,7 +1,8 @@
 import { Link, useParams } from "react-router-dom";
-import { imageSrc, useDrones, useDroneTypes, useMech, useMechs, useModuleQualities, useModules, usePostedBuild, useTypes, useWeapons } from "../api/client";
+import { imageSrc, useAircraft, useAircraftAttributes, useDrones, useDroneTypes, useMech, useMechs, useModuleQualities, useModules, usePostedBuild, useTypes, useWeapons } from "../api/client";
 import { BuildModuleCard } from "./profile/BuildModuleCard";
 import { BuildDronesSection } from "./profile/BuildDronesSection";
+import { BuildAircraftSection } from "./profile/BuildAircraftSection";
 import type { WeaponSummary } from "../api/types";
 import { Seo } from "../components/Seo";
 import { AuthorTag } from "../profile/AuthorTag";
@@ -36,6 +37,8 @@ export function BuildDetailPage() {
   const types = useTypes();
   const drones = useDrones();
   const droneTypes = useDroneTypes();
+  const aircraft = useAircraft();
+  const aircraftAttributes = useAircraftAttributes();
 
   if (build.isPending) {
     return (
@@ -264,6 +267,28 @@ export function BuildDetailPage() {
             drones={drones.data ?? []}
             droneTypes={droneTypes.data ?? []}
             selections={b.droneSelections ?? {}}
+            readOnly
+          />
+        </div>
+      )}
+
+      {/* Only once at least one aircraft is actually equipped. An id that no
+          longer resolves (deleted from the wiki) would render a bare heading,
+          so it only counts once we KNOW the catalog has loaded — while it's
+          still fetching we keep showing rather than flicker.
+          isPending, not !aircraft.data: the latter is also true after the
+          catalog request FAILS, which would leave the heading up forever over
+          an empty grid. */}
+      {Object.values(b.aircraftSelections ?? {}).some(
+        (s) =>
+          s.aircraftId !== null &&
+          (aircraft.isPending || (aircraft.data?.some((a) => a.id === s.aircraftId) ?? false))
+      ) && (
+        <div className="mt-6">
+          <BuildAircraftSection
+            aircraft={aircraft.data ?? []}
+            attributeGroups={aircraftAttributes.data ?? []}
+            selections={b.aircraftSelections ?? {}}
             readOnly
           />
         </div>
