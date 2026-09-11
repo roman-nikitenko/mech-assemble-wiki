@@ -275,11 +275,14 @@ export function BuildDetailPage() {
       {/* Only once at least one aircraft is actually equipped. An id that no
           longer resolves (deleted from the wiki) would render a bare heading,
           so it only counts once we KNOW the catalog has loaded — while it's
-          still fetching we keep showing rather than flicker. */}
+          still fetching we keep showing rather than flicker.
+          isPending, not !aircraft.data: the latter is also true after the
+          catalog request FAILS, which would leave the heading up forever over
+          an empty grid. */}
       {Object.values(b.aircraftSelections ?? {}).some(
         (s) =>
           s.aircraftId !== null &&
-          (!aircraft.data || aircraft.data.some((a) => a.id === s.aircraftId))
+          (aircraft.isPending || (aircraft.data?.some((a) => a.id === s.aircraftId) ?? false))
       ) && (
         <div className="mt-6">
           <BuildAircraftSection

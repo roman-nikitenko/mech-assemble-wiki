@@ -163,6 +163,9 @@ const WITH_AIRCRAFT: PostedBuild = {
   },
 };
 
+/** Set by the one test that needs the aircraft catalog request to fail. */
+let failAircraftCatalog = false;
+
 function renderPage(path: string) {
   vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
     const url = String(input);
@@ -187,7 +190,15 @@ function renderPage(path: string) {
     // "/api/aircraft" also matches "/api/aircraft-attributes", so the more
     // specific path is tested first.
     else if (url.includes("/api/aircraft-attributes")) body = aircraftAttrs;
-    else if (url.includes("/api/aircraft")) body = aircraftCatalog;
+    else if (url.includes("/api/aircraft")) {
+      if (failAircraftCatalog) {
+        return new Response(JSON.stringify({ error: "boom" }), {
+          status: 500,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+      body = aircraftCatalog;
+    }
     else if (url.includes("/api/drone-types")) body = droneTypes;
     else if (url.includes("/api/drones")) body = drones;
     else body = [mechSummary];
@@ -329,5 +340,23 @@ describe("BuildDetailPage", () => {
     await waitFor(() =>
       expect(screen.queryByRole("heading", { level: 2, name: "Aircraft" })).not.toBeInTheDocument()
     );
+  });
+
+  it("omits the section when the aircraft catalog request fails", async () => {
+    // The id can't be resolved either way, but a FAILED request must not be
+    // mistaken for a still-loading one — otherwise the heading stays up
+    // forever over an empty grid.
+    failAircraftCatalog = true;
+    try {
+      renderPage("/builds/bair");
+      await screen.findByRole("heading", { level: 1, name: "Zap rush" });
+      await waitFor(() =>
+        expect(
+          screen.queryByRole("heading", { level: 2, name: "Aircraft" })
+        ).not.toBeInTheDocument()
+      );
+    } finally {
+      failAircraftCatalog = false;
+    }
   });
 });
