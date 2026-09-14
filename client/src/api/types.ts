@@ -538,6 +538,9 @@ export interface PostedBuild {
   droneSelections: Record<string, DroneSelection>;
   // The build's two aircraft, keyed by aircraft slot "0" / "1".
   aircraftSelections: Record<string, AircraftSelection>;
+  // Awakening step key — "2-2" (level 2, outer node 2) or "2-C" (level 2's
+  // core reached, labelled "Awakening Lv3"). null = not awakened.
+  awakeningStep: string | null;
   // Set by the client after a heart toggle — not included in GET responses.
   userHearted?: boolean;
   createdAt: string;
@@ -607,6 +610,8 @@ export interface BuildPostInput {
   droneSelections?: Record<string, DroneSelection>;
   // Optional like the fields above — the server defaults it to {}.
   aircraftSelections?: Record<string, AircraftSelection>;
+  // The server defaults it to null (not awakened).
+  awakeningStep?: string | null;
 }
 
 /** Payload for POST/PUT /api/accessories. */

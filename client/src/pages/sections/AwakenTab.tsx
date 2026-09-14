@@ -61,7 +61,7 @@ function NodeRow({
       {/* identity: icon, position label, and the stat itself */}
       <div className="flex items-start gap-3">
         <span className="mt-0.5 shrink-0">
-          <AwakeningIcon icon={node.icon} size={34} />
+          <AwakeningIcon icon={node.icon} size={50} />
         </span>
         <div className="min-w-0">
           <span className="block font-mono text-xs tracking-widest text-ink-dim">

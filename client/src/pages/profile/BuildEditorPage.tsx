@@ -24,6 +24,9 @@ import { STierIcon } from "../../components/STierIcon";
 import { Dropdown } from "../../components/Dropdown";
 import { ButtonGroup } from "../../components/ButtonGroup";
 import { PickedSlot, SkillsBlock } from "../../profile/SkillsBlock";
+import { AwakeningEffectBox } from "../../components/AwakeningEffectBox";
+import { awakeningStepOptions, reachedCores } from "../../profile/awakeningSteps";
+import { withUniversalCores } from "../../profile/universalCoreSkills";
 import { NotesField } from "../../profile/NotesField";
 import { useMe } from "../../auth/useMe";
 import { useCreateBuild, useMyBuilds, useUpdateBuild } from "../../auth/useBuilds";
@@ -120,6 +123,8 @@ function BuildEditorContent({ existing }: { existing: PostedBuild | undefined })
   );
   // Quality tier of the SUBJECT (mech, or single weapon) + per equipped weapon.
   const [quality, setQuality] = useState<QualityTier>(existing?.quality ?? "Blue");
+  // Awakening step key ("2-2" / "2-C"), null = not awakened.
+  const [awakeningStep, setAwakeningStep] = useState<string | null>(existing?.awakeningStep ?? null);
   const [weaponQualities, setWeaponQualities] = useState<Record<string, QualityTier>>(
     existing?.weaponQualities ?? {}
   );
@@ -153,6 +158,14 @@ function BuildEditorContent({ existing }: { existing: PostedBuild | undefined })
 
   const mechs = useMechs({});
   const detail = useMech(mechId ?? "");
+  // Empty for a mech with no live awakening levels — the dropdown hides then.
+  const awakeningOptions = awakeningStepOptions(detail.data?.awakeningLevels ?? []);
+  // The step only counts if THIS mech's track offers it: one picked on another
+  // mech (or saved before a level changed) would otherwise show a blank
+  // dropdown next to an effect box for a step you can't see. Until the mech
+  // loads we can't tell, so the stored value is kept rather than wiped.
+  const effectiveAwakeningStep =
+    !detail.data || awakeningOptions.some((o) => o.value === awakeningStep) ? awakeningStep : null;
   const weapons = useWeapons();
   const types = useTypes();
   const modules = useModules();
@@ -301,8 +314,10 @@ function BuildEditorContent({ existing }: { existing: PostedBuild | undefined })
   const mech = detail.data;
   // Skill pools filtered for THIS build: a LINKED skill only appears when its
   // gate partner is present — the mech pool is gated by the equipped weapon
-  // ids; a weapon's pool is gated by the build's mech id.
-  const skills = availableSkills(mech?.skillNodes ?? [], weaponIds);
+  // ids; a weapon's pool is gated by the build's mech id. The mech pool also
+  // gets the 4 universal cores — but only once the mech has loaded, so an
+  // unloaded mech doesn't show four lone core cards.
+  const skills = availableSkills(mech ? withUniversalCores(mech.skillNodes) : [], weaponIds);
   const buildWeaponSkills = availableSkills(
     buildWeapon ? buildWeapon.skillNodes : [],
     mechId ? [mechId] : []
@@ -362,6 +377,9 @@ function BuildEditorContent({ existing }: { existing: PostedBuild | undefined })
     // Weapons (and their skill picks) stay: any weapon fits any mech.
     setMechId(null);
     setPickedIds([]);
+    // Awakening progress belongs to one mech too — even when the next mech's
+    // track has the same key ("2-2"), it isn't that mech's progress.
+    setAwakeningStep(null);
   }
 
   // The build-wide Core pool: core picks stay STORED with their source
@@ -478,6 +496,8 @@ function BuildEditorContent({ existing }: { existing: PostedBuild | undefined })
       skillIds: resolvePicks(subjectPickable, pickedIds, subjectGranted).map((p) => p.id),
       weaponIds: savedWeaponIds,
       quality,
+      // Mech builds only, and only a step this mech's track offers.
+      awakeningStep: isWeaponBuild ? null : effectiveAwakeningStep,
       weaponQualities: isWeaponBuild
         ? {}
         : Object.fromEntries(savedWeaponIds.map((id) => [id, weaponQualities[id] ?? "Blue"])),
@@ -801,6 +821,29 @@ function BuildEditorContent({ existing }: { existing: PostedBuild | undefined })
 
       {/* one expandable skills block for the mech, one per equipped weapon */}
       <QualitySelect label="Mech quality" value={quality} onChange={setQuality} />
+      {/* Only for a mech with awakening levels a player can reach today. */}
+      {awakeningOptions.length > 0 && (
+        <div className="mt-5">
+          <div className="max-w-[220px]">
+            <span className="mb-1 block text-sm font-semibold text-ink-dim">Mech awakening</span>
+            <Dropdown
+              ariaLabel="Mech awakening"
+              // "" is the "Not awakened" option; the build stores it as null.
+              value={effectiveAwakeningStep ?? ""}
+              onChange={(v) => setAwakeningStep(v === "" ? null : v)}
+              options={[{ value: "", label: "Not awakened" }, ...awakeningOptions]}
+            />
+          </div>
+          {effectiveAwakeningStep !== null && (
+            <div className="mt-3 max-w-xl">
+              <AwakeningEffectBox
+                cores={reachedCores(detail.data?.awakeningLevels ?? [], effectiveAwakeningStep)}
+                mechIconUrl={detail.data?.iconUrl ?? null}
+              />
+            </div>
+          )}
+        </div>
+      )}
       <SkillsBlock
         title={mech ? `${mech.name} skills` : "Mech skills"}
         skills={mechPickable}

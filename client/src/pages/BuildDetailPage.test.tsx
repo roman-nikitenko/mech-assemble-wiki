@@ -3,7 +3,7 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import type { Aircraft, AircraftAttributeGroup, Drone, DroneType, MechDetail, MechSummary, PostedBuild, WeaponSummary } from "../api/types";
+import type { Aircraft, AircraftAttributeGroup, AwakeningLevel, Drone, DroneType, MechDetail, MechSummary, PostedBuild, WeaponSummary } from "../api/types";
 import { BuildDetailPage } from "./BuildDetailPage";
 
 const mechSummary: MechSummary = {
@@ -16,6 +16,12 @@ const mechSummary: MechSummary = {
   imageUrl: null,
 };
 
+const awakeningLevel = (n: number, over: Partial<AwakeningLevel> = {}): AwakeningLevel => ({
+  id: `lv${n}`, level: n, isLive: true, coreAttr: [], coreSkill: null, coreInfo: null,
+  coreCd: [], corePower: null, coreLuckyId: null, coreReward: null, coreSkin: null, nodes: [],
+  ...over,
+});
+
 const mechDetail: MechDetail = {
   ...mechSummary,
   iconUrl: null,
@@ -25,7 +31,11 @@ const mechDetail: MechDetail = {
   rankUpPreview: [],
   skills: [],
   traits: [],
-  awakeningLevels: [],
+  awakeningLevels: [
+    awakeningLevel(1, { coreAttr: ["HP +5%", "ATK +5%", "DEF +5%"], coreSkill: "DMG from Mechs -50%" }),
+    awakeningLevel(2, { coreAttr: ["HP +5%", "ATK +5%", "DEF +5%"], coreSkill: "Fatal Blade" }),
+    awakeningLevel(3, { coreAttr: ["HP +8%", "ATK +8%", "DEF +8%"], coreSkill: "Poisoned Shuriken" }),
+  ],
   weapon: null,
   accessory: null,
   pilot: null,
@@ -36,6 +46,12 @@ const mechDetail: MechDetail = {
     { id: "s5", parentId: null, name: null, description: "Core power", appearanceLevel: 1, type: "Core", sortOrder: 1, repeatable: false, linkedWeaponId: null, linkedMechId: null, initialAtTier: null },
     { id: "ls1", parentId: null, name: "Frost Synergy", description: "combo", appearanceLevel: 1, type: "Normal", sortOrder: 2, repeatable: false, linkedWeaponId: "w1", linkedMechId: null, initialAtTier: null },
     { id: "qg1", parentId: null, name: "Freeze", description: "freeze", appearanceLevel: 1, type: "Normal", sortOrder: 3, repeatable: false, linkedWeaponId: null, linkedMechId: null, initialAtTier: "Gold" },
+    // A Zap → Chain Bolt → Storm Call chain, a second root, and a child of the
+    // quality-granted Freeze — for the family layout test.
+    { id: "s2", parentId: "s1", name: "Chain Bolt", description: "chain", appearanceLevel: 1, type: "Normal", sortOrder: 4, repeatable: false, linkedWeaponId: null, linkedMechId: null, initialAtTier: null },
+    { id: "s3", parentId: "s2", name: "Storm Call", description: "storm", appearanceLevel: 1, type: "Normal", sortOrder: 5, repeatable: false, linkedWeaponId: null, linkedMechId: null, initialAtTier: null },
+    { id: "s4", parentId: null, name: "Spark", description: "spark", appearanceLevel: 1, type: "Normal", sortOrder: 6, repeatable: false, linkedWeaponId: null, linkedMechId: null, initialAtTier: null },
+    { id: "fz1", parentId: "qg1", name: "Shatter", description: "shatter", appearanceLevel: 1, type: "Normal", sortOrder: 7, repeatable: false, linkedWeaponId: null, linkedMechId: null, initialAtTier: null },
   ],
 };
 
@@ -44,10 +60,20 @@ const GRANT_ON: PostedBuild = {
   id: "bgon", name: "Golden", description: "", mechId: "m1", weaponId: null,
   skillIds: [], weaponIds: [], weaponSkillIds: {}, hearts: 0, quality: "Gold", weaponQualities: {}, moduleSelections: {}, droneSelections: {},
   aircraftSelections: {},
+  awakeningStep: null,
   status: "Published", createdAt: "2026-08-12T00:00:00.000Z",
   updatedAt: "2026-08-12T00:00:00.000Z", author: { nickname: null, server: null },
 };
 const GRANT_OFF: PostedBuild = { ...GRANT_ON, id: "bgoff", quality: "Blue" };
+
+// Picks in the order a player might take them: Spark is picked BEFORE Storm
+// Call, but must read after the whole Zap family. Gold grants Freeze, whose
+// picked child Shatter should hang under it.
+const FAMILY: PostedBuild = {
+  ...GRANT_ON,
+  id: "bfam",
+  skillIds: ["s1", "s2", "s4", "s3", "fz1"],
+};
 
 // Drone catalog + a build with one Battle drone equipped in slot 1.
 const droneTypes: DroneType[] = [
@@ -74,6 +100,7 @@ const LINKED_ON: PostedBuild = {
   id: "bon", name: "Combo", description: "", mechId: "m1", weaponId: null,
   skillIds: ["s1", "ls1"], weaponIds: ["w1"], weaponSkillIds: {}, hearts: 0, quality: "Blue", weaponQualities: {}, moduleSelections: {}, droneSelections: {},
   aircraftSelections: {},
+  awakeningStep: null,
   status: "Published", createdAt: "2026-07-20T00:00:00.000Z",
   updatedAt: "2026-07-20T00:00:00.000Z", author: { nickname: null, server: null },
 };
@@ -106,6 +133,7 @@ const WEAPON_ONLY: PostedBuild = {
   id: "bwo", name: "Weapon only", description: "", mechId: null, weaponId: "w1",
   skillIds: ["ws1", "wls1"], weaponIds: [], weaponSkillIds: {}, hearts: 0, quality: "Blue", weaponQualities: {}, moduleSelections: {}, droneSelections: {},
   aircraftSelections: {},
+  awakeningStep: null,
   status: "Published", createdAt: "2026-08-10T00:00:00.000Z",
   updatedAt: "2026-08-10T00:00:00.000Z", author: { nickname: null, server: null },
 };
@@ -121,6 +149,7 @@ const BUILD: PostedBuild = {
   weaponSkillIds: { w1: ["ws1"] },
   hearts: 0, quality: "Blue", weaponQualities: {}, moduleSelections: {}, droneSelections: {},
   aircraftSelections: {},
+  awakeningStep: null,
   status: "Published",
   createdAt: "2026-07-20T00:00:00.000Z",
   updatedAt: "2026-07-20T00:00:00.000Z",
@@ -163,6 +192,24 @@ const WITH_AIRCRAFT: PostedBuild = {
   },
 };
 
+// A mech build that picked one of the 4 universal cores (client constants, not
+// rows in the mech's skillNodes) — and a weapon-only build carrying the same id,
+// which has no mech pool for it to belong to.
+const UNIVERSAL_CORE: PostedBuild = { ...BUILD, id: "buni", skillIds: ["s1", "universal-core-exp"] };
+const WEAPON_ONLY_UNIVERSAL: PostedBuild = {
+  ...WEAPON_ONLY,
+  id: "bwouni",
+  skillIds: ["ws1", "universal-core-exp"],
+};
+
+// "Awakening Lv3" reached: Lv.1 and Lv.2 cores count, Lv.3's doesn't.
+const AWAKENED: PostedBuild = { ...BUILD, id: "bawk", awakeningStep: "2-C" };
+// A well-formed key the server accepts, but this mech's live track ends at
+// level 3 — so there is no step "4-1" to show.
+const AWAKENING_STALE: PostedBuild = { ...BUILD, id: "bawkstale", awakeningStep: "4-1" };
+// Mid-way through level 1: no core reached yet.
+const AWAKENING_EARLY: PostedBuild = { ...BUILD, id: "bawk13", awakeningStep: "1-3" };
+
 /** Set by the one test that needs the aircraft catalog request to fail. */
 let failAircraftCatalog = false;
 
@@ -176,6 +223,12 @@ function renderPage(path: string) {
     else if (url.match(/\/api\/builds\/bwo$/)) body = WEAPON_ONLY;
     else if (url.match(/\/api\/builds\/bgon$/)) body = GRANT_ON;
     else if (url.match(/\/api\/builds\/bgoff$/)) body = GRANT_OFF;
+    else if (url.match(/\/api\/builds\/bfam$/)) body = FAMILY;
+    else if (url.match(/\/api\/builds\/buni$/)) body = UNIVERSAL_CORE;
+    else if (url.match(/\/api\/builds\/bwouni$/)) body = WEAPON_ONLY_UNIVERSAL;
+    else if (url.match(/\/api\/builds\/bawk$/)) body = AWAKENED;
+    else if (url.match(/\/api\/builds\/bawk13$/)) body = AWAKENING_EARLY;
+    else if (url.match(/\/api\/builds\/bawkstale$/)) body = AWAKENING_STALE;
     else if (url.match(/\/api\/builds\/nope$/)) {
       return new Response(JSON.stringify({ error: "Build not found" }), {
         status: 404,
@@ -308,6 +361,85 @@ describe("BuildDetailPage", () => {
     renderPage("/builds/bgoff");
     await screen.findByRole("heading", { level: 1, name: "Golden" });
     expect(screen.queryByText("Freeze")).not.toBeInTheDocument();
+  });
+
+  it("groups picked skills into families: children follow their parent, one level deeper", async () => {
+    renderPage("/builds/bfam");
+    const list = await screen.findByRole("list", { name: "Iron Colossus skills" });
+    // Wait for the mech's skill pool to load before reading the rows.
+    await within(list).findByText("Storm Call", { selector: "span" });
+
+    const rowsOf = (el: HTMLElement) =>
+      within(el)
+        .getAllByRole("listitem")
+        .map((li) => [li.querySelector("span.font-black")?.textContent, li.dataset.depth]);
+    expect(rowsOf(list)).toEqual([
+      ["Zap", "0"],
+      ["Chain Bolt", "1"],
+      ["Storm Call", "2"],
+      // Spark, picked before Storm Call, reads after Zap's whole family.
+      ["Spark", "0"],
+      // Freeze's child is a root here: its granted parent lives in the
+      // initial section above, not in this row.
+      ["Shatter", "0"],
+    ]);
+    // The hierarchy is announced, not only drawn.
+    expect(within(list).getByText("Upgrade of Zap")).toBeInTheDocument();
+    expect(within(list).getByText("Upgrade of Chain Bolt")).toBeInTheDocument();
+
+    // Quality-granted skills keep their own section, so the picked row holds
+    // only the picks.
+    expect(screen.getByRole("heading", { name: /Iron Colossus initial/ })).toBeInTheDocument();
+    const initialList = screen.getByRole("list", { name: "Iron Colossus initial skills" });
+    expect(rowsOf(initialList)).toEqual([["Freeze", "0"]]);
+    expect(within(initialList).getByText("Initial skill")).toBeInTheDocument();
+    expect(within(list).queryByText("Initial skill")).not.toBeInTheDocument();
+  });
+
+  it("shows a picked universal core under Core skills", async () => {
+    renderPage("/builds/buni");
+    // Wait for the mech's pool to load (Zap is a picked mech skill).
+    await screen.findByText("Zap", { selector: "span" });
+    expect(screen.getByRole("heading", { name: "Core skills" })).toBeInTheDocument();
+    expect(screen.getByText("EXP +30%")).toBeInTheDocument();
+  });
+
+  it("drops a universal core id from a weapon-only build", async () => {
+    renderPage("/builds/bwouni");
+    expect(await screen.findByText("Slash", { selector: "span" })).toBeInTheDocument();
+    expect(screen.queryByText("EXP +30%")).not.toBeInTheDocument();
+  });
+
+  it("shows the reached awakening cores, stats summed, read-only", async () => {
+    renderPage("/builds/bawk");
+    const box = await screen.findByRole("region", { name: "Awakening Effect" });
+    expect(screen.getByText("Awakening Lv3")).toBeInTheDocument();
+    // Lv.1 + Lv.2: HP, ATK and DEF each +10%, and both special effects.
+    expect(within(box).getAllByText("+10%")).toHaveLength(3);
+    expect(within(box).getByText("DMG from Mechs -50%")).toBeInTheDocument();
+    expect(within(box).getByText("Fatal Blade")).toBeInTheDocument();
+    // Lv.3's core isn't reached at this step.
+    expect(within(box).queryByText("Poisoned Shuriken")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Mech awakening" })).not.toBeInTheDocument();
+  });
+
+  it("says no awakening effects yet before the first core step", async () => {
+    renderPage("/builds/bawk13");
+    const box = await screen.findByRole("region", { name: "Awakening Effect" });
+    expect(within(box).getByText("No awakening effects yet.")).toBeInTheDocument();
+  });
+
+  it("shows no awakening section for a step the mech's track doesn't offer", async () => {
+    renderPage("/builds/bawkstale");
+    await screen.findByRole("heading", { name: "Iron Colossus skills" });
+    expect(screen.queryByRole("region", { name: "Awakening Effect" })).not.toBeInTheDocument();
+    expect(screen.queryByText("4-1")).not.toBeInTheDocument();
+  });
+
+  it("shows no awakening section when the build has no step", async () => {
+    renderPage("/builds/b1");
+    await screen.findByRole("heading", { name: "Iron Colossus skills" });
+    expect(screen.queryByRole("region", { name: "Awakening Effect" })).not.toBeInTheDocument();
   });
 
   it("renders the aircraft and its reset rolls read-only", async () => {
