@@ -8,6 +8,7 @@ import { Seo } from "../components/Seo";
 import { AuthorTag } from "../profile/AuthorTag";
 import { availableSkills, grantedSkills, resolvePicks } from "../profile/buildRules";
 import { PickedSlot } from "../profile/SkillsBlock";
+import { SkillFamilyRow } from "../profile/SkillFamilyRow";
 import { NotePreview } from "../profile/NotePreview";
 import { formatDate } from "../lib/date";
 import { ShareButton } from "../profile/ShareButton";
@@ -181,29 +182,36 @@ export function BuildDetailPage() {
         </>
       )}
 
+      {/* Quality-granted skills keep their own section ABOVE the picks, so
+          the picked row holds only the (at most 8) picks and fits one line on
+          desktop. A picked child of a granted skill therefore shows as a root
+          in the picked row — its parent is up here. */}
       {subjectGranted.length > 0 && (
         <>
           <h2 className="mt-6 mb-2 text-2xl font-semibold">
             {subjectName} initial <span className="text-ink-dim">(from quality)</span>
           </h2>
-          <SkillGrid>
-            {subjectGranted.map((skill) => (
-              <PickedSlot key={`sgrant-${skill.id}`} skill={skill} cardImageUrl={subjectArt} linkedIcons={linkedIcons} initial />
-            ))}
-          </SkillGrid>
+          <SkillFamilyRow
+            label={`${subjectName ?? ""} initial skills`.trim()}
+            skills={subjectGranted}
+            initial
+            cardImageUrl={subjectArt}
+            linkedIcons={linkedIcons}
+          />
         </>
       )}
 
+      {/* Picked skills as families — each upgrade right after the skill it
+          upgrades. */}
       {subjectRegular.length > 0 && (
         <>
           <h2 className="mt-6 mb-2 text-2xl font-semibold">{subjectName} skills</h2>
-          <SkillGrid>
-            {/* Keyed by position, not id — a repeatable skill can appear
-                more than once in the same list. */}
-            {subjectRegular.map((skill, i) => (
-              <PickedSlot key={`subject-${i}`} skill={skill} cardImageUrl={subjectArt} linkedIcons={linkedIcons} />
-            ))}
-          </SkillGrid>
+          <SkillFamilyRow
+            label={`${subjectName ?? ""} skills`.trim()}
+            skills={subjectRegular}
+            cardImageUrl={subjectArt}
+            linkedIcons={linkedIcons}
+          />
         </>
       )}
 
@@ -214,29 +222,22 @@ export function BuildDetailPage() {
           <div className="flex flex-col gap-2" key={weapon.id}>
             <h2 className="mt-6 mb-2 text-2xl font-semibold">{weapon.name} skills</h2>
             {granted.length > 0 && (
-              <SkillGrid>
-                {granted.map((skill) => (
-                  <PickedSlot
-                    key={`${weapon.id}-grant-${skill.id}`}
-                    skill={skill}
-                    cardImageUrl={weapon.iconUrl ?? weapon.imageUrl}
-                    linkedIcons={linkedIcons}
-                    initial
-                  />
-                ))}
-              </SkillGrid>
+              <SkillFamilyRow
+                label={`${weapon.name} initial skills`}
+                skills={granted}
+                initial
+                cardImageUrl={weapon.iconUrl ?? weapon.imageUrl}
+                linkedIcons={linkedIcons}
+              />
             )}
-            <SkillGrid>
-              {/* Positional keys — a repeatable skill may occupy two slots. */}
-              {regular.map((skill, i) => (
-                <PickedSlot
-                  key={`${weapon.id}-${i}`}
-                  skill={skill}
-                  cardImageUrl={weapon.iconUrl ?? weapon.imageUrl}
-                  linkedIcons={linkedIcons}
-                />
-              ))}
-            </SkillGrid>
+            {regular.length > 0 && (
+              <SkillFamilyRow
+                label={`${weapon.name} skills`}
+                skills={regular}
+                cardImageUrl={weapon.iconUrl ?? weapon.imageUrl}
+                linkedIcons={linkedIcons}
+              />
+            )}
           </div>
         );
       })}

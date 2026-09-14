@@ -44,6 +44,19 @@ describe("PickedSlot footer", () => {
     rerender(<PickedSlot skill={skill} initial />);
     expect(screen.getByText("Initial skill")).toBeInTheDocument();
   });
+
+  // The mobile bar layout is opt-in: the build editor's slots must keep the
+  // plain vertical card at every width.
+  it("only switches to the mobile bar layout when responsive", () => {
+    const skill: SkillNodeRow = {
+      id: "x", parentId: null, name: "Boost", description: "d", appearanceLevel: 3,
+      type: "Normal", sortOrder: 0, repeatable: false, linkedWeaponId: null, linkedMechId: null, initialAtTier: null,
+    };
+    const { container, rerender } = render(<PickedSlot skill={skill} />);
+    expect(container.innerHTML).not.toContain("max-sm:");
+    rerender(<PickedSlot skill={skill} responsive />);
+    expect(container.innerHTML).toContain("max-sm:grid");
+  });
 });
 
 describe("SkillsBlock repeatable picks", () => {

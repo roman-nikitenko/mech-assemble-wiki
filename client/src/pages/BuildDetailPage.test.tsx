@@ -36,6 +36,12 @@ const mechDetail: MechDetail = {
     { id: "s5", parentId: null, name: null, description: "Core power", appearanceLevel: 1, type: "Core", sortOrder: 1, repeatable: false, linkedWeaponId: null, linkedMechId: null, initialAtTier: null },
     { id: "ls1", parentId: null, name: "Frost Synergy", description: "combo", appearanceLevel: 1, type: "Normal", sortOrder: 2, repeatable: false, linkedWeaponId: "w1", linkedMechId: null, initialAtTier: null },
     { id: "qg1", parentId: null, name: "Freeze", description: "freeze", appearanceLevel: 1, type: "Normal", sortOrder: 3, repeatable: false, linkedWeaponId: null, linkedMechId: null, initialAtTier: "Gold" },
+    // A Zap → Chain Bolt → Storm Call chain, a second root, and a child of the
+    // quality-granted Freeze — for the family layout test.
+    { id: "s2", parentId: "s1", name: "Chain Bolt", description: "chain", appearanceLevel: 1, type: "Normal", sortOrder: 4, repeatable: false, linkedWeaponId: null, linkedMechId: null, initialAtTier: null },
+    { id: "s3", parentId: "s2", name: "Storm Call", description: "storm", appearanceLevel: 1, type: "Normal", sortOrder: 5, repeatable: false, linkedWeaponId: null, linkedMechId: null, initialAtTier: null },
+    { id: "s4", parentId: null, name: "Spark", description: "spark", appearanceLevel: 1, type: "Normal", sortOrder: 6, repeatable: false, linkedWeaponId: null, linkedMechId: null, initialAtTier: null },
+    { id: "fz1", parentId: "qg1", name: "Shatter", description: "shatter", appearanceLevel: 1, type: "Normal", sortOrder: 7, repeatable: false, linkedWeaponId: null, linkedMechId: null, initialAtTier: null },
   ],
 };
 
@@ -48,6 +54,15 @@ const GRANT_ON: PostedBuild = {
   updatedAt: "2026-08-12T00:00:00.000Z", author: { nickname: null, server: null },
 };
 const GRANT_OFF: PostedBuild = { ...GRANT_ON, id: "bgoff", quality: "Blue" };
+
+// Picks in the order a player might take them: Spark is picked BEFORE Storm
+// Call, but must read after the whole Zap family. Gold grants Freeze, whose
+// picked child Shatter should hang under it.
+const FAMILY: PostedBuild = {
+  ...GRANT_ON,
+  id: "bfam",
+  skillIds: ["s1", "s2", "s4", "s3", "fz1"],
+};
 
 // Drone catalog + a build with one Battle drone equipped in slot 1.
 const droneTypes: DroneType[] = [
@@ -176,6 +191,7 @@ function renderPage(path: string) {
     else if (url.match(/\/api\/builds\/bwo$/)) body = WEAPON_ONLY;
     else if (url.match(/\/api\/builds\/bgon$/)) body = GRANT_ON;
     else if (url.match(/\/api\/builds\/bgoff$/)) body = GRANT_OFF;
+    else if (url.match(/\/api\/builds\/bfam$/)) body = FAMILY;
     else if (url.match(/\/api\/builds\/nope$/)) {
       return new Response(JSON.stringify({ error: "Build not found" }), {
         status: 404,
@@ -308,6 +324,39 @@ describe("BuildDetailPage", () => {
     renderPage("/builds/bgoff");
     await screen.findByRole("heading", { level: 1, name: "Golden" });
     expect(screen.queryByText("Freeze")).not.toBeInTheDocument();
+  });
+
+  it("groups picked skills into families: children follow their parent, one level deeper", async () => {
+    renderPage("/builds/bfam");
+    const list = await screen.findByRole("list", { name: "Iron Colossus skills" });
+    // Wait for the mech's skill pool to load before reading the rows.
+    await within(list).findByText("Storm Call", { selector: "span" });
+
+    const rowsOf = (el: HTMLElement) =>
+      within(el)
+        .getAllByRole("listitem")
+        .map((li) => [li.querySelector("span.font-black")?.textContent, li.dataset.depth]);
+    expect(rowsOf(list)).toEqual([
+      ["Zap", "0"],
+      ["Chain Bolt", "1"],
+      ["Storm Call", "2"],
+      // Spark, picked before Storm Call, reads after Zap's whole family.
+      ["Spark", "0"],
+      // Freeze's child is a root here: its granted parent lives in the
+      // initial section above, not in this row.
+      ["Shatter", "0"],
+    ]);
+    // The hierarchy is announced, not only drawn.
+    expect(within(list).getByText("Upgrade of Zap")).toBeInTheDocument();
+    expect(within(list).getByText("Upgrade of Chain Bolt")).toBeInTheDocument();
+
+    // Quality-granted skills keep their own section, so the picked row holds
+    // only the picks.
+    expect(screen.getByRole("heading", { name: /Iron Colossus initial/ })).toBeInTheDocument();
+    const initialList = screen.getByRole("list", { name: "Iron Colossus initial skills" });
+    expect(rowsOf(initialList)).toEqual([["Freeze", "0"]]);
+    expect(within(initialList).getByText("Initial skill")).toBeInTheDocument();
+    expect(within(list).queryByText("Initial skill")).not.toBeInTheDocument();
   });
 
   it("renders the aircraft and its reset rolls read-only", async () => {

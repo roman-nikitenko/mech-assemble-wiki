@@ -24,6 +24,7 @@ export function PickedSlot({
   onRemove,
   linkedIcons,
   initial = false,
+  responsive = false,
 }: {
   skill: SkillNodeRow;
   cardImageUrl?: string | null;
@@ -32,8 +33,17 @@ export function PickedSlot({
   linkedIcons?: Record<string, string | null>;
   /** Marks a quality-granted "initial" skill — shows an "Initial skill" band. */
   initial?: boolean;
+  /** Build page only: below `sm` the card turns into a horizontal bar. Off by
+      default, so the editor's slots keep the vertical card at every width. */
+  responsive?: boolean;
 }) {
-  const cls = `relative flex min-h-50 flex-col gap-2 rounded-xl border-2 p-2 text-center ${SKILL_CARD[skill.type].frame}`;
+  // The bar is a 3-column grid (art | name over description | level) so the
+  // SAME children can be placed without a second DOM for mobile. `m()` adds
+  // those max-sm: classes only when responsive.
+  const m = (classes: string) => (responsive ? ` ${classes}` : "");
+  const cls = `relative flex ${responsive ? "w-full sm:min-h-50" : "min-h-50"} flex-col gap-2 rounded-xl border-2 p-2 text-center ${SKILL_CARD[skill.type].frame}${m(
+    "max-sm:grid max-sm:grid-cols-[auto_1fr_auto] max-sm:items-center max-sm:gap-x-3 max-sm:gap-y-1 max-sm:text-left"
+  )}`;
   const linked = skill.linkedWeaponId !== null || skill.linkedMechId !== null;
   const content = (
     <>
@@ -41,26 +51,40 @@ export function PickedSlot({
       <span
         className={`text-xs pb-1 border-b border-b-white/30 font-black ${SKILL_CARD[skill.type].header} ${
           skill.type === "Core" ? "italic" : ""
-        }`}
+        }${m("max-sm:col-start-2 max-sm:row-start-1 max-sm:border-b-0 max-sm:pb-0")}`}
       >
         {skillDisplayName(skill)}
       </span>
-      {/* Absolute band just under the header, marking a quality-granted skill. */}
+      {/* Absolute band just under the header, marking a quality-granted skill.
+          In the mobile bar there's no room under the header, so it becomes a
+          third line under the description. */}
       {initial && (
-        <span className="absolute inset-x-0 top-8 z-10 py-0.5 text-[10px] font-black uppercase tracking-wider text-bg">
+        <span
+          className={`absolute inset-x-0 top-8 z-10 py-0.5 text-[10px] font-black uppercase tracking-wider text-bg${m(
+            "max-sm:static max-sm:col-start-2 max-sm:row-start-3 max-sm:py-0"
+          )}`}
+        >
           Initial skill
         </span>
       )}
       {cardImageUrl && (
-        <img src={imageSrc(cardImageUrl)} alt="" className="h-20 object-contain" />
+        <img
+          src={imageSrc(cardImageUrl)}
+          alt=""
+          className={`h-20 object-contain${m("max-sm:col-start-1 max-sm:row-span-3 max-sm:row-start-1 max-sm:h-12")}`}
+        />
       )}
       {skill.description && (
-        <span className="px-0.5 text-xs font-bold">{skill.description}</span>
+        <span className={`px-0.5 text-xs font-bold${m("max-sm:col-start-2 max-sm:row-start-2 max-sm:px-0")}`}>
+          {skill.description}
+        </span>
       )}
       {/* Footer: the level this skill shows up at (N/8), mirroring the header's
           border on the bottom of the card. */}
       <span
-        className={`mt-auto border-t border-t-white/30 pt-1 text-xs font-black ${SKILL_CARD[skill.type].header}`}
+        className={`mt-auto border-t border-t-white/30 pt-1 text-xs font-black ${SKILL_CARD[skill.type].header}${m(
+          "max-sm:col-start-3 max-sm:row-span-3 max-sm:row-start-1 max-sm:mt-0 max-sm:border-t-0 max-sm:pt-0"
+        )}`}
       >
         {skill.appearanceLevel}/8
       </span>
