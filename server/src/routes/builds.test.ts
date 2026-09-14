@@ -157,6 +157,20 @@ describe("POST /api/builds", () => {
     expect(res.body.aircraftSelections["2"]).toBeUndefined();
   });
 
+  it("round-trips the awakening step, and defaults it to null", async () => {
+    authState.sub = "test|builds-a";
+    const awakened = await request(app)
+      .post("/api/builds")
+      .send({ ...BUILD, name: "[test:builds] Awakened", awakeningStep: "2-C" });
+    expect(awakened.status).toBe(201);
+    expect(awakened.body.awakeningStep).toBe("2-C");
+
+    const plain = await request(app)
+      .post("/api/builds")
+      .send({ ...BUILD, name: "[test:builds] Not Awakened" });
+    expect(plain.body.awakeningStep).toBeNull();
+  });
+
   it("defaults the aircraft selections when absent", async () => {
     authState.sub = "test|builds-a";
     const res = await request(app)

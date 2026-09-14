@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen, within } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -16,7 +16,7 @@ import type {
   WeaponSummary,
 } from "../../api/types";
 import { BuildEditorPage } from "./BuildEditorPage";
-import type { Aircraft, AircraftAttributeGroup } from "../../api/types";
+import type { Aircraft, AircraftAttributeGroup, AwakeningLevel } from "../../api/types";
 
 // Builds the editor can load in edit mode (GET /api/builds/mine).
 let myBuilds: PostedBuild[] = [];
@@ -33,6 +33,7 @@ const postedBuild = (over: Partial<PostedBuild> = {}): PostedBuild => ({
   status: "Draft" as BuildStatus,
   hearts: 0, quality: "Blue", weaponQualities: {}, moduleSelections: {}, droneSelections: {},
   aircraftSelections: {},
+  awakeningStep: null,
   createdAt: "2026-07-15T00:00:00.000Z",
   updatedAt: "2026-07-15T00:00:00.000Z",
   author: { nickname: "Tester", server: "" },
@@ -66,6 +67,19 @@ const summary: MechSummary = {
   imageUrl: null,
 };
 
+// Two live awakening levels (so the step dropdown has something to offer) and
+// one that isn't live yet.
+const awakeningLevel = (n: number, over: Partial<AwakeningLevel> = {}): AwakeningLevel => ({
+  id: `lv${n}`, level: n, isLive: true, coreAttr: [], coreSkill: null, coreInfo: null,
+  coreCd: [], corePower: null, coreLuckyId: null, coreReward: null, coreSkin: null, nodes: [],
+  ...over,
+});
+const awakeningFixture: AwakeningLevel[] = [
+  awakeningLevel(1, { coreAttr: ["HP +5%", "ATK +5%", "DEF +5%"], coreSkill: "DMG from Mechs -50%" }),
+  awakeningLevel(2, { coreAttr: ["HP +5%", "ATK +5%", "DEF +5%"], coreSkill: "Fatal Blade" }),
+  awakeningLevel(3, { isLive: false }),
+];
+
 // Four skills exercising every gate: two free ones, a child, a level-3.
 const detail: MechDetail = {
   ...summary,
@@ -76,7 +90,7 @@ const detail: MechDetail = {
   rankUpPreview: [],
   skills: [],
   traits: [],
-  awakeningLevels: [],
+  awakeningLevels: awakeningFixture,
   weapon: null,
   accessory: null,
   pilot: null,
@@ -568,6 +582,58 @@ describe("BuildEditorPage (new build)", () => {
     await userEvent.click(screen.getByRole("button", { name: "Save build" }));
     await screen.findByText("profile list");
     expect(lastSavedInput().droneSelections).toEqual({ "0": { droneId: "d1", quality: 7 } });
+  });
+
+  // ---------- Awakening ----------
+
+  it("offers the mech's awakening track and shows what the chosen step unlocked", async () => {
+    renderEditor();
+    await userEvent.click(await screen.findByRole("button", { name: /Iron Colossus/ }));
+    // Nothing is shown until a step is chosen.
+    const select = await screen.findByRole("button", { name: "Mech awakening" });
+    expect(screen.queryByRole("region", { name: "Awakening Effect" })).not.toBeInTheDocument();
+
+    await userEvent.click(select);
+    // Core steps carry the NEXT level's number, like the game's own track.
+    expect(screen.getByRole("option", { name: "Awakening Lv2" })).toBeInTheDocument();
+    // Level 3 isn't live, so its steps aren't offered.
+    expect(screen.queryByRole("option", { name: "3-1" })).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole("option", { name: "1-3" }));
+    const box = screen.getByRole("region", { name: "Awakening Effect" });
+    expect(within(box).getByText("No awakening effects yet.")).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "Mech awakening" }));
+    await userEvent.click(screen.getByRole("option", { name: "2-2" }));
+    expect(within(screen.getByRole("region", { name: "Awakening Effect" })).getByText("DMG from Mechs -50%")).toBeInTheDocument();
+
+    await userEvent.type(screen.getByLabelText("Build name *"), "Awake rush");
+    await userEvent.click(screen.getByRole("button", { name: "Save build" }));
+    await screen.findByText("profile list");
+    expect(lastSavedInput().awakeningStep).toBe("2-2");
+  });
+
+  it("saves no awakening step when none was chosen", async () => {
+    renderEditor();
+    await userEvent.click(await screen.findByRole("button", { name: /Iron Colossus/ }));
+    await screen.findByRole("button", { name: "Mech awakening" });
+    await userEvent.type(screen.getByLabelText("Build name *"), "Plain rush");
+    await userEvent.click(screen.getByRole("button", { name: "Save build" }));
+    await screen.findByText("profile list");
+    expect(lastSavedInput().awakeningStep).toBeNull();
+  });
+
+  // A step this mech's track doesn't offer (its level 3 isn't live) must not
+  // survive: the dropdown would show nothing while the box and the save still
+  // used it.
+  it("drops a saved awakening step the mech's track doesn't offer", async () => {
+    myBuilds = [postedBuild({ awakeningStep: "3-2" })];
+    renderEditor("/profile/builds/b1/edit");
+    const select = await screen.findByRole("button", { name: "Mech awakening" });
+    expect(select).toHaveTextContent("Not awakened");
+    expect(screen.queryByRole("region", { name: "Awakening Effect" })).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "Save build" }));
+    await waitFor(() => expect(lastSavedInput().awakeningStep).toBeNull());
   });
 
   // ---------- Aircraft + Reset Effect ----------

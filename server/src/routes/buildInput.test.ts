@@ -64,6 +64,28 @@ describe("parseBuildInput — droneSelections", () => {
   });
 });
 
+describe("parseBuildInput — awakeningStep", () => {
+  it("defaults to null (not awakened)", () => {
+    expect(parseBuildInput(BASE)?.awakeningStep).toBeNull();
+  });
+
+  // "L-P" = level L, outer node P; "L-C" = level L's core reached. Levels up
+  // to 6 are accepted so a level going live later needs no server change.
+  it("keeps a well-formed step key", () => {
+    for (const step of ["1-1", "2-2", "3-5", "3-C", "6-C"]) {
+      expect(parseBuildInput({ ...BASE, awakeningStep: step })?.awakeningStep, step).toBe(step);
+    }
+  });
+
+  it("nulls anything off the step format instead of rejecting the build", () => {
+    for (const bad of ["0-1", "2-6", "7-1", "2-c", "Awakening Lv2", "", 42, null]) {
+      const parsed = parseBuildInput({ ...BASE, awakeningStep: bad });
+      expect(parsed, String(bad)).not.toBeNull();
+      expect(parsed?.awakeningStep, String(bad)).toBeNull();
+    }
+  });
+});
+
 describe("parseBuildInput — aircraft", () => {
   const roll = { attributeId: "attr-1", grade: "SS" };
 

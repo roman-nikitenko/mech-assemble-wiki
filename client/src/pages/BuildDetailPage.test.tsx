@@ -3,7 +3,7 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import type { Aircraft, AircraftAttributeGroup, Drone, DroneType, MechDetail, MechSummary, PostedBuild, WeaponSummary } from "../api/types";
+import type { Aircraft, AircraftAttributeGroup, AwakeningLevel, Drone, DroneType, MechDetail, MechSummary, PostedBuild, WeaponSummary } from "../api/types";
 import { BuildDetailPage } from "./BuildDetailPage";
 
 const mechSummary: MechSummary = {
@@ -16,6 +16,12 @@ const mechSummary: MechSummary = {
   imageUrl: null,
 };
 
+const awakeningLevel = (n: number, over: Partial<AwakeningLevel> = {}): AwakeningLevel => ({
+  id: `lv${n}`, level: n, isLive: true, coreAttr: [], coreSkill: null, coreInfo: null,
+  coreCd: [], corePower: null, coreLuckyId: null, coreReward: null, coreSkin: null, nodes: [],
+  ...over,
+});
+
 const mechDetail: MechDetail = {
   ...mechSummary,
   iconUrl: null,
@@ -25,7 +31,11 @@ const mechDetail: MechDetail = {
   rankUpPreview: [],
   skills: [],
   traits: [],
-  awakeningLevels: [],
+  awakeningLevels: [
+    awakeningLevel(1, { coreAttr: ["HP +5%", "ATK +5%", "DEF +5%"], coreSkill: "DMG from Mechs -50%" }),
+    awakeningLevel(2, { coreAttr: ["HP +5%", "ATK +5%", "DEF +5%"], coreSkill: "Fatal Blade" }),
+    awakeningLevel(3, { coreAttr: ["HP +8%", "ATK +8%", "DEF +8%"], coreSkill: "Poisoned Shuriken" }),
+  ],
   weapon: null,
   accessory: null,
   pilot: null,
@@ -50,6 +60,7 @@ const GRANT_ON: PostedBuild = {
   id: "bgon", name: "Golden", description: "", mechId: "m1", weaponId: null,
   skillIds: [], weaponIds: [], weaponSkillIds: {}, hearts: 0, quality: "Gold", weaponQualities: {}, moduleSelections: {}, droneSelections: {},
   aircraftSelections: {},
+  awakeningStep: null,
   status: "Published", createdAt: "2026-08-12T00:00:00.000Z",
   updatedAt: "2026-08-12T00:00:00.000Z", author: { nickname: null, server: null },
 };
@@ -89,6 +100,7 @@ const LINKED_ON: PostedBuild = {
   id: "bon", name: "Combo", description: "", mechId: "m1", weaponId: null,
   skillIds: ["s1", "ls1"], weaponIds: ["w1"], weaponSkillIds: {}, hearts: 0, quality: "Blue", weaponQualities: {}, moduleSelections: {}, droneSelections: {},
   aircraftSelections: {},
+  awakeningStep: null,
   status: "Published", createdAt: "2026-07-20T00:00:00.000Z",
   updatedAt: "2026-07-20T00:00:00.000Z", author: { nickname: null, server: null },
 };
@@ -121,6 +133,7 @@ const WEAPON_ONLY: PostedBuild = {
   id: "bwo", name: "Weapon only", description: "", mechId: null, weaponId: "w1",
   skillIds: ["ws1", "wls1"], weaponIds: [], weaponSkillIds: {}, hearts: 0, quality: "Blue", weaponQualities: {}, moduleSelections: {}, droneSelections: {},
   aircraftSelections: {},
+  awakeningStep: null,
   status: "Published", createdAt: "2026-08-10T00:00:00.000Z",
   updatedAt: "2026-08-10T00:00:00.000Z", author: { nickname: null, server: null },
 };
@@ -136,6 +149,7 @@ const BUILD: PostedBuild = {
   weaponSkillIds: { w1: ["ws1"] },
   hearts: 0, quality: "Blue", weaponQualities: {}, moduleSelections: {}, droneSelections: {},
   aircraftSelections: {},
+  awakeningStep: null,
   status: "Published",
   createdAt: "2026-07-20T00:00:00.000Z",
   updatedAt: "2026-07-20T00:00:00.000Z",
@@ -178,6 +192,11 @@ const WITH_AIRCRAFT: PostedBuild = {
   },
 };
 
+// "Awakening Lv3" reached: Lv.1 and Lv.2 cores count, Lv.3's doesn't.
+const AWAKENED: PostedBuild = { ...BUILD, id: "bawk", awakeningStep: "2-C" };
+// Mid-way through level 1: no core reached yet.
+const AWAKENING_EARLY: PostedBuild = { ...BUILD, id: "bawk13", awakeningStep: "1-3" };
+
 /** Set by the one test that needs the aircraft catalog request to fail. */
 let failAircraftCatalog = false;
 
@@ -192,6 +211,8 @@ function renderPage(path: string) {
     else if (url.match(/\/api\/builds\/bgon$/)) body = GRANT_ON;
     else if (url.match(/\/api\/builds\/bgoff$/)) body = GRANT_OFF;
     else if (url.match(/\/api\/builds\/bfam$/)) body = FAMILY;
+    else if (url.match(/\/api\/builds\/bawk$/)) body = AWAKENED;
+    else if (url.match(/\/api\/builds\/bawk13$/)) body = AWAKENING_EARLY;
     else if (url.match(/\/api\/builds\/nope$/)) {
       return new Response(JSON.stringify({ error: "Build not found" }), {
         status: 404,
@@ -357,6 +378,31 @@ describe("BuildDetailPage", () => {
     expect(rowsOf(initialList)).toEqual([["Freeze", "0"]]);
     expect(within(initialList).getByText("Initial skill")).toBeInTheDocument();
     expect(within(list).queryByText("Initial skill")).not.toBeInTheDocument();
+  });
+
+  it("shows the reached awakening cores, stats summed, read-only", async () => {
+    renderPage("/builds/bawk");
+    const box = await screen.findByRole("region", { name: "Awakening Effect" });
+    expect(screen.getByText("Awakening Lv3")).toBeInTheDocument();
+    // Lv.1 + Lv.2: HP, ATK and DEF each +10%, and both special effects.
+    expect(within(box).getAllByText("+10%")).toHaveLength(3);
+    expect(within(box).getByText("DMG from Mechs -50%")).toBeInTheDocument();
+    expect(within(box).getByText("Fatal Blade")).toBeInTheDocument();
+    // Lv.3's core isn't reached at this step.
+    expect(within(box).queryByText("Poisoned Shuriken")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Mech awakening" })).not.toBeInTheDocument();
+  });
+
+  it("says no awakening effects yet before the first core step", async () => {
+    renderPage("/builds/bawk13");
+    const box = await screen.findByRole("region", { name: "Awakening Effect" });
+    expect(within(box).getByText("No awakening effects yet.")).toBeInTheDocument();
+  });
+
+  it("shows no awakening section when the build has no step", async () => {
+    renderPage("/builds/b1");
+    await screen.findByRole("heading", { name: "Iron Colossus skills" });
+    expect(screen.queryByRole("region", { name: "Awakening Effect" })).not.toBeInTheDocument();
   });
 
   it("renders the aircraft and its reset rolls read-only", async () => {

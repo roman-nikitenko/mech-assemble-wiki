@@ -18,6 +18,7 @@ function formatBuild(b: {
   status: BuildStatus;
   hearts: number;
   quality: QualityTier;
+  awakeningStep: string | null;
   weaponQualities: unknown;
   moduleSelections: unknown;
   droneSelections: unknown;
@@ -38,6 +39,7 @@ function formatBuild(b: {
     status: b.status,
     hearts: b.hearts,
     quality: b.quality,
+    awakeningStep: b.awakeningStep,
     weaponQualities: b.weaponQualities as Record<string, QualityTier>,
     moduleSelections: b.moduleSelections as Record<
       string,
@@ -72,6 +74,11 @@ function currentUser(req: Request) {
 /** Validate + normalize the editable build fields shared by create and edit.
     Returns null when the name is missing (the one hard requirement). */
 const QUALITY_TIERS = ["Blue", "Purple", "Orange", "Red", "Turquoise", "Gold", "Mythic"];
+
+// An awakening step key: "L-P" (level L, outer node 1-5) or "L-C" (level L's
+// core reached). Levels up to 6 are accepted — the game has authored 6 but only
+// switched on 3 — so a level going live needs no server change.
+const AWAKENING_STEP_RE = /^[1-6]-([1-5]|C)$/;
 
 // The 6 drone squares are a fixed 2/2/2 layout, so a slot key is its index.
 const DRONE_SLOT_KEYS = ["0", "1", "2", "3", "4", "5"];
@@ -186,6 +193,11 @@ export function parseBuildInput(body: unknown) {
         ? (b.weaponSkillIds as Record<string, string[]>)
         : {},
     quality: quality as QualityTier,
+    // Coerced like quality: a bad key means "not awakened", never a rejected build.
+    awakeningStep:
+      typeof b.awakeningStep === "string" && AWAKENING_STEP_RE.test(b.awakeningStep)
+        ? b.awakeningStep
+        : null,
     weaponQualities: weaponQualities as Record<string, QualityTier>,
     moduleSelections,
     droneSelections,

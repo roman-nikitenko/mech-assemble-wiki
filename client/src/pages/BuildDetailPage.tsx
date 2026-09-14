@@ -9,6 +9,8 @@ import { AuthorTag } from "../profile/AuthorTag";
 import { availableSkills, grantedSkills, resolvePicks } from "../profile/buildRules";
 import { PickedSlot } from "../profile/SkillsBlock";
 import { SkillFamilyRow } from "../profile/SkillFamilyRow";
+import { AwakeningEffectBox } from "../components/AwakeningEffectBox";
+import { awakeningStepLabel, awakeningStepOptions, reachedCores } from "../profile/awakeningSteps";
 import { NotePreview } from "../profile/NotePreview";
 import { formatDate } from "../lib/date";
 import { ShareButton } from "../profile/ShareButton";
@@ -241,6 +243,21 @@ export function BuildDetailPage() {
           </div>
         );
       })}
+
+      {/* Only when the author set a step AND this mech still has live levels. */}
+      {b.awakeningStep && mech && awakeningStepOptions(mech.awakeningLevels).length > 0 && (
+        <>
+          <h2 className="mt-6 mb-2 text-2xl font-semibold">
+            Awakening <span className="text-ink-dim">{awakeningStepLabel(b.awakeningStep)}</span>
+          </h2>
+          <div className="max-w-xl">
+            <AwakeningEffectBox
+              cores={reachedCores(mech.awakeningLevels, b.awakeningStep)}
+              mechIconUrl={mech.iconUrl}
+            />
+          </div>
+        </>
+      )}
 
       {(modules.data ?? []).length > 0 && (
         <>
