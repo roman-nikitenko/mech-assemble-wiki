@@ -26,6 +26,7 @@ import { ButtonGroup } from "../../components/ButtonGroup";
 import { PickedSlot, SkillsBlock } from "../../profile/SkillsBlock";
 import { AwakeningEffectBox } from "../../components/AwakeningEffectBox";
 import { awakeningStepOptions, reachedCores } from "../../profile/awakeningSteps";
+import { withUniversalCores } from "../../profile/universalCoreSkills";
 import { NotesField } from "../../profile/NotesField";
 import { useMe } from "../../auth/useMe";
 import { useCreateBuild, useMyBuilds, useUpdateBuild } from "../../auth/useBuilds";
@@ -313,8 +314,10 @@ function BuildEditorContent({ existing }: { existing: PostedBuild | undefined })
   const mech = detail.data;
   // Skill pools filtered for THIS build: a LINKED skill only appears when its
   // gate partner is present — the mech pool is gated by the equipped weapon
-  // ids; a weapon's pool is gated by the build's mech id.
-  const skills = availableSkills(mech?.skillNodes ?? [], weaponIds);
+  // ids; a weapon's pool is gated by the build's mech id. The mech pool also
+  // gets the 4 universal cores — but only once the mech has loaded, so an
+  // unloaded mech doesn't show four lone core cards.
+  const skills = availableSkills(mech ? withUniversalCores(mech.skillNodes) : [], weaponIds);
   const buildWeaponSkills = availableSkills(
     buildWeapon ? buildWeapon.skillNodes : [],
     mechId ? [mechId] : []

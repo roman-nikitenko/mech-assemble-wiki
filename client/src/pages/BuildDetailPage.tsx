@@ -11,6 +11,7 @@ import { PickedSlot } from "../profile/SkillsBlock";
 import { SkillFamilyRow } from "../profile/SkillFamilyRow";
 import { AwakeningEffectBox } from "../components/AwakeningEffectBox";
 import { awakeningStepLabel, awakeningStepOptions, reachedCores } from "../profile/awakeningSteps";
+import { withUniversalCores } from "../profile/universalCoreSkills";
 import { NotePreview } from "../profile/NotePreview";
 import { formatDate } from "../lib/date";
 import { ShareButton } from "../profile/ShareButton";
@@ -71,7 +72,8 @@ export function BuildDetailPage() {
 
   // Filter LINKED skills by whether their gate partner is in the build: the
   // mech pool is gated by the equipped weapon ids, a weapon's pool by the mech.
-  const mechPool = availableSkills(mech?.skillNodes ?? [], b.weaponIds);
+  // Plus the 4 universal cores every mech has, so a saved pick of one resolves.
+  const mechPool = availableSkills(mech ? withUniversalCores(mech.skillNodes) : [], b.weaponIds);
   const subjectSkills = isWeaponBuild
     ? availableSkills(buildWeapon?.skillNodes ?? [], b.mechId ? [b.mechId] : [])
     : mechPool;

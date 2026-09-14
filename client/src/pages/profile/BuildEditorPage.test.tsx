@@ -442,6 +442,29 @@ describe("BuildEditorPage (new build)", () => {
     expect(screen.queryByText("Core slot 1")).not.toBeInTheDocument();
   });
 
+  // The 4 universal cores aren't in the mech's skillNodes — the editor adds
+  // them to every mech's pool.
+  it("offers the universal cores for a mech and saves a picked one", async () => {
+    renderEditor();
+    await userEvent.click(await screen.findByRole("button", { name: /Iron Colossus/ }));
+    await userEvent.click(await screen.findByRole("button", { name: /Core skill Mech DMG \+150%/ }));
+    for (const other of ["Speed \\+50%, size decrease", "HP \\+50%, size increase", "EXP \\+30%"]) {
+      expect(screen.getByRole("button", { name: new RegExp(`Core skill ${other}`) })).toBeInTheDocument();
+    }
+
+    await userEvent.type(screen.getByLabelText("Build name *"), "Big damage");
+    await userEvent.click(screen.getByRole("button", { name: "Save build" }));
+    await screen.findByText("profile list");
+    expect(lastSavedInput().skillIds).toContain("universal-core-mech-dmg");
+  });
+
+  it("does not offer the universal cores in a weapon-only build", async () => {
+    renderEditor();
+    await userEvent.click(await screen.findByRole("button", { name: /Blade of Dawn/ }));
+    await screen.findByText("Slash");
+    expect(screen.queryByRole("button", { name: /Mech DMG \+150%/ })).not.toBeInTheDocument();
+  });
+
   it("weapon-only build hides the weapon's linked skills (no mech to pair)", async () => {
     renderEditor();
     await userEvent.click(await screen.findByRole("button", { name: /Blade of Dawn/ }));

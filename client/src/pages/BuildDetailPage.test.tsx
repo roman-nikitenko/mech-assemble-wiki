@@ -192,6 +192,16 @@ const WITH_AIRCRAFT: PostedBuild = {
   },
 };
 
+// A mech build that picked one of the 4 universal cores (client constants, not
+// rows in the mech's skillNodes) — and a weapon-only build carrying the same id,
+// which has no mech pool for it to belong to.
+const UNIVERSAL_CORE: PostedBuild = { ...BUILD, id: "buni", skillIds: ["s1", "universal-core-exp"] };
+const WEAPON_ONLY_UNIVERSAL: PostedBuild = {
+  ...WEAPON_ONLY,
+  id: "bwouni",
+  skillIds: ["ws1", "universal-core-exp"],
+};
+
 // "Awakening Lv3" reached: Lv.1 and Lv.2 cores count, Lv.3's doesn't.
 const AWAKENED: PostedBuild = { ...BUILD, id: "bawk", awakeningStep: "2-C" };
 // Mid-way through level 1: no core reached yet.
@@ -211,6 +221,8 @@ function renderPage(path: string) {
     else if (url.match(/\/api\/builds\/bgon$/)) body = GRANT_ON;
     else if (url.match(/\/api\/builds\/bgoff$/)) body = GRANT_OFF;
     else if (url.match(/\/api\/builds\/bfam$/)) body = FAMILY;
+    else if (url.match(/\/api\/builds\/buni$/)) body = UNIVERSAL_CORE;
+    else if (url.match(/\/api\/builds\/bwouni$/)) body = WEAPON_ONLY_UNIVERSAL;
     else if (url.match(/\/api\/builds\/bawk$/)) body = AWAKENED;
     else if (url.match(/\/api\/builds\/bawk13$/)) body = AWAKENING_EARLY;
     else if (url.match(/\/api\/builds\/nope$/)) {
@@ -378,6 +390,20 @@ describe("BuildDetailPage", () => {
     expect(rowsOf(initialList)).toEqual([["Freeze", "0"]]);
     expect(within(initialList).getByText("Initial skill")).toBeInTheDocument();
     expect(within(list).queryByText("Initial skill")).not.toBeInTheDocument();
+  });
+
+  it("shows a picked universal core under Core skills", async () => {
+    renderPage("/builds/buni");
+    // Wait for the mech's pool to load (Zap is a picked mech skill).
+    await screen.findByText("Zap", { selector: "span" });
+    expect(screen.getByRole("heading", { name: "Core skills" })).toBeInTheDocument();
+    expect(screen.getByText("EXP +30%")).toBeInTheDocument();
+  });
+
+  it("drops a universal core id from a weapon-only build", async () => {
+    renderPage("/builds/bwouni");
+    expect(await screen.findByText("Slash", { selector: "span" })).toBeInTheDocument();
+    expect(screen.queryByText("EXP +30%")).not.toBeInTheDocument();
   });
 
   it("shows the reached awakening cores, stats summed, read-only", async () => {
