@@ -163,3 +163,75 @@ export function familyOrder(skills: SkillNodeRow[]): SkillNodeRow[] {
   for (const s of skills) if (!placed.has(s.id)) out.push(s);
   return out;
 }
+
+/** One card in the build page's family row (see skillFamilies). */
+export interface SkillFamilyEntry {
+  skill: SkillNodeRow;
+  /** Position in the input list — a stable React key even when a repeatable
+      skill appears twice. */
+  index: number;
+  /** 0 = a root; each ancestor present in the list adds one. */
+  depth: number;
+  /** The in-list parent, or null for a root. */
+  parent: SkillNodeRow | null;
+  /** No later sibling under the same parent — where the mobile bracket stops. */
+  lastChild: boolean;
+  /** How many cards back this child's PREVIOUS sibling sits in the row (its
+      own descendants in between). 0 for a root or a first child. Lets the
+      desktop top rail run from one sibling to the next, so all children of a
+      parent hang off one shared line. */
+  siblingSpan: number;
+}
+
+/** Group a PICK list into families for the build page: every child sits right
+    after its parent, depth-first; otherwise the input order is kept.
+
+    Unlike familyOrder (a palette of unique nodes), a pick list can repeat an
+    id — a repeatable skill picked twice — so entries are tracked by POSITION,
+    and a child attaches to the FIRST copy of its parent only; drawing it under
+    both copies would show a pick that was never made. A skill whose parent
+    isn't in the list stays a root right where it stands. */
+export function skillFamilies(skills: SkillNodeRow[]): SkillFamilyEntry[] {
+  const firstIndex = new Map<string, number>();
+  skills.forEach((s, i) => {
+    if (!firstIndex.has(s.id)) firstIndex.set(s.id, i);
+  });
+
+  const roots: number[] = [];
+  const childrenOf = new Map<number, number[]>();
+  skills.forEach((s, i) => {
+    const p = s.parentId === null ? undefined : firstIndex.get(s.parentId);
+    if (p === undefined) roots.push(i);
+    else childrenOf.set(p, [...(childrenOf.get(p) ?? []), i]);
+  });
+
+  const out: SkillFamilyEntry[] = [];
+  const placed = new Set<number>();
+  function walk(siblings: number[], depth: number, parent: SkillNodeRow | null) {
+    // Row position of the previous sibling placed, for siblingSpan.
+    let prevPos: number | null = null;
+    siblings.forEach((i, k) => {
+      if (placed.has(i)) return;
+      placed.add(i);
+      const pos = out.length;
+      out.push({
+        skill: skills[i],
+        index: i,
+        depth,
+        parent,
+        lastChild: k === siblings.length - 1,
+        siblingSpan: parent === null || prevPos === null ? 0 : pos - prevPos,
+      });
+      prevPos = pos;
+      walk(childrenOf.get(i) ?? [], depth + 1, skills[i]);
+    });
+  }
+  walk(roots, 0, null);
+  // Only reachable with bad data (a parent cycle never reaches a root) —
+  // show those skills flat rather than silently dropping them.
+  skills.forEach((s, i) => {
+    if (placed.has(i)) return;
+    out.push({ skill: s, index: i, depth: 0, parent: null, lastChild: true, siblingSpan: 0 });
+  });
+  return out;
+}

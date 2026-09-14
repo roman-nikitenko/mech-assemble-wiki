@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { SkillNodeRow } from "../api/types";
-import { MAX_CORE_SLOTS, MAX_SLOTS, availableSkills, canPick, familyOrder, grantedSkills, lockReason, normalizePicks, skillDisplayName, tierAtLeast } from "./buildRules";
+import { MAX_CORE_SLOTS, MAX_SLOTS, availableSkills, canPick, familyOrder, grantedSkills, lockReason, normalizePicks, skillDisplayName, skillFamilies, tierAtLeast } from "./buildRules";
 
 let seq = 0;
 const node = (over: Partial<SkillNodeRow> = {}): SkillNodeRow => ({
@@ -136,6 +136,88 @@ describe("familyOrder", () => {
     const root = node();
     const orphan = node({ parentId: "gone" });
     expect(familyOrder([orphan, root])).toEqual([root, orphan]);
+  });
+});
+
+describe("skillFamilies", () => {
+  // Compact view of the result: [name, depth, parent name].
+  const view = (skills: SkillNodeRow[]) =>
+    skillFamilies(skills).map((e) => [e.skill.name, e.depth, e.parent?.name ?? null]);
+
+  it("puts each picked child right after its parent, one level deeper", () => {
+    const a = node({ name: "A" });
+    const b = node({ name: "B" });
+    const a1 = node({ name: "A1", parentId: a.id });
+    const a1a = node({ name: "A1a", parentId: a1.id });
+    const a2 = node({ name: "A2", parentId: a.id });
+    // Pick order: B was taken before A's upgrades, but reads after A's family.
+    expect(view([a, b, a1, a1a, a2])).toEqual([
+      ["A", 0, null],
+      ["A1", 1, "A"],
+      ["A1a", 2, "A1"],
+      ["A2", 1, "A"],
+      ["B", 0, null],
+    ]);
+  });
+
+  it("flags the last child of each parent (where the mobile bracket stops)", () => {
+    const a = node({ name: "A" });
+    const a1 = node({ name: "A1", parentId: a.id });
+    const a1a = node({ name: "A1a", parentId: a1.id });
+    const a2 = node({ name: "A2", parentId: a.id });
+    const last = Object.fromEntries(skillFamilies([a, a1, a1a, a2]).map((e) => [e.skill.name, e.lastChild]));
+    expect(last).toEqual({ A: true, A1: false, A1a: true, A2: true });
+  });
+
+  it("counts how many cards back each child's previous sibling sits (for the shared top rail)", () => {
+    const a = node({ name: "A" });
+    const a1 = node({ name: "A1", parentId: a.id });
+    const a1a = node({ name: "A1a", parentId: a1.id });
+    const a2 = node({ name: "A2", parentId: a.id });
+    const a3 = node({ name: "A3", parentId: a.id });
+    const span = Object.fromEntries(
+      skillFamilies([a, a1, a1a, a2, a3]).map((e) => [e.skill.name, e.siblingSpan])
+    );
+    // A1 is a first child (0); A2's rail reaches back over A1a to A1 (2); A3
+    // sits right after A2 (1).
+    expect(span).toEqual({ A: 0, A1: 0, A1a: 0, A2: 2, A3: 1 });
+  });
+
+  it("keeps a skill whose parent isn't in the list as a root, in its own place", () => {
+    const x = node({ name: "X" });
+    const orphan = node({ name: "Orphan", parentId: "not-picked" });
+    const y = node({ name: "Y" });
+    expect(view([x, orphan, y])).toEqual([
+      ["X", 0, null],
+      ["Orphan", 0, null],
+      ["Y", 0, null],
+    ]);
+  });
+
+  it("nests a child under its parent even when the child is listed first", () => {
+    const parent = node({ name: "P" });
+    const child = node({ name: "C", parentId: parent.id });
+    expect(view([child, parent])).toEqual([
+      ["P", 0, null],
+      ["C", 1, "P"],
+    ]);
+  });
+
+  it("draws a repeatable skill's child once, under the first copy", () => {
+    const r = node({ name: "R", repeatable: true });
+    const child = node({ name: "C", parentId: r.id });
+    expect(view([r, r, child])).toEqual([
+      ["R", 0, null],
+      ["C", 1, "R"],
+      ["R", 0, null],
+    ]);
+  });
+
+  it("never drops skills caught in a parent cycle (bad data)", () => {
+    const a = node({ name: "A" });
+    const b = node({ name: "B", parentId: a.id });
+    a.parentId = b.id;
+    expect(skillFamilies([a, b])).toHaveLength(2);
   });
 });
 

@@ -607,6 +607,11 @@ model Build {
   weaponSkillIds Json     @default("{}") @map("weapon_skill_ids")
   // The SUBJECT's quality tier (the mech, or a single-weapon build's weapon).
   quality         QualityTier @default(Blue)
+  // How far the mech is awakened, as a step KEY: "L-P" = level L, outer node P
+  // (1-5), or "L-C" = level L's core node reached (the game labels that step
+  // "Awakening Lv L+1"). null = not awakened. A key rather than an index, so a
+  // level going live later never shifts what existing builds point at.
+  awakeningStep   String?     @map("awakening_step")
   // Per equipped weapon: {"<weaponId>": "Gold", ...}
   weaponQualities Json        @default("{}") @map("weapon_qualities")
   // Attack-module picks: {"<moduleId>": {quality, effect1, effect2, effect3}}.
