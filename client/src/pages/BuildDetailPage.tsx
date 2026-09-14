@@ -246,8 +246,12 @@ export function BuildDetailPage() {
         );
       })}
 
-      {/* Only when the author set a step AND this mech still has live levels. */}
-      {b.awakeningStep && mech && awakeningStepOptions(mech.awakeningLevels).length > 0 && (
+      {/* Only when the author set a step AND this mech's track still offers it —
+          a stale key (say a level that's no longer live) would otherwise show
+          a step that doesn't exist, with effects that don't match it. */}
+      {b.awakeningStep &&
+        mech &&
+        awakeningStepOptions(mech.awakeningLevels).some((o) => o.value === b.awakeningStep) && (
         <>
           <h2 className="mt-6 mb-2 text-2xl font-semibold">
             Awakening <span className="text-ink-dim">{awakeningStepLabel(b.awakeningStep)}</span>

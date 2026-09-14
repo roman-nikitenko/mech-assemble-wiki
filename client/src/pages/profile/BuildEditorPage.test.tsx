@@ -635,6 +635,28 @@ describe("BuildEditorPage (new build)", () => {
     expect(lastSavedInput().awakeningStep).toBe("2-2");
   });
 
+  // Awakening progress belongs to one mech. The next mech's track may well
+  // offer the same key ("2-2"), so only an explicit reset keeps it from
+  // silently carrying over.
+  it("clears the awakening step when the mech is changed", async () => {
+    renderEditor();
+    await userEvent.click(await screen.findByRole("button", { name: /Iron Colossus/ }));
+    await userEvent.click(await screen.findByRole("button", { name: "Mech awakening" }));
+    await userEvent.click(screen.getByRole("option", { name: "2-2" }));
+    expect(screen.getByRole("region", { name: "Awakening Effect" })).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "Change mech" }));
+    // Re-picking a mech whose track also has "2-2" must start un-awakened.
+    await userEvent.click(await screen.findByRole("button", { name: /Iron Colossus/ }));
+    expect(await screen.findByRole("button", { name: "Mech awakening" })).toHaveTextContent("Not awakened");
+    expect(screen.queryByRole("region", { name: "Awakening Effect" })).not.toBeInTheDocument();
+
+    await userEvent.type(screen.getByLabelText("Build name *"), "Switched");
+    await userEvent.click(screen.getByRole("button", { name: "Save build" }));
+    await screen.findByText("profile list");
+    expect(lastSavedInput().awakeningStep).toBeNull();
+  });
+
   it("saves no awakening step when none was chosen", async () => {
     renderEditor();
     await userEvent.click(await screen.findByRole("button", { name: /Iron Colossus/ }));

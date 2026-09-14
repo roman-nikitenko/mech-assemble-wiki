@@ -37,13 +37,16 @@ export function awakeningStepLabel(step: string): string {
 
 /** The live levels whose core node a step has reached. At an outer node
     ("2-2") that's every level BELOW it; at a core step ("2-C") it includes the
-    step's own level. Unreadable or missing keys reach nothing. */
+    step's own level. Unreadable keys reach nothing — and so does a step on a
+    level that isn't live, since awakeningStepOptions never offers one. */
 export function reachedCores(levels: AwakeningLevel[], step: string | null): AwakeningLevel[] {
   const m = step === null ? null : STEP_RE.exec(step);
   if (!m) return [];
   const level = Number(m[1]);
   const coreReached = m[2] === "C";
-  return liveLevels(levels).filter((l) => (coreReached ? l.level <= level : l.level < level));
+  const live = liveLevels(levels);
+  if (!live.some((l) => l.level === level)) return [];
+  return live.filter((l) => (coreReached ? l.level <= level : l.level < level));
 }
 
 /** One line of the summed core stats. `name` is null for a line that didn't

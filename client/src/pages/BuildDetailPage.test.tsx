@@ -204,6 +204,9 @@ const WEAPON_ONLY_UNIVERSAL: PostedBuild = {
 
 // "Awakening Lv3" reached: Lv.1 and Lv.2 cores count, Lv.3's doesn't.
 const AWAKENED: PostedBuild = { ...BUILD, id: "bawk", awakeningStep: "2-C" };
+// A well-formed key the server accepts, but this mech's live track ends at
+// level 3 — so there is no step "4-1" to show.
+const AWAKENING_STALE: PostedBuild = { ...BUILD, id: "bawkstale", awakeningStep: "4-1" };
 // Mid-way through level 1: no core reached yet.
 const AWAKENING_EARLY: PostedBuild = { ...BUILD, id: "bawk13", awakeningStep: "1-3" };
 
@@ -225,6 +228,7 @@ function renderPage(path: string) {
     else if (url.match(/\/api\/builds\/bwouni$/)) body = WEAPON_ONLY_UNIVERSAL;
     else if (url.match(/\/api\/builds\/bawk$/)) body = AWAKENED;
     else if (url.match(/\/api\/builds\/bawk13$/)) body = AWAKENING_EARLY;
+    else if (url.match(/\/api\/builds\/bawkstale$/)) body = AWAKENING_STALE;
     else if (url.match(/\/api\/builds\/nope$/)) {
       return new Response(JSON.stringify({ error: "Build not found" }), {
         status: 404,
@@ -423,6 +427,13 @@ describe("BuildDetailPage", () => {
     renderPage("/builds/bawk13");
     const box = await screen.findByRole("region", { name: "Awakening Effect" });
     expect(within(box).getByText("No awakening effects yet.")).toBeInTheDocument();
+  });
+
+  it("shows no awakening section for a step the mech's track doesn't offer", async () => {
+    renderPage("/builds/bawkstale");
+    await screen.findByRole("heading", { name: "Iron Colossus skills" });
+    expect(screen.queryByRole("region", { name: "Awakening Effect" })).not.toBeInTheDocument();
+    expect(screen.queryByText("4-1")).not.toBeInTheDocument();
   });
 
   it("shows no awakening section when the build has no step", async () => {
