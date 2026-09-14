@@ -85,9 +85,15 @@ describe("reachedCores", () => {
     expect(levels("2-9")).toEqual([]);
   });
 
-  it("never counts a level that isn't live", () => {
+  // A step on a level that isn't live (or isn't there at all) is not a step
+  // the track offers, so it reaches nothing rather than borrowing lower cores.
+  it("reaches nothing for a step on a level that isn't live or doesn't exist", () => {
     const offline = [level(1), level(2, { isLive: false })];
-    expect(reachedCores(offline, "2-C").map((l) => l.level)).toEqual([1]);
+    expect(reachedCores(offline, "2-C")).toEqual([]);
+    expect(reachedCores(offline, "2-1")).toEqual([]);
+    // LEVELS has 1-3 live and 4 switched off; there is no level 5 at all.
+    expect(levels("4-1")).toEqual([]);
+    expect(levels("5-C")).toEqual([]);
   });
 });
 

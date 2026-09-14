@@ -377,6 +377,9 @@ function BuildEditorContent({ existing }: { existing: PostedBuild | undefined })
     // Weapons (and their skill picks) stay: any weapon fits any mech.
     setMechId(null);
     setPickedIds([]);
+    // Awakening progress belongs to one mech too — even when the next mech's
+    // track has the same key ("2-2"), it isn't that mech's progress.
+    setAwakeningStep(null);
   }
 
   // The build-wide Core pool: core picks stay STORED with their source
