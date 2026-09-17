@@ -104,7 +104,7 @@ export function FilterBar({
                 onClick={() => onToggleRank(r)}
                 className={chipCls(active)}
               >
-                {r === "S" ? <STierIcon size={28} className="inline align-middle" /> : r}
+                {r === "S" ? <STierIcon size={25} className="inline align-middle" /> : r}
 
               </button>
             );
