@@ -38,9 +38,9 @@ export function AircraftCard({
           <div className="h-full w-full" aria-hidden />
         )}
         <h3
-          className="flex items-center justify-center gap-2 text-xl font-black absolute top-1"
+          className="flex items-center justify-center gap-2 text-xl font-black absolute top-2"
         >
-          {aircraft.tier === "S" && <STierIcon size={45} />}
+          {aircraft.tier === "S" && <STierIcon size={30} />}
           <span className="truncate">{aircraft.name}</span>
         </h3>
       </div>

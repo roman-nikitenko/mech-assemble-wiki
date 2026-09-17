@@ -131,7 +131,7 @@ export function AircraftFormPage() {
                       : "border-edge text-ink-dim hover:border-accent/50"
                   }`}
                 >
-                  {t === "S" && <STierIcon size={45} />}
+                  {t === "S" && <STierIcon size={30} />}
                   {t}
                 </button>
               );
