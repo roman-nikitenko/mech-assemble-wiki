@@ -83,7 +83,6 @@ export function AdminTableFilters({
         options={TIERS.map((t) => ({
           value: t,
           label: t,
-          // S-tier gets the drawn gold badge (shown next to the label).
           icon: t === "S" ? <STierIcon size={18} /> : undefined,
         }))}
       />
