@@ -51,7 +51,7 @@ export function DroneCard({
         ></div>
         <div className="bg-gradient-to-r absolute w-full z-10 px-3 py-2 text-center">
           <h3 className="flex items-center justify-center gap-2 text-xl font-black ">
-            {drone.tier === "S" && <STierIcon size={45} />}
+            {drone.tier === "S" && <STierIcon size={30} />}
             <span className="truncate">{drone.name}</span>
           </h3>
         </div>
