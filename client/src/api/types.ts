@@ -513,6 +513,25 @@ export interface AccessorySetInput {
   accessoryIds: string[];
 }
 
+/** A Final Raid gear set. Wearing 2 pieces grants twoPieceBonus, 4 pieces
+    also grants fourPieceBonus. Both are free-text sentences from the game. */
+export interface ArsenalSet {
+  id: string;
+  name: string;
+  iconUrl: string | null;
+  twoPieceBonus: string | null;
+  fourPieceBonus: string | null;
+  sortOrder: number;
+}
+
+/** Payload for POST/PUT /api/arsenal-sets. */
+export interface ArsenalSetInput {
+  name: string;
+  iconUrl: string | null;
+  twoPieceBonus: string | null;
+  fourPieceBonus: string | null;
+}
+
 /** A build's publication state (mirrors the server BuildStatus enum). */
 export type BuildStatus = "Draft" | "Published" | "Unposted";
 

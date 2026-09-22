@@ -822,3 +822,24 @@ model AircraftAttribute {
   @@index([groupId])
   @@map("aircraft_attributes")
 }
+
+// ---------- Final Raid ----------
+
+// A Final Raid gear set ("Swift Set", "Abyssal Set"). Wearing 2 pieces of the
+// same set grants twoPieceBonus; wearing 4 grants fourPieceBonus as well.
+// Both bonuses are free text, by the same reasoning as mechs.special_bonus: the
+// game states them as sentences ("Fire Rate +100%", "Each shot increases DMG
+// by 15%, max 20 stacks..."), not as structured stat/value pairs.
+model ArsenalSet {
+  id             String   @id @default(uuid()) @db.Uuid
+  name           String   @unique
+  // The set emblem shown in the game's arsenal screen.
+  iconUrl        String?  @map("icon_url")
+  twoPieceBonus  String?  @map("two_piece_bonus")
+  fourPieceBonus String?  @map("four_piece_bonus")
+  // Admin-controlled display order (same as accessory sets).
+  sortOrder      Int      @default(0) @map("sort_order")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  @@map("arsenal_sets")
+}

@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { AccessoryInput, AccessorySet, AccessorySetInput, AccessorySummary, AdminUser, Aircraft, AircraftAttributeGroup, AircraftInput, AwakeningCostTier, AwakeningLevel, DashboardStats, Drone, DroneInput, DroneType, DroneTypeInput, Feedback, GameType, MechDetail, MechInput, MechRank, MechSummary, ModuleDetail, ModuleInput, ModuleQuality, ModuleQualityInput, ModuleSummary, Pilot, PilotInput, PostedBuild, TypeInput, WeaponDetail, WeaponInput, WeaponSummary } from "./types";
+import type { AccessoryInput, AccessorySet, AccessorySetInput, ArsenalSet, ArsenalSetInput, AccessorySummary, AdminUser, Aircraft, AircraftAttributeGroup, AircraftInput, AwakeningCostTier, AwakeningLevel, DashboardStats, Drone, DroneInput, DroneType, DroneTypeInput, Feedback, GameType, MechDetail, MechInput, MechRank, MechSummary, ModuleDetail, ModuleInput, ModuleQuality, ModuleQualityInput, ModuleSummary, Pilot, PilotInput, PostedBuild, TypeInput, WeaponDetail, WeaponInput, WeaponSummary } from "./types";
 import { adminHeaders } from "../auth/adminSession";
 
 export const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
@@ -354,6 +354,40 @@ export function useDeleteDroneType() {
       }
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["drone-types"] }),
+  });
+}
+
+export function useArsenalSets() {
+  return useQuery({ queryKey: ["arsenal-sets"], queryFn: () => fetchJson<ArsenalSet[]>("/api/arsenal-sets") });
+}
+
+export function useCreateArsenalSet() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: ArsenalSetInput) => sendJson<ArsenalSet>("/api/arsenal-sets", "POST", input),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["arsenal-sets"] }),
+  });
+}
+
+export function useUpdateArsenalSet(id: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: ArsenalSetInput) => sendJson<ArsenalSet>(`/api/arsenal-sets/${id}`, "PUT", input),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["arsenal-sets"] }),
+  });
+}
+
+export function useDeleteArsenalSet() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`${API_URL}/api/arsenal-sets/${id}`, { method: "DELETE", headers: adminHeaders() });
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        throw new Error(data?.error ?? `API error ${res.status}`);
+      }
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["arsenal-sets"] }),
   });
 }
 

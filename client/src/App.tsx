@@ -55,6 +55,8 @@ const TypeFormPage = lazyNamed(() => import("./admin/types/TypeFormPage"), "Type
 const DroneTypeFormPage = lazyNamed(() => import("./admin/types/DroneTypeFormPage"), "DroneTypeFormPage");
 const AdminDronesPage = lazyNamed(() => import("./admin/drones/AdminDronesPage"), "AdminDronesPage");
 const DroneFormPage = lazyNamed(() => import("./admin/drones/DroneFormPage"), "DroneFormPage");
+const FinalRaidPage = lazyNamed(() => import("./admin/finalRaid/FinalRaidPage"), "FinalRaidPage");
+const ArsenalSetFormPage = lazyNamed(() => import("./admin/finalRaid/ArsenalSetFormPage"), "ArsenalSetFormPage");
 const AdminAircraftPage = lazyNamed(() => import("./admin/aircraft/AdminAircraftPage"), "AdminAircraftPage");
 const AircraftFormPage = lazyNamed(() => import("./admin/aircraft/AircraftFormPage"), "AircraftFormPage");
 const AdminModulesPage = lazyNamed(() => import("./admin/modules/AdminModulesPage"), "AdminModulesPage");
@@ -132,6 +134,9 @@ export default function App() {
         <Route path="module-qualities" element={<AdminModuleQualitiesPage />} />
         <Route path="module-qualities/new" element={<ModuleQualityFormPage />} />
         <Route path="module-qualities/:id/edit" element={<ModuleQualityFormPage />} />
+        <Route path="final-raid" element={<FinalRaidPage />} />
+        <Route path="final-raid/sets/new" element={<ArsenalSetFormPage />} />
+        <Route path="final-raid/sets/:id/edit" element={<ArsenalSetFormPage />} />
         <Route path="settings" element={<SettingsPage />} />
       </Route>
 
