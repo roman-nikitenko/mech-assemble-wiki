@@ -9,6 +9,8 @@ const PREFIX = "[test:arsenal-sets] ";
 const MISSING_ID = "00000000-0000-4000-8000-000000000000";
 
 afterAll(async () => {
+  // Pieces first: the set FK is Restrict, so sets with pieces can't go.
+  await prisma.arsenalPiece.deleteMany({ where: { name: { startsWith: PREFIX } } });
   await prisma.arsenalSet.deleteMany({ where: { name: { startsWith: PREFIX } } });
   await prisma.$disconnect();
 });
@@ -23,6 +25,21 @@ describe("GET /api/arsenal-sets", () => {
     const res = await request(app).get("/api/arsenal-sets");
     expect(res.status).toBe(200);
     expect(res.body.map((s: { id: string }) => s.id)).toContain(set.id);
+  });
+
+  it("reports how many pieces belong to each set", async () => {
+    const set = await makeSet("Counted");
+    await prisma.arsenalPiece.createMany({
+      data: [
+        { name: `${PREFIX}Counted Belt`, slot: "Belt", qualityMin: 8, qualityMax: 13, setId: set.id },
+        { name: `${PREFIX}Counted Boots`, slot: "Boots", qualityMin: 8, qualityMax: 13, setId: set.id },
+      ],
+    });
+    const res = await request(app).get("/api/arsenal-sets");
+    const found = res.body.find((s: { id: string }) => s.id === set.id);
+    expect(found.pieceCount).toBe(2);
+    // Prisma's raw `_count` wrapper must not leak into the API shape.
+    expect(found._count).toBeUndefined();
   });
 });
 
@@ -117,6 +134,17 @@ describe("DELETE /api/arsenal-sets/:id", () => {
     const res = await request(app).delete(`/api/arsenal-sets/${set.id}`).set(ADMIN);
     expect(res.status).toBe(204);
     expect(await prisma.arsenalSet.findUnique({ where: { id: set.id } })).toBeNull();
+  });
+
+  it("refuses to delete a set that still has pieces (409), and keeps it", async () => {
+    const set = await makeSet("Occupied");
+    await prisma.arsenalPiece.create({
+      data: { name: `${PREFIX}Occupied Helmet`, slot: "Helmet", qualityMin: 8, qualityMax: 13, setId: set.id },
+    });
+    const res = await request(app).delete(`/api/arsenal-sets/${set.id}`).set(ADMIN);
+    expect(res.status).toBe(409);
+    expect(res.body.error).toMatch(/1 piece\(s\) still belong/);
+    expect(await prisma.arsenalSet.findUnique({ where: { id: set.id } })).not.toBeNull();
   });
 
   it("returns 404 for an unknown id", async () => {

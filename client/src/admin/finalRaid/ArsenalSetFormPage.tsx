@@ -27,7 +27,10 @@ export function ArsenalSetFormPage() {
   const seededFor = useRef<string | null>(null);
 
   useEffect(() => {
-    if (isEdit && sets.data && seededFor.current !== id) {
+    // Wait out any in-flight fetch: when the page opens on a cached list, the
+    // cache may be stale (e.g. the piece was changed in another tab), and a
+    // form filled from it would save those stale values back.
+    if (isEdit && sets.data && !sets.isFetching && seededFor.current !== id) {
       const set = sets.data.find((s) => s.id === id);
       if (set) {
         seededFor.current = id;
@@ -39,7 +42,7 @@ export function ArsenalSetFormPage() {
         });
       }
     }
-  }, [isEdit, id, sets.data]);
+  }, [isEdit, id, sets.data, sets.isFetching]);
 
   const mutation = isEdit ? updateSet : createSet;
 
@@ -48,7 +51,11 @@ export function ArsenalSetFormPage() {
     mutation.mutate(form, { onSuccess: () => navigate(BACK) });
   }
 
-  if (isEdit && sets.isPending) return <p className="text-ink-dim">Loading…</p>;
+  // Also "loading" while the fresh copy is on its way and the form hasn't been
+  // filled yet — otherwise the empty form would flash first.
+  if (isEdit && (sets.isPending || (sets.isFetching && seededFor.current !== id))) {
+    return <p className="text-ink-dim">Loading…</p>;
+  }
   // Without this, a failed load would show an empty form for an existing set.
   if (isEdit && sets.isError) return <ErrorPanel onRetry={() => sets.refetch()} />;
   if (isEdit && sets.data && !sets.data.some((s) => s.id === id)) {

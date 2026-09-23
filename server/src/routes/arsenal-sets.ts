@@ -47,7 +47,12 @@ function parseSetInput(body: unknown): { ok: true; value: SetInput } | { ok: fal
 }
 
 arsenalSetsRouter.get("/", async (_req, res) => {
-  res.json(await prisma.arsenalSet.findMany({ orderBy: SET_ORDER }));
+  const rows = await prisma.arsenalSet.findMany({
+    orderBy: SET_ORDER,
+    include: { _count: { select: { pieces: true } } },
+  });
+  // Flatten Prisma's `_count: { pieces }` into a plain pieceCount field.
+  res.json(rows.map(({ _count, ...set }) => ({ ...set, pieceCount: _count.pieces })));
 });
 
 arsenalSetsRouter.post("/", requireAdmin, async (req, res) => {
@@ -93,15 +98,31 @@ arsenalSetsRouter.put("/:id", requireAdmin, async (req, res) => {
   }
 });
 
+// DELETE is BLOCKED while pieces still belong to the set (like types). We
+// count them ourselves for a friendly message; the FK's onDelete: Restrict
+// is the backstop if a piece is added between the count and the delete.
 arsenalSetsRouter.delete("/:id", requireAdmin, async (req, res) => {
   const { id } = req.params;
   if (!UUID_RE.test(id)) return res.status(404).json({ error: "Set not found." });
+  const set = await prisma.arsenalSet.findUnique({ where: { id }, select: { name: true } });
+  if (!set) return res.status(404).json({ error: "Set not found." });
+
+  const pieceCount = await prisma.arsenalPiece.count({ where: { setId: id } });
+  if (pieceCount > 0) {
+    return res.status(409).json({
+      error: `Cannot delete '${set.name}' — ${pieceCount} piece(s) still belong to it. Move or delete them first.`,
+    });
+  }
   try {
     await prisma.arsenalSet.delete({ where: { id } });
     res.status(204).end();
   } catch (err) {
-    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2025") {
-      return res.status(404).json({ error: "Set not found." });
+    if (err instanceof Prisma.PrismaClientKnownRequestError) {
+      // P2003 = the Restrict backstop fired; P2025 = deleted from another tab.
+      if (err.code === "P2003") {
+        return res.status(409).json({ error: `Cannot delete '${set.name}' — it is in use.` });
+      }
+      if (err.code === "P2025") return res.status(404).json({ error: "Set not found." });
     }
     throw err;
   }

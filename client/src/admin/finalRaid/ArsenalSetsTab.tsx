@@ -43,13 +43,14 @@ export function ArsenalSetsTab() {
                 <th className="px-4 py-3">Name</th>
                 <th className="px-4 py-3">2-piece bonus</th>
                 <th className="px-4 py-3">4-piece bonus</th>
+                <th className="px-4 py-3">Pieces</th>
                 <th className="px-4 py-3">Actions</th>
               </tr>
             </thead>
             <tbody>
               {data.length === 0 && (
                 <tr className="border-t border-edge">
-                  <td colSpan={5} className="px-4 py-6 text-center text-ink-dim">
+                  <td colSpan={6} className="px-4 py-6 text-center text-ink-dim">
                     No sets yet.
                   </td>
                 </tr>
@@ -70,6 +71,7 @@ export function ArsenalSetsTab() {
                   </td>
                   <td className="px-4 py-2 text-ink-dim">{set.twoPieceBonus ?? "—"}</td>
                   <td className="px-4 py-2 text-ink-dim">{set.fourPieceBonus ?? "—"}</td>
+                  <td className="px-4 py-2 text-ink-dim">{set.pieceCount}</td>
                   <td className="px-4 py-2">
                     <div className="flex gap-2">
                       <Link
@@ -103,7 +105,12 @@ export function ArsenalSetsTab() {
         >
           <div className="max-w-md rounded-xl border border-edge bg-surface p-6">
             <h2 className="font-bold">Delete {confirming.name}?</h2>
-            <p className="mt-2 text-sm text-ink-dim">This can't be undone.</p>
+            <p className="mt-2 text-sm text-ink-dim">
+              {/* Warn up front; the server refuses anyway (409) while pieces remain. */}
+              {confirming.pieceCount > 0
+                ? `${confirming.pieceCount} piece(s) still belong to this set — move or delete them first.`
+                : "This can't be undone."}
+            </p>
             {deleteSet.isError && <p className="mt-2 text-sm text-fire">{(deleteSet.error as Error).message}</p>}
             <div className="mt-4 flex justify-end gap-2">
               <button onClick={closeDialog} className="min-h-11 rounded-lg border border-edge px-4 text-sm">

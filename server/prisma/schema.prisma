@@ -841,5 +841,66 @@ model ArsenalSet {
   sortOrder      Int      @default(0) @map("sort_order")
   createdAt      DateTime @default(now()) @map("created_at")
 
+  pieces ArsenalPiece[]
+
   @@map("arsenal_sets")
+}
+
+// The six gear slots, in the game's own order. An enum (not a catalog table
+// like `types`) because the slots are fixed game structure, like MechRank —
+// a future build equips exactly one piece per slot.
+enum ArsenalSlot {
+  Breastplate
+  Greaves
+  Boots
+  Gauntlets
+  Belt
+  Helmet
+}
+
+// One named piece of Final Raid gear ("Swift Belt", "Computation Rune").
+// A piece with a set_id is "set arsenal"; without one it is "normal arsenal".
+model ArsenalPiece {
+  id      String      @id @default(uuid()) @db.Uuid
+  // NOT unique: the game ships "Swift Belt" twice — a normal piece at
+  // qualities 4-7 and a Swift Set piece at 8-13.
+  name    String
+  iconUrl String?     @map("icon_url")
+  slot    ArsenalSlot
+  // The quality range the piece exists at, 1 (Crude) … 13 (Supreme). Stored as
+  // Ints so a future build can offer "pick a quality between min and max";
+  // the names live in client/src/lib/arsenalQualities.ts. 1-13 and
+  // min <= max are app rules (checked in the route).
+  qualityMin Int @map("quality_min")
+  qualityMax Int @map("quality_max")
+  setId      String? @map("set_id") @db.Uuid
+  sortOrder  Int      @default(0) @map("sort_order")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  // Restrict, like types: a set that still has pieces can't be deleted —
+  // the admin must move or delete its pieces first.
+  set ArsenalSet? @relation(fields: [setId], references: [id], onDelete: Restrict)
+
+  @@index([setId])
+  @@map("arsenal_pieces")
+}
+
+// A Final Raid hidden achievement ("Lone Wolf", "Frenzy Friend"). `tier` is the
+// game's difficulty/quality 1-4 — the art for it lives in the client
+// (assets/achivments-quality/<tier>.png), so only the number is stored. Kept as
+// an Int rather than an enum: the game gives these tiers no names, and 1-4 is
+// an app rule (checked in the route), not something the DB needs to know.
+model HiddenAchievement {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String   @unique
+  description String
+  iconUrl     String?  @map("icon_url")
+  tier        Int
+  // The rewards as the game words them, e.g. ["Diamond x1,000", "Supply Coin
+  // x100"] — up to 2, app-enforced like other text[] fields in this schema.
+  rewards     String[]
+  sortOrder   Int      @default(0) @map("sort_order")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@map("hidden_achievements")
 }

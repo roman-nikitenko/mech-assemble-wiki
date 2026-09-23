@@ -14,6 +14,7 @@ const existing: ArsenalSet = {
   twoPieceBonus: "Fire Rate +100%",
   fourPieceBonus: "Each shot increases DMG by 15%.",
   sortOrder: 0,
+  pieceCount: 0,
 };
 
 /** Subscribes to the same query as the form. TanStack Query hands new data to

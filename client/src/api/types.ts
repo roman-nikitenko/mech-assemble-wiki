@@ -522,6 +522,8 @@ export interface ArsenalSet {
   twoPieceBonus: string | null;
   fourPieceBonus: string | null;
   sortOrder: number;
+  /** How many arsenal pieces belong to this set (a set in use can't be deleted). */
+  pieceCount: number;
 }
 
 /** Payload for POST/PUT /api/arsenal-sets. */
@@ -530,6 +532,55 @@ export interface ArsenalSetInput {
   iconUrl: string | null;
   twoPieceBonus: string | null;
   fourPieceBonus: string | null;
+}
+
+/** The six Final Raid gear slots (mirrors the server ArsenalSlot enum). */
+export type ArsenalSlot = "Breastplate" | "Greaves" | "Boots" | "Gauntlets" | "Belt" | "Helmet";
+
+/** One Final Raid gear piece. setId null = "normal arsenal", set = "set
+    arsenal". qualityMin/Max are 1 (Crude) … 13 (Supreme) — names and colours
+    live in lib/arsenalQualities.ts. */
+export interface ArsenalPiece {
+  id: string;
+  name: string;
+  iconUrl: string | null;
+  slot: ArsenalSlot;
+  qualityMin: number;
+  qualityMax: number;
+  setId: string | null;
+  set: { id: string; name: string } | null;
+  sortOrder: number;
+}
+
+/** Payload for POST/PUT /api/arsenal-pieces. */
+export interface ArsenalPieceInput {
+  name: string;
+  iconUrl: string | null;
+  slot: ArsenalSlot;
+  qualityMin: number;
+  qualityMax: number;
+  setId: string | null;
+}
+
+/** A Final Raid hidden achievement. `tier` is the game's quality/difficulty
+    1-4; its art comes from lib/achievementQuality.ts. Up to 2 rewards. */
+export interface HiddenAchievement {
+  id: string;
+  name: string;
+  description: string;
+  iconUrl: string | null;
+  tier: number;
+  rewards: string[];
+  sortOrder: number;
+}
+
+/** Payload for POST/PUT /api/hidden-achievements. */
+export interface HiddenAchievementInput {
+  name: string;
+  description: string;
+  iconUrl: string | null;
+  tier: number;
+  rewards: string[];
 }
 
 /** A build's publication state (mirrors the server BuildStatus enum). */

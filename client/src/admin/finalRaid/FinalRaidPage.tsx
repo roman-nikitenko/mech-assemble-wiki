@@ -1,5 +1,7 @@
 import { useSearchParams } from "react-router-dom";
 import { ArsenalSetsTab } from "./ArsenalSetsTab";
+import { ArsenalTab } from "./ArsenalTab";
+import { AchievementsTab } from "./AchievementsTab";
 
 // The key is what goes in the URL (?tab=sets). "arsenal" is the default, so it
 // gets no param at all — /admin/final-raid lands on it.
@@ -48,14 +50,9 @@ export function FinalRaidPage() {
       </div>
 
       <div className="mt-6">
-        {active === "sets" ? (
-          <ArsenalSetsTab />
-        ) : (
-          // Placeholders until parts 2 and 3 land.
-          <p className="text-ink-dim">
-            {active === "arsenal" ? "Arsenal gear" : "Hidden achievements"} — coming soon.
-          </p>
-        )}
+        {active === "arsenal" && <ArsenalTab />}
+        {active === "sets" && <ArsenalSetsTab />}
+        {active === "achievements" && <AchievementsTab />}
       </div>
     </div>
   );
