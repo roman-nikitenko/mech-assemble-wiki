@@ -1,4 +1,4 @@
-import { useState, type CSSProperties } from "react";
+import { useState } from "react";
 import { imageSrc } from "../api/client";
 import type { GameType, ModuleQuality, ModuleSummary, QualityTier } from "../api/types";
 import { effectCountForTier } from "../lib/moduleEffects";
