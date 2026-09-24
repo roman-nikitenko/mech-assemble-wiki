@@ -53,8 +53,13 @@ const PilotFormPage = lazyNamed(() => import("./admin/pilots/PilotFormPage"), "P
 const AdminTypesPage = lazyNamed(() => import("./admin/types/AdminTypesPage"), "AdminTypesPage");
 const TypeFormPage = lazyNamed(() => import("./admin/types/TypeFormPage"), "TypeFormPage");
 const DroneTypeFormPage = lazyNamed(() => import("./admin/types/DroneTypeFormPage"), "DroneTypeFormPage");
+const FinalRaidPublicPage = lazyNamed(() => import("./pages/finalRaid/FinalRaidPage"), "FinalRaidPage");
 const AdminDronesPage = lazyNamed(() => import("./admin/drones/AdminDronesPage"), "AdminDronesPage");
 const DroneFormPage = lazyNamed(() => import("./admin/drones/DroneFormPage"), "DroneFormPage");
+const FinalRaidPage = lazyNamed(() => import("./admin/finalRaid/FinalRaidPage"), "FinalRaidPage");
+const ArsenalSetFormPage = lazyNamed(() => import("./admin/finalRaid/ArsenalSetFormPage"), "ArsenalSetFormPage");
+const ArsenalPieceFormPage = lazyNamed(() => import("./admin/finalRaid/ArsenalPieceFormPage"), "ArsenalPieceFormPage");
+const HiddenAchievementFormPage = lazyNamed(() => import("./admin/finalRaid/HiddenAchievementFormPage"), "HiddenAchievementFormPage");
 const AdminAircraftPage = lazyNamed(() => import("./admin/aircraft/AdminAircraftPage"), "AdminAircraftPage");
 const AircraftFormPage = lazyNamed(() => import("./admin/aircraft/AircraftFormPage"), "AircraftFormPage");
 const AdminModulesPage = lazyNamed(() => import("./admin/modules/AdminModulesPage"), "AdminModulesPage");
@@ -83,6 +88,7 @@ export default function App() {
         <Route path="/accessories" element={<AccessoriesPage />} />
         <Route path="/pilots" element={<PilotsPage />} />
         <Route path="/drones" element={<DronesPage />} />
+        <Route path="/final-raid" element={<FinalRaidPublicPage />} />
         <Route path="/aircraft" element={<AircraftPage />} />
         <Route path="/modules" element={<ModulesPage />} />
         <Route path="/feedback" element={<FeedbackPage />} />
@@ -132,6 +138,13 @@ export default function App() {
         <Route path="module-qualities" element={<AdminModuleQualitiesPage />} />
         <Route path="module-qualities/new" element={<ModuleQualityFormPage />} />
         <Route path="module-qualities/:id/edit" element={<ModuleQualityFormPage />} />
+        <Route path="final-raid" element={<FinalRaidPage />} />
+        <Route path="final-raid/sets/new" element={<ArsenalSetFormPage />} />
+        <Route path="final-raid/sets/:id/edit" element={<ArsenalSetFormPage />} />
+        <Route path="final-raid/arsenal/new" element={<ArsenalPieceFormPage />} />
+        <Route path="final-raid/arsenal/:id/edit" element={<ArsenalPieceFormPage />} />
+        <Route path="final-raid/achievements/new" element={<HiddenAchievementFormPage />} />
+        <Route path="final-raid/achievements/:id/edit" element={<HiddenAchievementFormPage />} />
         <Route path="settings" element={<SettingsPage />} />
       </Route>
 

@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { AccessoryInput, AccessorySet, AccessorySetInput, AccessorySummary, AdminUser, Aircraft, AircraftAttributeGroup, AircraftInput, AwakeningCostTier, AwakeningLevel, DashboardStats, Drone, DroneInput, DroneType, DroneTypeInput, Feedback, GameType, MechDetail, MechInput, MechRank, MechSummary, ModuleDetail, ModuleInput, ModuleQuality, ModuleQualityInput, ModuleSummary, Pilot, PilotInput, PostedBuild, TypeInput, WeaponDetail, WeaponInput, WeaponSummary } from "./types";
+import type { AccessoryInput, AccessorySet, AccessorySetInput, ArsenalPiece, ArsenalPieceInput, ArsenalSet, ArsenalSetInput, AccessorySummary, AdminUser, Aircraft, AircraftAttributeGroup, AircraftInput, AwakeningCostTier, AwakeningLevel, DashboardStats, Drone, DroneInput, DroneType, DroneTypeInput, Feedback, GameType, HiddenAchievement, HiddenAchievementInput, MechDetail, MechInput, MechRank, MechSummary, ModuleDetail, ModuleInput, ModuleQuality, ModuleQualityInput, ModuleSummary, Pilot, PilotInput, PostedBuild, TypeInput, WeaponDetail, WeaponInput, WeaponSummary } from "./types";
 import { adminHeaders } from "../auth/adminSession";
 
 export const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
@@ -354,6 +354,127 @@ export function useDeleteDroneType() {
       }
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["drone-types"] }),
+  });
+}
+
+export function useArsenalSets() {
+  return useQuery({ queryKey: ["arsenal-sets"], queryFn: () => fetchJson<ArsenalSet[]>("/api/arsenal-sets") });
+}
+
+export function useCreateArsenalSet() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: ArsenalSetInput) => sendJson<ArsenalSet>("/api/arsenal-sets", "POST", input),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["arsenal-sets"] }),
+  });
+}
+
+export function useUpdateArsenalSet(id: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: ArsenalSetInput) => sendJson<ArsenalSet>(`/api/arsenal-sets/${id}`, "PUT", input),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["arsenal-sets"] }),
+  });
+}
+
+export function useDeleteArsenalSet() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`${API_URL}/api/arsenal-sets/${id}`, { method: "DELETE", headers: adminHeaders() });
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        throw new Error(data?.error ?? `API error ${res.status}`);
+      }
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["arsenal-sets"] }),
+  });
+}
+
+export function useArsenalPieces() {
+  return useQuery({ queryKey: ["arsenal-pieces"], queryFn: () => fetchJson<ArsenalPiece[]>("/api/arsenal-pieces") });
+}
+
+// Piece writes also invalidate "arsenal-sets": each set shows a pieceCount,
+// which changes whenever a piece joins, leaves or is deleted.
+function useInvalidateArsenal() {
+  const qc = useQueryClient();
+  return () =>
+    Promise.all([
+      qc.invalidateQueries({ queryKey: ["arsenal-pieces"] }),
+      qc.invalidateQueries({ queryKey: ["arsenal-sets"] }),
+    ]);
+}
+
+export function useCreateArsenalPiece() {
+  const invalidate = useInvalidateArsenal();
+  return useMutation({
+    mutationFn: (input: ArsenalPieceInput) => sendJson<ArsenalPiece>("/api/arsenal-pieces", "POST", input),
+    onSuccess: invalidate,
+  });
+}
+
+export function useUpdateArsenalPiece(id: string) {
+  const invalidate = useInvalidateArsenal();
+  return useMutation({
+    mutationFn: (input: ArsenalPieceInput) => sendJson<ArsenalPiece>(`/api/arsenal-pieces/${id}`, "PUT", input),
+    onSuccess: invalidate,
+  });
+}
+
+export function useDeleteArsenalPiece() {
+  const invalidate = useInvalidateArsenal();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`${API_URL}/api/arsenal-pieces/${id}`, { method: "DELETE", headers: adminHeaders() });
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        throw new Error(data?.error ?? `API error ${res.status}`);
+      }
+    },
+    onSuccess: invalidate,
+  });
+}
+
+export function useHiddenAchievements() {
+  return useQuery({
+    queryKey: ["hidden-achievements"],
+    queryFn: () => fetchJson<HiddenAchievement[]>("/api/hidden-achievements"),
+  });
+}
+
+export function useCreateHiddenAchievement() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: HiddenAchievementInput) =>
+      sendJson<HiddenAchievement>("/api/hidden-achievements", "POST", input),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["hidden-achievements"] }),
+  });
+}
+
+export function useUpdateHiddenAchievement(id: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: HiddenAchievementInput) =>
+      sendJson<HiddenAchievement>(`/api/hidden-achievements/${id}`, "PUT", input),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["hidden-achievements"] }),
+  });
+}
+
+export function useDeleteHiddenAchievement() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`${API_URL}/api/hidden-achievements/${id}`, {
+        method: "DELETE",
+        headers: adminHeaders(),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        throw new Error(data?.error ?? `API error ${res.status}`);
+      }
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["hidden-achievements"] }),
   });
 }
 

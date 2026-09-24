@@ -10,6 +10,7 @@ const TABS = [
   { to: "/pilots", label: "Pilots" },
   { to: "/drones", label: "Drones" },
   { to: "/aircraft", label: "Aircraft" },
+  { to: "/final-raid", label: "Final Raid" },
   { to: "/modules", label: "Attack Module" },
   { to: "/feedback", label: "Feedback" },
 ];
