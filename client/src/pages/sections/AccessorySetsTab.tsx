@@ -89,7 +89,7 @@ function PieceTile({
         style={{ backgroundImage: `url(${bgImage})` }}
       >
         {piece.tier === "S" && (
-          <STierIcon size={30} className="absolute -left-3 -top-3 z-10" />
+          <STierIcon size={25} className="absolute left-0.5 top-0.5 z-10" />
         )}
         {art && (
           <img src={imageSrc(art)} alt="" className="h-16 w-16 object-contain" />

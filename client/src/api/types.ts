@@ -513,6 +513,85 @@ export interface AccessorySetInput {
   accessoryIds: string[];
 }
 
+/** A Final Raid gear set. Wearing 2 pieces grants twoPieceBonus, 4 pieces
+    also grants fourPieceBonus. Both are free-text sentences from the game. */
+export interface ArsenalSet {
+  id: string;
+  name: string;
+  iconUrl: string | null;
+  twoPieceBonus: string | null;
+  fourPieceBonus: string | null;
+  sortOrder: number;
+  /** How many arsenal pieces belong to this set (a set in use can't be deleted). */
+  pieceCount: number;
+}
+
+/** Payload for POST/PUT /api/arsenal-sets. */
+export interface ArsenalSetInput {
+  name: string;
+  iconUrl: string | null;
+  twoPieceBonus: string | null;
+  fourPieceBonus: string | null;
+}
+
+/** The six Final Raid gear slots (mirrors the server ArsenalSlot enum). */
+export type ArsenalSlot = "Breastplate" | "Greaves" | "Boots" | "Gauntlets" | "Belt" | "Helmet";
+
+/** One Final Raid gear piece. setId null = "normal arsenal", set = "set
+    arsenal". qualityMin/Max are 1 (Crude) … 13 (Supreme) — names and colours
+    live in lib/arsenalQualities.ts. */
+export interface ArsenalPiece {
+  id: string;
+  name: string;
+  iconUrl: string | null;
+  slot: ArsenalSlot;
+  qualityMin: number;
+  qualityMax: number;
+  setId: string | null;
+  set: { id: string; name: string } | null;
+  sortOrder: number;
+}
+
+/** Payload for POST/PUT /api/arsenal-pieces. */
+export interface ArsenalPieceInput {
+  name: string;
+  iconUrl: string | null;
+  slot: ArsenalSlot;
+  qualityMin: number;
+  qualityMax: number;
+  setId: string | null;
+}
+
+/** One thing an achievement grants: how many, and of what. `type` is a key
+    from the client's icon folder (lib/rewardIcons.ts) and is null when the
+    reward has no matching art; `amount` is text, because the game writes
+    "3000", "1,000" and "x1". */
+export interface AchievementReward {
+  type: string | null;
+  amount: string;
+}
+
+/** A Final Raid hidden achievement. `tier` is the game's quality/difficulty
+    1-4; its art comes from lib/achievementQuality.ts. Up to 6 rewards. */
+export interface HiddenAchievement {
+  id: string;
+  name: string;
+  description: string;
+  iconUrl: string | null;
+  tier: number;
+  rewards: AchievementReward[];
+  sortOrder: number;
+}
+
+/** Payload for POST/PUT /api/hidden-achievements. */
+export interface HiddenAchievementInput {
+  name: string;
+  description: string;
+  iconUrl: string | null;
+  tier: number;
+  rewards: AchievementReward[];
+}
+
 /** A build's publication state (mirrors the server BuildStatus enum). */
 export type BuildStatus = "Draft" | "Published" | "Unposted";
 
