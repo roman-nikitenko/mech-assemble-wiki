@@ -1,4 +1,4 @@
-import { useState, type CSSProperties } from "react";
+import { useState } from "react";
 import { imageSrc } from "../../api/client";
 import type { ArsenalPiece } from "../../api/types";
 import { arsenalQualityArt } from "../../lib/arsenalQualities";
