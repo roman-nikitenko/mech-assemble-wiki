@@ -22,7 +22,6 @@ export function ArsenalPieceCard({ piece, quality }: { piece: ArsenalPiece; qual
     <article className="flex flex-col overflow-hidden border-edge bg-surface">
       <div
         className="relative flex gap-3 bg-cover bg-center p-3 after:absolute after:inset-0 after:z-0 after:bg-(image:--bg-url) after:bg-cover after:bg-no-repeat"
-        style={{ "--bg-url": art.header ? `url(${art.header})` : "" } as CSSProperties}
       >
         <div
           className="relative z-10 flex h-14 w-14 shrink-0 items-center justify-center bg-cover bg-center"
@@ -86,7 +85,7 @@ export function ArsenalPieceCard({ piece, quality }: { piece: ArsenalPiece; qual
 
           {/* Name on the left, span on the right. An effect the game config
               gives no number for has no span, so its name runs the full width. */}
-          <ul className="mt-2 space-y-1 text-xs text-ink-dim">
+          <ul className="mt-2 space-y-1 text-xs text-ink-dim px-3">
             {slot.options.map((option) => {
               const { label, range } = affixRangeParts(option);
               return (

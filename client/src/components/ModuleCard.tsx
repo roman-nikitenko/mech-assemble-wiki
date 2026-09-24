@@ -24,8 +24,7 @@ export function ModuleCard({
   return (
     <div className="overflow-hidden max-w-[300px] min-w-[300px] place-self-center border border-edge bg-surface">
       <div
-        className="flex flex-col  gap-3 relative  bg-contain bg-no-repeat bg-center p-3 after:absolute after:z-0 after:bg-no-repeat after:bg-cover after:inset-0 after:bg-(image:--bg-url)"
-        style={{ "--bg-url": style.header ? `url(${style.header})` : "" } as CSSProperties}
+        className="flex flex-col border-b-2 border-b-surface-2 gap-3 relative  bg-contain bg-no-repeat bg-center p-3 after:absolute after:z-0 after:bg-no-repeat after:bg-cover after:inset-0 after:bg-(image:--bg-url)"
       >
         <div className="flex z-10 gap-2">
           <div
