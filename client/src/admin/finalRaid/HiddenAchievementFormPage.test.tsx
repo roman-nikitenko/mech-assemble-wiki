@@ -12,7 +12,10 @@ const existing: HiddenAchievement = {
   description: "Clear the remaining enemies after your teammate is defeated.",
   iconUrl: null,
   tier: 3,
-  rewards: ["Diamond x1,000", "Supply Coin x100"],
+  rewards: [
+    { type: "diamond", amount: "3000" },
+    { type: "supply-coin", amount: "100" },
+  ],
   sortOrder: 0,
 };
 
@@ -68,12 +71,35 @@ describe("HiddenAchievementFormPage", () => {
     }
   });
 
-  it("POSTs the chosen quality and both rewards as an array", async () => {
+  it("starts with one reward row and adds another on + Add reward", async () => {
+    renderForm("/admin/final-raid/achievements/new");
+    expect(screen.getByLabelText("Reward 1 amount")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Reward 2 amount")).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "+ Add reward" }));
+    expect(screen.getByLabelText("Reward 2 amount")).toBeInTheDocument();
+  });
+
+  it("removes a row, and keeps one empty row when the last is removed", async () => {
+    renderForm("/admin/final-raid/achievements/new");
+    await userEvent.click(screen.getByRole("button", { name: "+ Add reward" }));
+    await userEvent.type(screen.getByLabelText("Reward 2 amount"), "100");
+
+    await userEvent.click(screen.getByRole("button", { name: "Remove reward 2" }));
+    expect(screen.queryByLabelText("Reward 2 amount")).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "Remove reward 1" }));
+    expect(screen.getByLabelText("Reward 1 amount")).toHaveValue("");
+  });
+
+  it("POSTs each reward as an amount plus the chosen item type", async () => {
     const fetchSpy = renderForm("/admin/final-raid/achievements/new");
     await userEvent.type(screen.getByLabelText("Name *"), "Lone Wolf");
     await userEvent.type(screen.getByLabelText("Description *"), "Win alone.");
-    await userEvent.type(screen.getByLabelText("Reward 1"), "Diamond x1,000");
-    await userEvent.type(screen.getByLabelText("Reward 2"), "Supply Coin x100");
+    await userEvent.type(screen.getByLabelText("Reward 1 amount"), "3000");
+    // The type picker is the shared Dropdown: open it, then choose by label.
+    await userEvent.click(screen.getByRole("button", { name: /Reward 1 type/ }));
+    await userEvent.click(await screen.findByRole("option", { name: "Diamond" }));
     await userEvent.click(screen.getByLabelText("Quality 4"));
     await userEvent.click(screen.getByRole("button", { name: "Create achievement" }));
 
@@ -86,26 +112,28 @@ describe("HiddenAchievementFormPage", () => {
       description: "Win alone.",
       iconUrl: null,
       tier: 4,
-      rewards: ["Diamond x1,000", "Supply Coin x100"],
+      rewards: [{ type: "diamond", amount: "3000" }],
     });
   });
 
-  it("sends one reward when only the second box is filled", async () => {
+  it("drops a row that was added but never filled in", async () => {
     const fetchSpy = renderForm("/admin/final-raid/achievements/new");
     await userEvent.type(screen.getByLabelText("Name *"), "Half Rewards");
     await userEvent.type(screen.getByLabelText("Description *"), "Do something.");
-    await userEvent.type(screen.getByLabelText("Reward 2"), "Supply Coin x100");
+    await userEvent.type(screen.getByLabelText("Reward 1 amount"), "100");
+    await userEvent.click(screen.getByRole("button", { name: "+ Add reward" }));
     await userEvent.click(screen.getByRole("button", { name: "Create achievement" }));
 
     await screen.findByText("Final Raid list");
-    expect(sentWrite(fetchSpy).body.rewards).toEqual(["Supply Coin x100"]);
+    expect(sentWrite(fetchSpy).body.rewards).toEqual([{ type: null, amount: "100" }]);
   });
 
-  it("prefills in edit mode, splitting the rewards back into two boxes", async () => {
+  it("prefills in edit mode, one row per stored reward", async () => {
     const fetchSpy = renderForm("/admin/final-raid/achievements/a1/edit");
     await waitFor(() => expect(screen.getByLabelText("Name *")).toHaveValue("Lone Wolf"));
-    expect(screen.getByLabelText("Reward 1")).toHaveValue("Diamond x1,000");
-    expect(screen.getByLabelText("Reward 2")).toHaveValue("Supply Coin x100");
+    expect(screen.getByLabelText("Reward 1 amount")).toHaveValue("3000");
+    expect(screen.getByLabelText("Reward 2 amount")).toHaveValue("100");
+    expect(screen.getByRole("button", { name: /Reward 1 type/ })).toHaveTextContent("Diamond");
     expect(screen.getByLabelText("Quality 3")).toBeChecked();
 
     await userEvent.click(screen.getByRole("button", { name: "Save changes" }));

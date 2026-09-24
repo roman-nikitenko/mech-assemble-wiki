@@ -11,9 +11,22 @@ export const hiddenAchievementsRouter = Router();
 // (assets/achivments-quality/<tier>.png).
 const TIER_MIN = 1;
 const TIER_MAX = 4;
-// Every achievement in the game grants exactly two rewards, so the form has
-// two inputs; the cap is app-level, like weapon skin bonuses.
-const MAX_REWARDS = 2;
+// The admin adds reward rows freely now, so this is a sanity ceiling rather
+// than the game's usual two; app-level, like weapon skin bonuses.
+const MAX_REWARDS = 6;
+// Keeps a stray paste out of the column: amounts read like "3000" or "x1",
+// and a type is a short catalog key such as "s-mech-shard".
+const MAX_AMOUNT_LEN = 40;
+const MAX_TYPE_LEN = 64;
+
+/** One reward: how many, and of what. `type` is a key from the CLIENT's icon
+    folder (client/src/lib/rewardIcons.ts) — the server keeps it as free text,
+    the same arrangement as the achievement quality art, so adding an icon
+    never needs a server change. */
+interface Reward {
+  type: string | null;
+  amount: string;
+}
 
 const ORDER = [{ sortOrder: "asc" as const }, { name: "asc" as const }];
 
@@ -22,7 +35,7 @@ interface AchievementInput {
   description: string;
   iconUrl: string | null;
   tier: number;
-  rewards: string[];
+  rewards: Reward[];
   sortOrder: number | undefined; // undefined = leave unchanged on PUT
 }
 
@@ -48,16 +61,31 @@ function parseInput(body: unknown): { ok: true; value: AchievementInput } | { ok
     return { ok: false, message: "rewards must be an array." };
   }
   const raw = (b.rewards as unknown[] | undefined) ?? [];
-  // A number or object here is a caller bug, so say so rather than dropping it
-  // silently — that would save an achievement with a reward quietly missing.
-  if (raw.some((r) => typeof r !== "string")) {
-    return { ok: false, message: "Every reward must be text." };
+  const rewards: Reward[] = [];
+  for (const entry of raw) {
+    if (typeof entry !== "object" || entry === null || Array.isArray(entry)) {
+      return { ok: false, message: "Every reward must be an object with an amount." };
+    }
+    const { type, amount } = entry as Record<string, unknown>;
+    if (amount !== undefined && typeof amount !== "string") {
+      return { ok: false, message: "A reward amount must be text." };
+    }
+    if (type !== undefined && type !== null && typeof type !== "string") {
+      return { ok: false, message: "A reward type must be text." };
+    }
+    const trimmedAmount = (amount ?? "").trim();
+    // An empty row is dropped rather than rejected: the admin's "+ Add reward"
+    // button leaves a blank row behind whenever one is added and not filled in.
+    if (trimmedAmount === "") continue;
+    if (trimmedAmount.length > MAX_AMOUNT_LEN) {
+      return { ok: false, message: `A reward amount is at most ${MAX_AMOUNT_LEN} characters.` };
+    }
+    const trimmedType = typeof type === "string" ? type.trim() : "";
+    if (trimmedType.length > MAX_TYPE_LEN) {
+      return { ok: false, message: `A reward type is at most ${MAX_TYPE_LEN} characters.` };
+    }
+    rewards.push({ type: trimmedType === "" ? null : trimmedType, amount: trimmedAmount });
   }
-  // Blanks, on the other hand, are dropped rather than rejected: the form
-  // always submits both inputs, and leaving the second one empty is normal.
-  // Unlike the mech rank-up preview, position carries no meaning here, so a
-  // gap can close up.
-  const rewards = (raw as string[]).map((r) => r.trim()).filter((r) => r !== "");
   if (rewards.length > MAX_REWARDS) {
     return { ok: false, message: `At most ${MAX_REWARDS} rewards.` };
   }
@@ -79,7 +107,9 @@ hiddenAchievementsRouter.post("/", requireAdmin, async (req, res) => {
   try {
     const { sortOrder, ...fields } = input.value;
     const created = await prisma.hiddenAchievement.create({
-      data: { ...fields, sortOrder: sortOrder ?? 0 },
+      // rewards is Reward[] — double-cast to satisfy Prisma's Json input type,
+      // the same as accessories.attributes in routes/accessories.ts.
+      data: { ...fields, rewards: fields.rewards as unknown as Prisma.InputJsonValue, sortOrder: sortOrder ?? 0 },
     });
     res.status(201).json(created);
   } catch (err) {
@@ -101,7 +131,11 @@ hiddenAchievementsRouter.put("/:id", requireAdmin, async (req, res) => {
     const { sortOrder, ...fields } = input.value;
     const updated = await prisma.hiddenAchievement.update({
       where: { id },
-      data: { ...fields, ...(sortOrder !== undefined ? { sortOrder } : {}) },
+      data: {
+        ...fields,
+        rewards: fields.rewards as unknown as Prisma.InputJsonValue,
+        ...(sortOrder !== undefined ? { sortOrder } : {}),
+      },
     });
     res.json(updated);
   } catch (err) {

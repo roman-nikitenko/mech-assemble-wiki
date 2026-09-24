@@ -562,15 +562,24 @@ export interface ArsenalPieceInput {
   setId: string | null;
 }
 
+/** One thing an achievement grants: how many, and of what. `type` is a key
+    from the client's icon folder (lib/rewardIcons.ts) and is null when the
+    reward has no matching art; `amount` is text, because the game writes
+    "3000", "1,000" and "x1". */
+export interface AchievementReward {
+  type: string | null;
+  amount: string;
+}
+
 /** A Final Raid hidden achievement. `tier` is the game's quality/difficulty
-    1-4; its art comes from lib/achievementQuality.ts. Up to 2 rewards. */
+    1-4; its art comes from lib/achievementQuality.ts. Up to 6 rewards. */
 export interface HiddenAchievement {
   id: string;
   name: string;
   description: string;
   iconUrl: string | null;
   tier: number;
-  rewards: string[];
+  rewards: AchievementReward[];
   sortOrder: number;
 }
 
@@ -580,7 +589,7 @@ export interface HiddenAchievementInput {
   description: string;
   iconUrl: string | null;
   tier: number;
-  rewards: string[];
+  rewards: AchievementReward[];
 }
 
 /** A build's publication state (mirrors the server BuildStatus enum). */

@@ -50,7 +50,10 @@ const achievements: HiddenAchievement[] = [
     description: "Clear the remaining enemies after your teammate is defeated.",
     iconUrl: null,
     tier: 3,
-    rewards: ["Diamond x1,000", "Supply Coin x100"],
+    rewards: [
+      { type: "diamond", amount: "3000" },
+      { type: "supply-coin", amount: "100" },
+    ],
     sortOrder: 0,
   },
 ];
@@ -129,7 +132,9 @@ describe("FinalRaidPage", () => {
   it("lists hidden achievements with their rewards and quality", async () => {
     renderPage("/admin/final-raid?tab=achievements");
     const row = (await screen.findByText("Lone Wolf")).closest("tr")!;
-    expect(row).toHaveTextContent("Diamond x1,000, Supply Coin x100");
+    // Each reward shows as its icon plus "<item> <amount>".
+    expect(row).toHaveTextContent("Diamond 3000");
+    expect(row).toHaveTextContent("Supply Coin 100");
     // The quality plate is decorative art, so the tier is announced in text.
     expect(row).toHaveTextContent("Quality 3");
     expect(screen.getByRole("link", { name: "+ New achievement" })).toHaveAttribute(

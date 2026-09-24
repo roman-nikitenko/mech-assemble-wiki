@@ -19,7 +19,10 @@ function body(overrides: Record<string, unknown> = {}) {
     name: `${PREFIX}Lone Wolf`,
     description: "Clear the remaining enemies after your teammate is defeated.",
     tier: 1,
-    rewards: ["Diamond x1,000", "Supply Coin x100"],
+    rewards: [
+      { type: "diamond", amount: "3000" },
+      { type: "supply-coin", amount: "100" },
+    ],
     ...overrides,
   };
 }
@@ -55,17 +58,47 @@ describe("POST /api/hidden-achievements", () => {
       name: `${PREFIX}Lone Wolf`,
       tier: 3,
       iconUrl: "/uploads/wolf.png",
-      rewards: ["Diamond x1,000", "Supply Coin x100"],
+      rewards: [
+        { type: "diamond", amount: "3000" },
+        { type: "supply-coin", amount: "100" },
+      ],
     });
   });
 
-  it("drops a blank reward instead of storing it", async () => {
+  it("trims a reward and keeps a typeless one as null", async () => {
     const res = await request(app)
       .post("/api/hidden-achievements")
       .set(ADMIN)
-      .send(body({ name: `${PREFIX}One Reward`, rewards: ["  Diamond x500  ", "   "] }));
+      .send(body({ name: `${PREFIX}Trimmed`, rewards: [{ type: "  diamond  ", amount: "  3000  " }, { amount: "x1" }] }));
     expect(res.status).toBe(201);
-    expect(res.body.rewards).toEqual(["Diamond x500"]);
+    expect(res.body.rewards).toEqual([
+      { type: "diamond", amount: "3000" },
+      { type: null, amount: "x1" },
+    ]);
+  });
+
+  it("drops a reward row with no amount — the admin's + button leaves empties", async () => {
+    const res = await request(app)
+      .post("/api/hidden-achievements")
+      .set(ADMIN)
+      .send(
+        body({
+          name: `${PREFIX}One Reward`,
+          rewards: [{ type: "diamond", amount: "500" }, { type: "supply-coin", amount: "   " }, {}],
+        })
+      );
+    expect(res.status).toBe(201);
+    expect(res.body.rewards).toEqual([{ type: "diamond", amount: "500" }]);
+  });
+
+  it("accepts up to 6 rewards", async () => {
+    const six = Array.from({ length: 6 }, (_, i) => ({ type: "diamond", amount: String(i + 1) }));
+    const res = await request(app)
+      .post("/api/hidden-achievements")
+      .set(ADMIN)
+      .send(body({ name: `${PREFIX}Six`, rewards: six }));
+    expect(res.status).toBe(201);
+    expect(res.body.rewards).toHaveLength(6);
   });
 
   it.each([
@@ -76,9 +109,12 @@ describe("POST /api/hidden-achievements", () => {
     ["tier 5", { tier: 5 }],
     ["a fractional tier", { tier: 2.5 }],
     ["a tier sent as text", { tier: "2" }],
-    ["three rewards", { rewards: ["a", "b", "c"] }],
+    ["seven rewards", { rewards: Array.from({ length: 7 }, () => ({ type: "diamond", amount: "1" })) }],
     ["rewards that aren't an array", { rewards: "Diamond" }],
-    ["a reward that isn't text", { rewards: ["Diamond x1,000", 42] }],
+    ["a reward that is a plain string", { rewards: ["Diamond x1,000"] }],
+    ["a reward amount that isn't text", { rewards: [{ type: "diamond", amount: 42 }] }],
+    ["a reward type that isn't text", { rewards: [{ type: 7, amount: "3000" }] }],
+    ["an over-long reward amount", { rewards: [{ type: "diamond", amount: "x".repeat(41) }] }],
   ])("rejects %s with 400", async (_label, overrides) => {
     const res = await request(app).post("/api/hidden-achievements").set(ADMIN).send(body(overrides));
     expect(res.status).toBe(400);
@@ -97,9 +133,14 @@ describe("PUT /api/hidden-achievements/:id", () => {
     const res = await request(app)
       .put(`/api/hidden-achievements/${row.id}`)
       .set(ADMIN)
-      .send(body({ name: `${PREFIX}After`, tier: 4, rewards: ["Ticket x1"] }));
+      .send(body({ name: `${PREFIX}After`, tier: 4, rewards: [{ type: "raid-honor-coin", amount: "1" }] }));
     expect(res.status).toBe(200);
-    expect(res.body).toMatchObject({ name: `${PREFIX}After`, tier: 4, rewards: ["Ticket x1"] });
+    // Replace-the-set: the two rewards it was created with are gone.
+    expect(res.body).toMatchObject({
+      name: `${PREFIX}After`,
+      tier: 4,
+      rewards: [{ type: "raid-honor-coin", amount: "1" }],
+    });
   });
 
   it("leaves sortOrder alone when it is not sent", async () => {

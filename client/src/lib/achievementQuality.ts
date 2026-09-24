@@ -1,3 +1,5 @@
+import { qualityCardStyle } from "./moduleCardStyle";
+
 /** The four hidden-achievement qualities (the game's difficulty tiers). */
 export const ACHIEVEMENT_TIERS = [1, 2, 3, 4] as const;
 
@@ -20,4 +22,13 @@ const BY_TIER = new Map<string, string>(
 export function achievementQualityImage(tier: number): string | undefined {
   if (!Number.isInteger(tier)) return undefined;
   return BY_TIER.get(String(tier));
+}
+
+/** The frame drawn behind a reward icon, borrowed from the module card art:
+    purple for qualities 1-3, gold for the top quality — which is how the game
+    frames the reward items on its own achievement rows. Undefined if that art
+    is missing, so callers fall back to a plain tile. */
+export function achievementRewardFrame(tier: number): string | undefined {
+  if (!Number.isInteger(tier) || tier < 1 || tier > ACHIEVEMENT_TIERS.length) return undefined;
+  return qualityCardStyle(tier === 4 ? "Gold" : "Purple").iconBorder;
 }

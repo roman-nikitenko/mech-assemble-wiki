@@ -53,6 +53,7 @@ const PilotFormPage = lazyNamed(() => import("./admin/pilots/PilotFormPage"), "P
 const AdminTypesPage = lazyNamed(() => import("./admin/types/AdminTypesPage"), "AdminTypesPage");
 const TypeFormPage = lazyNamed(() => import("./admin/types/TypeFormPage"), "TypeFormPage");
 const DroneTypeFormPage = lazyNamed(() => import("./admin/types/DroneTypeFormPage"), "DroneTypeFormPage");
+const FinalRaidPublicPage = lazyNamed(() => import("./pages/finalRaid/FinalRaidPage"), "FinalRaidPage");
 const AdminDronesPage = lazyNamed(() => import("./admin/drones/AdminDronesPage"), "AdminDronesPage");
 const DroneFormPage = lazyNamed(() => import("./admin/drones/DroneFormPage"), "DroneFormPage");
 const FinalRaidPage = lazyNamed(() => import("./admin/finalRaid/FinalRaidPage"), "FinalRaidPage");
@@ -87,6 +88,7 @@ export default function App() {
         <Route path="/accessories" element={<AccessoriesPage />} />
         <Route path="/pilots" element={<PilotsPage />} />
         <Route path="/drones" element={<DronesPage />} />
+        <Route path="/final-raid" element={<FinalRaidPublicPage />} />
         <Route path="/aircraft" element={<AircraftPage />} />
         <Route path="/modules" element={<ModulesPage />} />
         <Route path="/feedback" element={<FeedbackPage />} />

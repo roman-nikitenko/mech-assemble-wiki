@@ -5,26 +5,38 @@ import {
   useHiddenAchievements,
   useUpdateHiddenAchievement,
 } from "../../api/client";
-import type { HiddenAchievementInput } from "../../api/types";
+import type { AchievementReward, HiddenAchievementInput } from "../../api/types";
 import { ErrorPanel } from "../../components/ErrorPanel";
 import { ACHIEVEMENT_TIERS, achievementQualityImage } from "../../lib/achievementQuality";
+import { Dropdown } from "../../components/Dropdown";
+import { REWARD_TYPES } from "../../lib/rewardIcons";
 import { ImageUploadField } from "../ImageUploadField";
 
 const BACK = "/admin/final-raid?tab=achievements";
 
-/** The form keeps the two rewards as separate fields (that's how the game
-    words them, and how the admin types them); they become an array on save,
-    with blanks dropped by the server. */
+/** The form holds the rewards as an editable list of rows. A row the admin
+    added but never filled in is dropped on save (the server does the same),
+    so "+ Add reward" is free to leave an empty row behind. */
 interface FormState {
   name: string;
   description: string;
   iconUrl: string | null;
   tier: number;
-  reward1: string;
-  reward2: string;
+  rewards: AchievementReward[];
 }
 
-const EMPTY: FormState = { name: "", description: "", iconUrl: null, tier: 1, reward1: "", reward2: "" };
+const EMPTY_REWARD: AchievementReward = { type: null, amount: "" };
+// One empty row to start, so the first reward needs no extra click.
+const EMPTY: FormState = { name: "", description: "", iconUrl: null, tier: 1, rewards: [EMPTY_REWARD] };
+
+// Matches MAX_REWARDS in server/src/routes/hidden-achievements.ts.
+const MAX_REWARDS = 6;
+
+const REWARD_OPTIONS = REWARD_TYPES.map((t) => ({
+  value: t.key,
+  label: t.label,
+  icon: <img src={t.icon} alt="" className="h-6 w-6 object-contain" />,
+}));
 
 function toInput(form: FormState): HiddenAchievementInput {
   return {
@@ -32,9 +44,7 @@ function toInput(form: FormState): HiddenAchievementInput {
     description: form.description,
     iconUrl: form.iconUrl,
     tier: form.tier,
-    // A blank Reward 1 with a filled Reward 2 collapses to one reward —
-    // position carries no meaning here, unlike the mech rank-up preview.
-    rewards: [form.reward1, form.reward2].filter((r) => r.trim() !== ""),
+    rewards: form.rewards.filter((r) => r.amount.trim() !== ""),
   };
 }
 
@@ -64,12 +74,28 @@ export function HiddenAchievementFormPage() {
           description: found.description,
           iconUrl: found.iconUrl,
           tier: found.tier,
-          reward1: found.rewards[0] ?? "",
-          reward2: found.rewards[1] ?? "",
+          // Always leave one row to type in, even for an achievement that
+          // grants nothing.
+          rewards: found.rewards.length > 0 ? found.rewards : [EMPTY_REWARD],
         });
       }
     }
   }, [isEdit, id, achievements.data, achievements.isFetching]);
+
+  function setReward(index: number, patch: Partial<AchievementReward>) {
+    setForm((f) => ({
+      ...f,
+      rewards: f.rewards.map((r, i) => (i === index ? { ...r, ...patch } : r)),
+    }));
+  }
+
+  function removeReward(index: number) {
+    setForm((f) => {
+      const rest = f.rewards.filter((_, i) => i !== index);
+      // Never leave the list empty: one blank row stays to type into.
+      return { ...f, rewards: rest.length > 0 ? rest : [EMPTY_REWARD] };
+    });
+  }
 
   const mutation = isEdit ? updateAchievement : createAchievement;
   const canSave = form.name.trim() !== "" && form.description.trim() !== "";
@@ -138,32 +164,51 @@ export function HiddenAchievementFormPage() {
           />
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div>
-            <label htmlFor="reward-1" className="mb-1 block text-sm font-semibold">
-              Reward 1
-            </label>
-            <input
-              id="reward-1"
-              value={form.reward1}
-              onChange={(e) => setForm((f) => ({ ...f, reward1: e.target.value }))}
-              className={fieldClass}
-              placeholder="e.g. Diamond x1,000"
-            />
+        <fieldset>
+          <legend className="mb-2 text-sm font-semibold">Rewards</legend>
+          <div className="space-y-2">
+            {form.rewards.map((reward, i) => (
+              <div key={i} className="flex items-center gap-2">
+                <input
+                  aria-label={`Reward ${i + 1} amount`}
+                  value={reward.amount}
+                  onChange={(e) => setReward(i, { amount: e.target.value })}
+                  className={`${fieldClass} sm:w-40`}
+                  placeholder="e.g. 3000"
+                />
+                <Dropdown
+                  ariaLabel={`Reward ${i + 1} type`}
+                  options={REWARD_OPTIONS}
+                  value={reward.type}
+                  onChange={(value) => setReward(i, { type: value })}
+                  placeholder="Choose an item…"
+                  searchable
+                  className="flex-1"
+                />
+                <button
+                  type="button"
+                  onClick={() => removeReward(i)}
+                  aria-label={`Remove reward ${i + 1}`}
+                  className="min-h-11 shrink-0 cursor-pointer rounded-lg border border-fire/40 px-3 text-sm text-fire hover:bg-fire/10"
+                >
+                  −
+                </button>
+              </div>
+            ))}
           </div>
-          <div>
-            <label htmlFor="reward-2" className="mb-1 block text-sm font-semibold">
-              Reward 2
-            </label>
-            <input
-              id="reward-2"
-              value={form.reward2}
-              onChange={(e) => setForm((f) => ({ ...f, reward2: e.target.value }))}
-              className={fieldClass}
-              placeholder="e.g. Supply Coin x100"
-            />
-          </div>
-        </div>
+          {form.rewards.length < MAX_REWARDS && (
+            <button
+              type="button"
+              onClick={() => setForm((f) => ({ ...f, rewards: [...f.rewards, EMPTY_REWARD] }))}
+              className="mt-2 min-h-11 cursor-pointer rounded-lg border border-edge px-4 text-sm font-semibold hover:border-accent/60"
+            >
+              + Add reward
+            </button>
+          )}
+          <p className="mt-1 text-xs text-ink-dim">
+            An amount with no item still shows as plain text. Rows left empty are dropped on save.
+          </p>
+        </fieldset>
 
         {/* Quality is picked by its art, since the game gives the four tiers
             no names — a radio group, so it stays keyboard-usable. */}

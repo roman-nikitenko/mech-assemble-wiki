@@ -1,4 +1,4 @@
-import { arsenalQuality, arsenalQualityName } from "../../lib/arsenalQualities";
+import { arsenalQuality, arsenalQualityName } from "../lib/arsenalQualities";
 
 /** A quality name in the game's colour for that quality, e.g. "Mythic+3" in
     gold. The colour goes on the text and a thin border, so it stays readable

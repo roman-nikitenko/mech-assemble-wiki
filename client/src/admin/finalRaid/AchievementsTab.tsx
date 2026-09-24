@@ -5,6 +5,7 @@ import type { HiddenAchievement } from "../../api/types";
 import { LoadingSkeleton } from "../../components/LoadingSkeleton";
 import { ErrorPanel } from "../../components/ErrorPanel";
 import { ACHIEVEMENT_TIERS } from "../../lib/achievementQuality";
+import { rewardIcon, rewardLabel } from "../../lib/rewardIcons";
 
 /** The "Hidden achievements" tab of the Final Raid page. */
 export function AchievementsTab() {
@@ -107,7 +108,26 @@ export function AchievementsTab() {
                   </td>
                   <td className="max-w-md px-4 py-2 text-ink-dim">{achievement.description}</td>
                   <td className="px-4 py-2 text-ink-dim">
-                    {achievement.rewards.length === 0 ? "—" : achievement.rewards.join(", ")}
+                    {achievement.rewards.length === 0 ? (
+                      "—"
+                    ) : (
+                      <span className="flex flex-wrap items-center gap-2">
+                        {achievement.rewards.map((reward, i) => {
+                          const icon = rewardIcon(reward.type);
+                          const label = rewardLabel(reward.type);
+                          return (
+                            <span
+                              key={`${reward.type ?? ""}-${reward.amount}-${i}`}
+                              className="inline-flex items-center gap-1"
+                              title={label}
+                            >
+                              {icon && <img src={icon} alt="" aria-hidden className="h-6 w-6 object-contain" />}
+                              <span>{[label, reward.amount].filter(Boolean).join(" ")}</span>
+                            </span>
+                          );
+                        })}
+                      </span>
+                    )}
                   </td>
                   <td className="px-4 py-2">
                     <div className="flex gap-2">

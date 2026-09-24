@@ -896,9 +896,13 @@ model HiddenAchievement {
   description String
   iconUrl     String?  @map("icon_url")
   tier        Int
-  // The rewards as the game words them, e.g. ["Diamond x1,000", "Supply Coin
-  // x100"] — up to 2, app-enforced like other text[] fields in this schema.
-  rewards     String[]
+  // What the achievement grants, as [{ type, amount }] — e.g.
+  // [{"type":"diamond","amount":"3000"}]. jsonb for the same reason as
+  // accessories.attributes: a small repeated shape, not worth two columns and
+  // a join. `amount` is text because the game writes "1,000" and "x1"; `type`
+  // is a key from the CLIENT's icon folder (lib/rewardIcons.ts), null when a
+  // reward has no matching art. Up to 6, app-enforced in the route.
+  rewards     Json     @default("[]")
   sortOrder   Int      @default(0) @map("sort_order")
   createdAt   DateTime @default(now()) @map("created_at")
 

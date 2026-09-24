@@ -5,7 +5,7 @@ import type { ArsenalPiece, ArsenalSlot } from "../../api/types";
 import { LoadingSkeleton } from "../../components/LoadingSkeleton";
 import { ErrorPanel } from "../../components/ErrorPanel";
 import { ARSENAL_SLOTS } from "../../lib/arsenalSlots";
-import { ArsenalQualityRange } from "./ArsenalQualityLabel";
+import { ArsenalQualityRange } from "../../components/ArsenalQualityLabel";
 
 // The "Set" filter holds either one of these two words or a specific set id.
 // Set ids are UUIDs, so they can never collide with "normal" / "any-set".
