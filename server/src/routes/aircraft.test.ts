@@ -14,14 +14,18 @@ afterAll(async () => {
 
 describe("GET /api/aircraft", () => {
   it("lists aircraft ordered by name", async () => {
-    await request(app).post("/api/aircraft").set(ADMIN).send({ name: "[test:aircraft] Zeta" });
+    // Controlled fixtures, created OUT of order, rather than checking whatever
+    // real rows exist: the expected order is then unambiguous under any
+    // collation (same prefix, same case, only the letter differs), so the test
+    // neither depends on the admin's data nor re-implements Postgres's sorting.
+    const P = "[test:aircraft] order-";
+    for (const n of ["Charlie", "Alpha", "Bravo"]) {
+      await request(app).post("/api/aircraft").set(ADMIN).send({ name: `${P}${n}` });
+    }
     const res = await request(app).get("/api/aircraft");
     expect(res.status).toBe(200);
-    const names = res.body
-      .map((a: { name: string }) => a.name)
-      .filter((n: string) => !n.startsWith("[test:"));
-    expect([...names].sort()).toEqual(names);
-    expect(res.body.some((a: { name: string }) => a.name === "[test:aircraft] Zeta")).toBe(true);
+    const ours = res.body.map((x: { name: string }) => x.name).filter((n: string) => n.startsWith(P));
+    expect(ours).toEqual([`${P}Alpha`, `${P}Bravo`, `${P}Charlie`]);
   });
 });
 

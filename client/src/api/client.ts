@@ -1,5 +1,5 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { AccessoryInput, AccessorySet, AccessorySetInput, ArsenalPiece, ArsenalPieceInput, ArsenalSet, ArsenalSetInput, AccessorySummary, AdminUser, Aircraft, AircraftAttributeGroup, AircraftInput, AwakeningCostTier, AwakeningLevel, DashboardStats, Drone, DroneInput, DroneType, DroneTypeInput, Feedback, GameType, HiddenAchievement, HiddenAchievementInput, MechDetail, MechInput, MechRank, MechSummary, ModuleDetail, ModuleInput, ModuleQuality, ModuleQualityInput, ModuleSummary, Pilot, PilotInput, PostedBuild, TypeInput, WeaponDetail, WeaponInput, WeaponSummary } from "./types";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import type { AccessoryInput, AccessorySet, AccessorySetInput, ArsenalPiece, ArsenalPieceInput, ArsenalSet, ArsenalSetInput, AccessorySummary, AdminUser, Aircraft, AircraftAttributeGroup, AircraftInput, AwakeningCostTier, AwakeningLevel, DashboardStats, Drone, DroneInput, DroneType, DroneTypeInput, Feedback, GameType, HiddenAchievement, HiddenAchievementInput, MediaPage, MechDetail, MechInput, MechRank, MechSummary, ModuleDetail, ModuleInput, ModuleQuality, ModuleQualityInput, ModuleSummary, Pilot, PilotInput, PostedBuild, TypeInput, WeaponDetail, WeaponInput, WeaponSummary } from "./types";
 import { adminHeaders } from "../auth/adminSession";
 
 export const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
@@ -899,5 +899,86 @@ export function useSaveAwakeningCostTiers() {
     mutationFn: (tiers: AwakeningCostTier[]) =>
       sendJson<AwakeningCostTier[]>("/api/awakening/cost-tiers", "PUT", { tiers }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["awakening-cost-tiers"] }),
+  });
+}
+
+// ── Media library (admin) ────────────────────────────────────────────────
+
+export interface MediaParams {
+  search?: string;
+  sort?: "newest" | "oldest";
+  type?: "image" | "video" | "all";
+  /** "unused" = files no record points at (the clean-up view). */
+  usage?: "all" | "used" | "unused";
+  page?: number;
+  limit?: number;
+}
+
+/** One page of the uploads folder. The params are part of the query KEY, so
+    each search/sort/page is its own cache entry. keepPreviousData keeps the old
+    grid on screen while the next page loads instead of flashing a skeleton. */
+export function useMedia(params: MediaParams) {
+  const qs = new URLSearchParams();
+  if (params.search) qs.set("search", params.search);
+  if (params.sort) qs.set("sort", params.sort);
+  if (params.type) qs.set("type", params.type);
+  if (params.usage && params.usage !== "all") qs.set("usage", params.usage);
+  if (params.page) qs.set("page", String(params.page));
+  if (params.limit) qs.set("limit", String(params.limit));
+  return useQuery({
+    queryKey: ["media", params],
+    queryFn: () => adminFetchJson<MediaPage>(`/api/media?${qs.toString()}`),
+    placeholderData: keepPreviousData,
+  });
+}
+
+/** Delete an uploaded file (and its resized copies) by file name. */
+export function useDeleteMedia() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (name: string) => {
+      const res = await fetch(`${API_URL}/api/media/${name}`, { method: "DELETE", headers: adminHeaders() });
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        throw new Error(data?.error ?? `API error ${res.status}`);
+      }
+    },
+    // Deleting a file also empties the image field of every record that used
+    // it (mechs, weapons, ...), so refresh ALL cached data, not just the media
+    // list — otherwise those pages keep showing the old, now-missing image.
+    onSuccess: () => qc.invalidateQueries(),
+  });
+}
+
+/** Every file matching the filters (no paging) as name + how many records use
+    it. Powers "select all N" — the grid itself only ever loads one page. */
+export async function fetchMediaNames(params: Omit<MediaParams, "page" | "limit">) {
+  const qs = new URLSearchParams({ names: "1" });
+  if (params.search) qs.set("search", params.search);
+  if (params.type) qs.set("type", params.type);
+  if (params.usage && params.usage !== "all") qs.set("usage", params.usage);
+  return adminFetchJson<{ files: { name: string; usageCount: number }[]; total: number }>(
+    `/api/media?${qs.toString()}`,
+  );
+}
+
+/** Delete many files at once (and clear the records that used them). */
+export function useDeleteMediaBulk() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (names: string[]) => {
+      const res = await fetch(`${API_URL}/api/media`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json", ...adminHeaders() },
+        body: JSON.stringify({ names }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        throw new Error(data?.error ?? `API error ${res.status}`);
+      }
+      return (await res.json()) as { deleted: number; missing: number };
+    },
+    // Same reasoning as useDeleteMedia: records lose their image too.
+    onSuccess: () => qc.invalidateQueries(),
   });
 }

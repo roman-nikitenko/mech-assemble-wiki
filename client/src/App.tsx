@@ -54,6 +54,7 @@ const AdminTypesPage = lazyNamed(() => import("./admin/types/AdminTypesPage"), "
 const TypeFormPage = lazyNamed(() => import("./admin/types/TypeFormPage"), "TypeFormPage");
 const DroneTypeFormPage = lazyNamed(() => import("./admin/types/DroneTypeFormPage"), "DroneTypeFormPage");
 const FinalRaidPublicPage = lazyNamed(() => import("./pages/finalRaid/FinalRaidPage"), "FinalRaidPage");
+const AdminMediaPage = lazyNamed(() => import("./admin/media/AdminMediaPage"), "AdminMediaPage");
 const AdminDronesPage = lazyNamed(() => import("./admin/drones/AdminDronesPage"), "AdminDronesPage");
 const DroneFormPage = lazyNamed(() => import("./admin/drones/DroneFormPage"), "DroneFormPage");
 const FinalRaidPage = lazyNamed(() => import("./admin/finalRaid/FinalRaidPage"), "FinalRaidPage");
@@ -126,6 +127,7 @@ export default function App() {
         <Route path="types/:id/edit" element={<TypeFormPage />} />
         <Route path="drone-types/new" element={<DroneTypeFormPage />} />
         <Route path="drone-types/:id/edit" element={<DroneTypeFormPage />} />
+        <Route path="media" element={<AdminMediaPage />} />
         <Route path="drones" element={<AdminDronesPage />} />
         <Route path="drones/new" element={<DroneFormPage />} />
         <Route path="drones/:id/edit" element={<DroneFormPage />} />
