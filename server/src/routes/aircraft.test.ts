@@ -20,7 +20,9 @@ describe("GET /api/aircraft", () => {
     const names = res.body
       .map((a: { name: string }) => a.name)
       .filter((n: string) => !n.startsWith("[test:"));
-    expect([...names].sort()).toEqual(names);
+    // localeCompare, not the default sort(): Postgres orders case-insensitively
+    // ("awd" before "Quantum"), while default sort() puts lowercase names last.
+    expect([...names].sort((a: string, b: string) => a.localeCompare(b))).toEqual(names);
     expect(res.body.some((a: { name: string }) => a.name === "[test:aircraft] Zeta")).toBe(true);
   });
 });

@@ -1,5 +1,7 @@
 import { useState } from "react";
-import { imageSrc, uploadImage } from "../api/client";
+import { createPortal } from "react-dom";
+import { imageSrc } from "../api/client";
+import { MediaPickerModal } from "./media/MediaPickerModal";
 
 interface ImageUploadFieldProps {
   label?: string; // "Icon", "Background", ... — defaults to "Image"
@@ -7,52 +9,64 @@ interface ImageUploadFieldProps {
   onChange: (url: string | null) => void;
 }
 
-/** File input + preview. Uploads immediately on selection; the parent form
-    only ever sees the resulting "/uploads/..." URL string. */
+/** Preview + a button that opens the Media popup (Upload / Media tabs). The
+    parent form still only ever sees the resulting "/uploads/..." URL string,
+    so every form using this field kept working when uploads moved into the
+    Media library. */
 export function ImageUploadField({ label = "Image", value, onChange }: ImageUploadFieldProps) {
-  const [uploading, setUploading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  async function handleFile(file: File | undefined) {
-    if (!file) return;
-    setUploading(true);
-    setError(null);
-    try {
-      onChange(await uploadImage(file));
-    } catch (e) {
-      setError((e as Error).message);
-    } finally {
-      setUploading(false);
-    }
-  }
+  const [picking, setPicking] = useState(false);
 
   return (
     <div>
       <label className="mb-1 block text-sm font-semibold">{label}</label>
       {value && (
-        <img
-          src={imageSrc(value)}
-          alt={`${label} preview`}
-          className="mb-2 h-32 w-32 rounded-xl border border-edge object-cover"
-        />
+        // Hovering the preview shows the file's name at its bottom-left corner,
+        // like the link preview a browser shows before you click. No max-width:
+        // a file name is longer than the 128px preview, so it extends past it.
+        <div className="group relative mb-2 inline-block">
+          <img
+            src={imageSrc(value)}
+            alt={`${label} preview`}
+            className="h-32 w-32 rounded-xl border border-edge object-cover"
+          />
+          <span className="pointer-events-none absolute bottom-0 left-0 z-10 whitespace-nowrap rounded-tr-lg rounded-bl-xl bg-bg/90 px-2 py-0.5 font-mono text-[11px] opacity-0 group-hover:opacity-100">
+            {value.split("/").pop()}
+          </span>
+        </div>
       )}
-      <input
-        type="file"
-        accept="image/png,image/jpeg,image/webp"
-        onChange={(e) => handleFile(e.target.files?.[0])}
-        className="block text-sm text-ink-dim file:mr-3 file:min-h-11 file:rounded-lg file:border-0 file:bg-surface-2 file:px-4 file:text-sm file:font-semibold file:text-ink"
-      />
-      {uploading && <p className="mt-1 text-sm text-ink-dim">Uploading…</p>}
-      {error && <p className="mt-1 text-sm text-fire">{error}</p>}
+      <button
+        type="button"
+        onClick={() => setPicking(true)}
+        className="min-h-11 rounded-lg bg-surface-2 px-4 text-sm font-semibold text-ink hover:brightness-125"
+      >
+        {value ? "Change image" : "Choose image"}
+      </button>
       {value && (
         <button
           type="button"
           onClick={() => onChange(null)}
-          className="mt-1 text-xs text-ink-dim underline hover:text-fire"
+          className="ml-3 text-xs text-ink-dim underline hover:text-fire"
         >
           Remove image
         </button>
       )}
+      {/* Portal into <body>, NOT rendered in place: this field lives inside the
+          admin <form>, and anything in the DOM subtree of a <form> can submit it
+          (Enter in the search box, a tab button with no type). Outside the
+          form, the popup can never save the mech by accident. */}
+      {picking &&
+        createPortal(
+          <MediaPickerModal
+            label={label}
+            current={value}
+            onSelect={(url) => {
+              onChange(url);
+              setPicking(false);
+            }}
+            onClose={() => setPicking(false)}
+          />,
+          document.body,
+        )}
     </div>
   );
 }

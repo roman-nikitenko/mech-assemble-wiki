@@ -23,6 +23,7 @@ function BellIcon({ className }: { className?: string }) {
 
 const NAV = [
   { to: "/admin", label: "Dashboard", end: true }, // end: exact match, or it'd stay lit for every /admin/* page
+  { to: "/admin/media", label: "Media", end: false },
   { to: "/admin/users", label: "Users", end: false },
   { to: "/admin/messages", label: "Messages", end: false },
   { to: "/admin/mechs", label: "Mechs", end: false },
