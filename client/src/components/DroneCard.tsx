@@ -4,6 +4,7 @@ import { useLockBodyScroll } from "../lib/useLockBodyScroll";
 import type { Drone, DroneType } from "../api/types";
 import { QualityGem } from "./QualityIcon";
 import { STierIcon } from "./STierIcon";
+import { NewBadge } from "./NewBadge";
 import droneCardBg from "../assets/drone-card-bg.webp";
 
 // The quality image shown beside each level-up bonus row, in order.
@@ -32,8 +33,9 @@ export function DroneCard({
   useLockBodyScroll(showVideo);
 
   return (
-    <div className="overflow-hidden rounded-xl border border-edge bg-surface">
+    <div className=" rounded-xl border border-edge bg-surface">
       <div className="bg-bottom bg-no-repeat bg-contain relative">
+        {quality === undefined && <NewBadge createdAt={drone.createdAt} />}
         {drone.previewVideoUrl && (
           <button
             type="button"
@@ -46,16 +48,19 @@ export function DroneCard({
           </button>
         )}
         <div
-          className="absolute inset-0 bg-amber-500 z-0 bg-bottom bg-no-repeat bg-cover"
+          className=" rounded-t-xl absolute inset-0 bg-amber-500 z-0 bg-bottom bg-no-repeat bg-cover"
           style={{ backgroundImage: `url(${droneCardBg})` }}
         ></div>
-        <div className="bg-gradient-to-r absolute w-full z-10 px-3 py-2 text-center">
+        <div className="bg-gradient-to-r rounded-t-xl absolute w-full z-10 px-3 py-2 text-center">
           <h3 className="flex items-center justify-center gap-2 text-xl font-black ">
             {drone.tier === "S" && <STierIcon size={30} />}
             <span className="truncate">{drone.name}</span>
           </h3>
         </div>
-        <div className="flex flex-col items-center bg-surface-2/60 px-3 pt-3 pb-2">
+        {/* Fixed height, not max-height: drone art comes in different aspect
+            ratios, and a height that follows the image makes neighbouring cards
+            jump. object-contain below scales each image to fit this box. */}
+        <div className="flex h-[400px] flex-col rounded-t-xl items-center bg-surface-2/60 px-3 pt-3 pb-2">
           {drone.iconUrl ? (
             <img
               src={imageSrc(drone.iconUrl)}
@@ -64,7 +69,7 @@ export function DroneCard({
               className="animate-drone-float h-full z-0 w-full object-contain"
             />
           ) : (
-            <div className="h-44 w-full" aria-hidden />
+            <div className="h-full w-full" aria-hidden />
           )}
           {type && (
             <div className="mt-1 flex absolute bottom-0 flex-col items-center">

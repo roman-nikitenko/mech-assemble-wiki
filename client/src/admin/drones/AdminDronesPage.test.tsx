@@ -9,6 +9,7 @@ import type { Drone } from "../../api/types";
 const drones: Drone[] = [
   {
     id: "d1", name: "Scout Drone", iconUrl: null, tier: "Standard", droneTypeId: null,
+    createdAt: "2026-01-01T00:00:00.000Z",
     inheritAttack: null, atk: null, hp: null, def: null, previewVideoUrl: null, levelUpBonuses: [],
   },
 ];

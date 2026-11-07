@@ -5,6 +5,7 @@ import { LoadingSkeleton } from "../components/LoadingSkeleton";
 import { ErrorPanel } from "../components/ErrorPanel";
 import { DroneCard } from "../components/DroneCard";
 import { Seo } from "../components/Seo";
+import { sortNewestFirst } from "../lib/sortNewestFirst";
 import { STierIcon } from "../components/STierIcon";
 
 /** Public drone list: icon, tier, type, stats, level-up bonuses, and (S-tier)
@@ -22,7 +23,7 @@ export function DronesPage() {
   const typeById = new Map((droneTypes.data ?? []).map((t) => [t.id, t]));
 
   const query = search.trim().toLowerCase();
-  const visible = (data ?? []).filter((d) => {
+  const visible = sortNewestFirst(data ?? []).filter((d) => {
     const nameOk = !query || d.name.toLowerCase().includes(query);
     const typeOk = typeIds.length === 0 || (d.droneTypeId !== null && typeIds.includes(d.droneTypeId));
     const tierOk = tier === "" || d.tier === tier;

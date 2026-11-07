@@ -9,6 +9,7 @@ import type { Pilot } from "../api/types";
 const PILOTS: Pilot[] = [
   {
     id: "kael",
+    createdAt: "2026-01-01T00:00:00.000Z",
     name: "Kael",
     unlockBoost: null,
     relationshipBonus: null,
@@ -20,6 +21,7 @@ const PILOTS: Pilot[] = [
   },
   {
     id: "darren",
+    createdAt: "2026-01-01T00:00:00.000Z",
     name: "Darren",
     unlockBoost: null,
     relationshipBonus: null,

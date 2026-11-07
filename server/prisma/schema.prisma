@@ -65,54 +65,57 @@ enum AircraftAttributeUnit {
 // ---------- The hub ----------
 
 model Mech {
-  id           String   @id @default(uuid()) @db.Uuid
-  name         String   @unique
+  id               String   @id @default(uuid()) @db.Uuid
+  // Insertion time: the public lists show newest first. Rows that existed before
+  // this column share the migration timestamp, so the client breaks ties by name.
+  createdAt        DateTime @default(now()) @map("created_at")
+  name             String   @unique
   // URL-safe public identifier shown in the address bar instead of the UUID
   // (e.g. /mechs/abyssal-knight). Nullable so the column can be added to a
   // populated table, then backfilled; the app generates one for every new
   // mech and the migration backfills existing rows, so in practice it's always
   // set. Unique because it's a public key; the UUID stays the primary key.
-  slug         String?  @unique
-  epithet      String? // subtitle, e.g. "Shadow Hunter"
+  slug             String?  @unique
+  epithet          String? // subtitle, e.g. "Shadow Hunter"
   // Element type is a CATALOG ROW now, not an enum: the admin manages types
   // (name + icon) in the UI. Nullable by design — the catalog starts empty
   // and real data gets assigned as it's entered. onDelete: Restrict is the
   // third delete flavor in this schema: a type that's in use cannot be
   // deleted (contrast: mech children Cascade; pilots SetNull).
-  typeId String? @map("type_id") @db.Uuid
-  type   Type?   @relation(fields: [typeId], references: [id], onDelete: Restrict)
-  rank         MechRank
+  typeId           String?  @map("type_id") @db.Uuid
+  type             Type?    @relation(fields: [typeId], references: [id], onDelete: Restrict)
+  rank             MechRank
   // Deliberately a plain string like "ATK +10%" — NOT structured fields.
   // Explicit product decision (see CLAUDE.md); do not normalize.
-  specialBonus String?  @map("special_bonus")
-  lore         String?
+  specialBonus     String?  @map("special_bonus")
+  lore             String?
   // Up to 7 rank-up preview lines. POSITIONAL, unlike the weapon field:
   // index = rank position, so interior blanks ("" entries) are meaningful
   // and preserved; only trailing blanks are trimmed by the API.
-  rankUpPreview String[] @map("rank_up_preview")
+  rankUpPreview    String[] @map("rank_up_preview")
   // Path to the mech's image under /uploads (e.g. "/uploads/abc.png").
   // We store the POINTER, not the image: databases are bad at large binary
   // blobs; filesystems/CDNs are good at them.
-  imageUrl String? @map("image_url")
+  imageUrl         String?  @map("image_url")
   // Second art slot, same Image+Icon pair weapons and accessories have.
-  iconUrl String? @map("icon_url")
+  iconUrl          String?  @map("icon_url")
   // Third art slot: the art shown inside this mech's skill CARDS
   // (build editor / game-style rank-up cards).
-  cardSkillIconUrl String? @map("card_skill_icon_url")
+  cardSkillIconUrl String?  @map("card_skill_icon_url")
 
   // S-tier-only systems below are optional/empty for Standard mechs;
   // the frontend decides what to show based on `rank`.
-  skills          MechSkill[]
-  traits          MechTrait[]
-  awakeningLevels AwakeningLevel[]
-  weapon          Weapon?
-  accessory       Accessory?
-  skins           Skin[]
-  helpers         Helper[]
-  pilot           Pilot?
-  skillNodes       SkillNode[] @relation("SkillNodeMechOwner")
+  skills           MechSkill[]
+  traits           MechTrait[]
+  awakeningLevels  AwakeningLevel[]
+  weapon           Weapon?
+  accessory        Accessory?
+  skins            Skin[]
+  helpers          Helper[]
+  pilot            Pilot?
+  skillNodes       SkillNode[]      @relation("SkillNodeMechOwner")
   // Linked skills on OTHER owners that require this mech as their gate partner.
-  gatingSkillNodes SkillNode[] @relation("SkillNodeMechGate")
+  gatingSkillNodes SkillNode[]      @relation("SkillNodeMechGate")
   moduleBonuses    ModuleBonus[]
 
   @@map("mechs")
@@ -122,6 +125,9 @@ model Mech {
 
 model Pilot {
   id                String   @id @default(uuid()) @db.Uuid
+  // Insertion time: the public lists show newest first. Rows that existed before
+  // this column share the migration timestamp, so the client breaks ties by name.
+  createdAt         DateTime @default(now()) @map("created_at")
   name              String   @unique
   unlockBoost       String?  @map("unlock_boost")
   relationshipBonus String?  @map("relationship_bonus")
@@ -135,12 +141,12 @@ model Pilot {
   // delete the pilot, just vacate the cockpit. Deliberate contrast with the
   // Cascade used on mech children: the pilot is a standalone entity, not a
   // part of the mech. "S-tier only" is enforced by the API, not the DB.
-  mechId String? @unique @map("mech_id") @db.Uuid
-  mech   Mech?   @relation(fields: [mechId], references: [id], onDelete: SetNull)
+  mechId            String?  @unique @map("mech_id") @db.Uuid
+  mech              Mech?    @relation(fields: [mechId], references: [id], onDelete: SetNull)
   // Either/or with mechId (app-enforced): a pilot sits in a mech OR fronts
   // a weapon, never both. Same SetNull reasoning — pilots are standalone.
-  weaponId String? @unique @map("weapon_id") @db.Uuid
-  weapon   Weapon? @relation(fields: [weaponId], references: [id], onDelete: SetNull)
+  weaponId          String?  @unique @map("weapon_id") @db.Uuid
+  weapon            Weapon?  @relation(fields: [weaponId], references: [id], onDelete: SetNull)
 
   @@map("pilots")
 }
@@ -164,20 +170,20 @@ model WeaponSkin {
 // Replaces the old weapon_upgrades system (dormant since Cycle I; cleanup is
 // a future cycle). Dual-owner since Cycle J.
 model SkillNode {
-  id String @id @default(uuid()) @db.Uuid
+  id              String        @id @default(uuid()) @db.Uuid
   // Dual-owner since Cycle J (like helpers): EXACTLY ONE of weaponId/mechId
   // is set — enforced by the writers (each router sets only its own owner),
   // not by the DB.
-  weaponId String? @map("weapon_id") @db.Uuid
-  mechId   String? @map("mech_id") @db.Uuid
+  weaponId        String?       @map("weapon_id") @db.Uuid
+  mechId          String?       @map("mech_id") @db.Uuid
   // Gate partner for a LINKED skill (only one is ever set, and only opposite
   // the owner): a mech-owned linked skill requires linkedWeaponId; a
   // weapon-owned one requires linkedMechId. Both null = an ordinary skill.
-  linkedWeaponId String? @map("linked_weapon_id") @db.Uuid
-  linkedMechId   String? @map("linked_mech_id") @db.Uuid
+  linkedWeaponId  String?       @map("linked_weapon_id") @db.Uuid
+  linkedMechId    String?       @map("linked_mech_id") @db.Uuid
   // Any-depth inheritance: parent points at a node in the SAME tree.
   // Named self-relation, like the older upgrade trees.
-  parentId String? @map("parent_id") @db.Uuid
+  parentId        String?       @map("parent_id") @db.Uuid
   // Nullable by design: Core skills have no name, only a description.
   name            String?
   description     String?
@@ -185,14 +191,14 @@ model SkillNode {
   appearanceLevel Int           @default(1) @map("appearance_level")
   type            SkillNodeType @default(Normal)
   // Sibling position; written by the drag-and-drop editor.
-  sortOrder Int @default(0) @map("sort_order")
+  sortOrder       Int           @default(0) @map("sort_order")
   // Normal-only: when true, this skill may be added to a build multiple
   // times, each copy taking one of the 8 shared slots. Forced false for
   // Premium/Core (they are never repeatable).
-  repeatable Boolean @default(false)
+  repeatable      Boolean       @default(false)
   // When the owning mech/weapon's quality tier ≥ this, the node is pre-granted
   // as an initial skill in a build (active, unlocks its children, no slot).
-  initialAtTier QualityTier? @map("initial_at_tier")
+  initialAtTier   QualityTier?  @map("initial_at_tier")
 
   weapon       Weapon?     @relation("SkillNodeWeaponOwner", fields: [weaponId], references: [id], onDelete: Cascade)
   mech         Mech?       @relation("SkillNodeMechOwner", fields: [mechId], references: [id], onDelete: Cascade)
@@ -211,8 +217,8 @@ model Type {
   name    String  @unique
   iconUrl String? @map("icon_url")
 
-  mechs    Mech[]
-  weapons  Weapon[]
+  mechs   Mech[]
+  weapons Weapon[]
 
   @@map("types")
 }
@@ -222,6 +228,9 @@ model Type {
 // convention (shown on S drones). levelUpBonuses ≤4, app-enforced.
 model Drone {
   id              String     @id @default(uuid()) @db.Uuid
+  // Insertion time: the public lists show newest first. Rows that existed before
+  // this column share the migration timestamp, so the client breaks ties by name.
+  createdAt       DateTime   @default(now()) @map("created_at")
   name            String     @unique
   iconUrl         String?    @map("icon_url")
   tier            MechRank   @default(Standard)
@@ -254,6 +263,9 @@ model DroneType {
 // the mech field (index = colour rank Orange→Mythic), not the weapon one.
 model Aircraft {
   id            String   @id @default(uuid()) @db.Uuid
+  // Insertion time: the public lists show newest first. Rows that existed before
+  // this column share the migration timestamp, so the client breaks ties by name.
+  createdAt     DateTime @default(now()) @map("created_at")
   name          String   @unique
   description   String?
   imageUrl      String?  @map("image_url")
@@ -380,8 +392,8 @@ model AwakeningLevel {
 }
 
 model AwakeningNode {
-  id       String @id @default(uuid()) @db.Uuid
-  levelId  String @map("level_id") @db.Uuid
+  id       String  @id @default(uuid()) @db.Uuid
+  levelId  String  @map("level_id") @db.Uuid
   position Int // 1-5, the outer nodes; the core node lives on the level
   // Sprite key, e.g. "UI_Attr_hp" — matches a file in
   // client/src/assets/awaking-icons/<icon>.png.
@@ -411,22 +423,25 @@ model AwakeningNode {
 // ---------- Unique weapon (S-tier only) + upgrade tree ----------
 
 model Weapon {
-  id          String  @id @default(uuid()) @db.Uuid
+  id            String   @id @default(uuid()) @db.Uuid
+  // Insertion time: the public lists show newest first. Rows that existed before
+  // this column share the migration timestamp, so the client breaks ties by name.
+  createdAt     DateTime @default(now()) @map("created_at")
   // Nullable since Cycle G: a weapon can exist on its own; @unique keeps
   // "a mech owns at most one weapon". The owner is set from the admin.
-  mechId      String? @unique @map("mech_id") @db.Uuid
-  name        String
+  mechId        String?  @unique @map("mech_id") @db.Uuid
+  name          String
   // Public URL key (/weapons/<slug>), like mechs.slug. Nullable so it could be
   // added to the populated table; the app generates + de-duplicates one for
   // every weapon. Unlike mechs, weapon NAMES aren't unique, so slug collisions
   // are normal here and get -2/-3 suffixes.
-  slug        String? @unique
-  description String?
-  baseStats   Json?   @map("base_stats")
+  slug          String?  @unique
+  description   String?
+  baseStats     Json?    @map("base_stats")
   // Weapons carry a type in the game too. Schema + API surface only for now —
   // the UI to assign it arrives with the future weapons editor.
-  typeId String? @map("type_id") @db.Uuid
-  type   Type?   @relation(fields: [typeId], references: [id], onDelete: Restrict)
+  typeId        String?  @map("type_id") @db.Uuid
+  type          Type?    @relation(fields: [typeId], references: [id], onDelete: Restrict)
   // Weapons have their own S/Standard tier in the game — same values as
   // mech rank, so the enum is shared rather than duplicated.
   tier          MechRank @default(Standard)
@@ -435,21 +450,21 @@ model Weapon {
   rankUpPreview String[] @map("rank_up_preview")
   // Two art slots: image = the big weapon art, icon = the small square
   // (future list badges on the public site).
-  imageUrl String? @map("image_url")
-  iconUrl  String? @map("icon_url")
+  imageUrl      String?  @map("image_url")
+  iconUrl       String?  @map("icon_url")
   // Only for mech-linked weapons — the weapon's special bonus while equipped
   // on its owner mech. Mirrors accessories.exclusiveEffect: the API normalizes
   // it to null whenever the weapon has no mech.
-  linkedEffect String? @map("linked_effect")
+  linkedEffect  String?  @map("linked_effect")
 
-  mech        Mech?           @relation(fields: [mechId], references: [id], onDelete: Cascade)
-  upgrades    WeaponUpgrade[]
-  weaponSkins WeaponSkin[]
-  helpers     Helper[]
-  pilot       Pilot?
-  skillNodes       SkillNode[] @relation("SkillNodeWeaponOwner")
+  mech             Mech?           @relation(fields: [mechId], references: [id], onDelete: Cascade)
+  upgrades         WeaponUpgrade[]
+  weaponSkins      WeaponSkin[]
+  helpers          Helper[]
+  pilot            Pilot?
+  skillNodes       SkillNode[]     @relation("SkillNodeWeaponOwner")
   // Linked skills on OTHER owners that require this weapon as their gate partner.
-  gatingSkillNodes SkillNode[] @relation("SkillNodeWeaponGate")
+  gatingSkillNodes SkillNode[]     @relation("SkillNodeWeaponGate")
   moduleBonuses    ModuleBonus[]
 
   @@map("weapons")
@@ -475,26 +490,29 @@ model WeaponUpgrade {
 // ---------- Accessory (admin-managed since Cycle H) ----------
 
 model Accessory {
-  id String @id @default(uuid()) @db.Uuid
+  id              String   @id @default(uuid()) @db.Uuid
+  // Insertion time: the public lists show newest first. Rows that existed before
+  // this column share the migration timestamp, so the client breaks ties by name.
+  createdAt       DateTime @default(now()) @map("created_at")
   // Nullable since Cycle H: Standard accessories are generic items; @unique
   // keeps "one accessory per mech" for the S-tier pairs. onDelete: SetNull —
   // a standalone accessory survives its mech (same reasoning as pilots).
-  mechId String? @unique @map("mech_id") @db.Uuid
-  name   String
+  mechId          String?  @unique @map("mech_id") @db.Uuid
+  name            String
   // Accessories share the Standard|S tier enum, like weapons.
-  tier MechRank @default(Standard)
+  tier            MechRank @default(Standard)
   // Attribute rows [{name, value}] — S: up to 2 rows, Standard: 1 (API rule).
-  attributes Json @default("[]")
+  attributes      Json     @default("[]")
   // Only for mech-paired accessories — the API normalizes this to null
   // whenever the accessory has no mech. RENAMED from `description` in
   // Cycle H: the old free text (e.g. "Crit hits restore 1% HP") was
   // semantically an exclusive effect all along.
-  exclusiveEffect String? @map("exclusive_effect")
+  exclusiveEffect String?  @map("exclusive_effect")
   // Two art slots, like weapons: image = big art, icon = small square badge.
-  imageUrl String? @map("image_url")
-  iconUrl  String? @map("icon_url")
+  imageUrl        String?  @map("image_url")
+  iconUrl         String?  @map("icon_url")
 
-  mech Mech? @relation(fields: [mechId], references: [id], onDelete: SetNull)
+  mech           Mech?                @relation(fields: [mechId], references: [id], onDelete: SetNull)
   setMemberships AccessorySetMember[]
 
   @@map("accessories")
@@ -510,10 +528,10 @@ model Skin {
   name        String
   description String?
   // Per-skin art, same slot the weapon_skins table got in Cycle G.1.
-  imageUrl String? @map("image_url")
+  imageUrl    String? @map("image_url")
 
-  mech   Mech       @relation(fields: [mechId], references: [id], onDelete: Cascade)
-  stars  SkinStar[]
+  mech  Mech       @relation(fields: [mechId], references: [id], onDelete: Cascade)
+  stars SkinStar[]
 
   @@map("skins")
 }
@@ -565,18 +583,18 @@ model HelperRank {
 // who someone is); this row is our membership card (what we display and
 // what future builds/hearts join against). No passwords ever exist here.
 model User {
-  id                String  @id @default(uuid()) @db.Uuid
+  id                String   @id @default(uuid()) @db.Uuid
   // Which social provider this identity came from ("google" | "discord")
   // and that provider's stable account id. Together they uniquely identify
   // an account — we never merge across providers (design decision).
-  provider          String  @map("provider")
-  providerAccountId String  @map("provider_account_id")
+  provider          String   @map("provider")
+  providerAccountId String   @map("provider_account_id")
   // Display name from the provider (Google name / Discord global_name),
   // captured at login. Shown in the admin Users list.
   name              String?
   // Public display name. Null until chosen in Settings; required (app
   // rule) before creating builds. Unique site-wide.
-  nickname          String? @unique
+  nickname          String?  @unique
   server            String? // game server, free text
   createdAt         DateTime @default(now()) @map("created_at")
 
@@ -593,36 +611,36 @@ model User {
 // text (no FK) so deleting a mech from the wiki doesn't cascade-delete
 // community builds — the same "degrades politely" principle as localStorage.
 model Build {
-  id          String  @id @default(uuid()) @db.Uuid
-  userId      String  @map("user_id") @db.Uuid
-  name        String
-  description String  @default("")
+  id                 String      @id @default(uuid()) @db.Uuid
+  userId             String      @map("user_id") @db.Uuid
+  name               String
+  description        String      @default("")
   // The build targets a mech OR a single weapon — exactly one set (app rule).
-  mechId   String?
-  weaponId String? @map("weapon_id")
+  mechId             String?
+  weaponId           String?     @map("weapon_id")
   // Skill / weapon picks, mirroring the localStorage BuildRecord shape.
-  skillIds       String[] @map("skill_ids")
-  weaponIds      String[] @map("weapon_ids")
+  skillIds           String[]    @map("skill_ids")
+  weaponIds          String[]    @map("weapon_ids")
   // Per-weapon skill picks: {"<weaponId>": ["<skillId>", ...]}
-  weaponSkillIds Json     @default("{}") @map("weapon_skill_ids")
+  weaponSkillIds     Json        @default("{}") @map("weapon_skill_ids")
   // The SUBJECT's quality tier (the mech, or a single-weapon build's weapon).
-  quality         QualityTier @default(Blue)
+  quality            QualityTier @default(Blue)
   // How far the mech is awakened, as a step KEY: "L-P" = level L, outer node P
   // (1-5), or "L-C" = level L's core node reached (the game labels that step
   // "Awakening Lv L+1"). null = not awakened. A key rather than an index, so a
   // level going live later never shifts what existing builds point at.
-  awakeningStep   String?     @map("awakening_step")
+  awakeningStep      String?     @map("awakening_step")
   // Per equipped weapon: {"<weaponId>": "Gold", ...}
-  weaponQualities Json        @default("{}") @map("weapon_qualities")
+  weaponQualities    Json        @default("{}") @map("weapon_qualities")
   // Attack-module picks: {"<moduleId>": {quality, effect1, effect2, effect3}}.
   // effect1 = element typeId; effect2/3 = the equipped bonus's target mech/weapon
   // id (both stable across module re-saves, so builds don't break).
-  moduleSelections Json       @default("{}") @map("module_selections")
+  moduleSelections   Json        @default("{}") @map("module_selections")
   // Drone picks, keyed by slot index "0".."5" (fixed layout: 2 Battle,
   // 2 Bombardment, 2 Support): {"0": {droneId, quality}}. `quality` is the
   // 0-9 QualityGem number — a DIFFERENT ladder from the QualityTier enum
   // used by mechs, weapons and modules.
-  droneSelections Json        @default("{}") @map("drone_selections")
+  droneSelections    Json        @default("{}") @map("drone_selections")
   // The build's TWO aircraft, keyed by slot index "0" and "1":
   //   {"0": {aircraftId, quality, resetSlots: {"0".."4": {attributeId, grade}}}}
   // Each aircraft carries its own quality AND its own 5-roll Reset Effect
@@ -634,13 +652,13 @@ model Build {
   // QualityTier steps, as shown on the aircraft cards), NOT the Q1-Q13 table.
   // A roll stores NO number: its grade letter implies a range, derived at
   // display time from the attribute group's caps.
-  aircraftSelections Json     @default("{}") @map("aircraft_selections")
+  aircraftSelections Json        @default("{}") @map("aircraft_selections")
   // Publication state. New builds start as Draft (private); the public feed
   // and share pages only surface Published rows.
-  status    BuildStatus @default(Draft)
-  hearts    Int      @default(0)
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  status             BuildStatus @default(Draft)
+  hearts             Int         @default(0)
+  createdAt          DateTime    @default(now()) @map("created_at")
+  updatedAt          DateTime    @updatedAt @map("updated_at")
 
   user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   heartedBy BuildHeart[]
@@ -704,18 +722,18 @@ model Module {
 // Extensible quality catalog. Base attributes (free-text) and effect_count
 // (how many effect tabs this quality unlocks) live here, shared across modules.
 model ModuleQuality {
-  id          String   @id @default(uuid()) @db.Uuid
-  name        String   @unique
-  iconUrl     String?  @map("icon_url")
-  hp          String
-  atk         String
-  def         String
+  id           String   @id @default(uuid()) @db.Uuid
+  name         String   @unique
+  iconUrl      String?  @map("icon_url")
+  hp           String
+  atk          String
+  def          String
   // Effect 1 (the elemental DMG %) is a property of the quality: it's the same
   // for every module and applies to all elements. Null below Turquoise (effect_count 0).
-  effect1Value String? @map("effect1_value")
-  effectCount Int      @map("effect_count")
-  sortOrder   Int      @default(0) @map("sort_order")
-  createdAt   DateTime @default(now()) @map("created_at")
+  effect1Value String?  @map("effect1_value")
+  effectCount  Int      @map("effect_count")
+  sortOrder    Int      @default(0) @map("sort_order")
+  createdAt    DateTime @default(now()) @map("created_at")
 
   @@map("module_qualities")
 }
@@ -747,13 +765,13 @@ model ModuleBonus {
 // every piece. Piece count is deliberately NOT fixed — the game has sets of
 // different sizes, and hard-coding three would mean a migration to add a fourth.
 model AccessorySet {
-  id   String @id @default(uuid()) @db.Uuid
-  name String @unique
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String   @unique
   // The effect granted once ALL pieces are equipped. Free text by the same
   // reasoning as mechs.special_bonus: the game states it as a sentence, and
   // splitting it into structured stat/value fields has not survived contact
   // with real data before.
-  bonus String?
+  bonus     String?
   // Admin-controlled display order on the public page.
   sortOrder Int      @default(0) @map("sort_order")
   createdAt DateTime @default(now()) @map("created_at")
@@ -789,19 +807,19 @@ model AccessorySetMember {
 // wrong value is corrected by a NEW migration with UPDATEs, never by editing an
 // applied one (that would break `migrate deploy` with a checksum error).
 model AircraftAttributeGroup {
-  id   String                @id @default(uuid()) @db.Uuid
-  name String                @unique
-  unit AircraftAttributeUnit
+  id        String                @id @default(uuid()) @db.Uuid
+  name      String                @unique
+  unit      AircraftAttributeUnit
   // Roll ceilings at the three quality rungs the game publishes (Q1, Q8, Q13);
   // the rungs in between are unknown. Float rather than the Int/String used
   // everywhere else in this schema: one cap is fractional (2.5), and the free-
   // text String convention is for values that carry their own units ("54.00k"),
   // which these don't — the unit is its own column. A future build editor also
   // needs to compare `value <= cap` without parsing.
-  q1Max     Float @map("q1_max")
-  q8Max     Float @map("q8_max")
-  q13Max    Float @map("q13_max")
-  sortOrder Int   @default(0) @map("sort_order")
+  q1Max     Float                 @map("q1_max")
+  q8Max     Float                 @map("q8_max")
+  q13Max    Float                 @map("q13_max")
+  sortOrder Int                   @default(0) @map("sort_order")
 
   attributes AircraftAttribute[]
 
@@ -861,21 +879,21 @@ enum ArsenalSlot {
 // One named piece of Final Raid gear ("Swift Belt", "Computation Rune").
 // A piece with a set_id is "set arsenal"; without one it is "normal arsenal".
 model ArsenalPiece {
-  id      String      @id @default(uuid()) @db.Uuid
+  id         String      @id @default(uuid()) @db.Uuid
   // NOT unique: the game ships "Swift Belt" twice — a normal piece at
   // qualities 4-7 and a Swift Set piece at 8-13.
-  name    String
-  iconUrl String?     @map("icon_url")
-  slot    ArsenalSlot
+  name       String
+  iconUrl    String?     @map("icon_url")
+  slot       ArsenalSlot
   // The quality range the piece exists at, 1 (Crude) … 13 (Supreme). Stored as
   // Ints so a future build can offer "pick a quality between min and max";
   // the names live in client/src/lib/arsenalQualities.ts. 1-13 and
   // min <= max are app rules (checked in the route).
-  qualityMin Int @map("quality_min")
-  qualityMax Int @map("quality_max")
-  setId      String? @map("set_id") @db.Uuid
-  sortOrder  Int      @default(0) @map("sort_order")
-  createdAt  DateTime @default(now()) @map("created_at")
+  qualityMin Int         @map("quality_min")
+  qualityMax Int         @map("quality_max")
+  setId      String?     @map("set_id") @db.Uuid
+  sortOrder  Int         @default(0) @map("sort_order")
+  createdAt  DateTime    @default(now()) @map("created_at")
 
   // Restrict, like types: a set that still has pieces can't be deleted —
   // the admin must move or delete its pieces first.

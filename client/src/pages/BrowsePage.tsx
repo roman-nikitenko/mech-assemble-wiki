@@ -6,6 +6,7 @@ import { MechCard } from "../components/MechCard";
 import { LoadingSkeleton } from "../components/LoadingSkeleton";
 import { ErrorPanel } from "../components/ErrorPanel";
 import { Seo } from "../components/Seo";
+import { sortNewestFirst } from "../lib/sortNewestFirst";
 
 export function BrowsePage() {
   const [typeIds, setTypeIds] = useState<string[]>([]);
@@ -23,7 +24,7 @@ export function BrowsePage() {
     set(list.includes(value) ? list.filter((v) => v !== value) : [...list, value]);
 
   const query = search.trim().toLowerCase();
-  const visible = (data ?? []).filter((m) => {
+  const visible = sortNewestFirst(data ?? []).filter((m) => {
     // OR within each group, AND across groups; empty group = no filter.
     const typeOk = typeIds.length === 0 || (m.type != null && typeIds.includes(m.type.id));
     const rankOk = ranks.length === 0 || ranks.includes(m.rank);

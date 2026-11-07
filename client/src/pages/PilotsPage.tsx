@@ -4,7 +4,9 @@ import { imageSrc, srcSet, usePilots } from "../api/client";
 import { LoadingSkeleton } from "../components/LoadingSkeleton";
 import { ErrorPanel } from "../components/ErrorPanel";
 import { Gem } from "../components/Gem";
+import { NewBadge } from "../components/NewBadge";
 import { Seo } from "../components/Seo";
+import { sortNewestFirst } from "../lib/sortNewestFirst";
 const STATS = ["ATK", "DEF", "HP"] as const;
 
 /** Public pilot list: portrait, boosts, and where the pilot serves
@@ -34,7 +36,7 @@ export function PilotsPage() {
   }, [location.hash, data]);
 
   const query = search.trim().toLowerCase();
-  const visible = (data ?? []).filter((p) => {
+  const visible = sortNewestFirst(data ?? []).filter((p) => {
     const nameOk = !query || p.name.toLowerCase().includes(query);
     const bonusText = [p.unlockBoost, p.relationshipBonus, ...p.bonusPerLevel]
       .filter(Boolean)
@@ -101,10 +103,11 @@ export function PilotsPage() {
               <div
                 key={p.id}
                 id={`pilot-${p.id}`}
-                className={`scroll-mt-20 rounded-xl border bg-surface p-4 pb-0 overflow-hidden transition-colors duration-700 ${
+                className={`relative scroll-mt-20 rounded-xl border bg-surface p-4 pb-0 transition-colors duration-700 ${
                   highlightedId === p.id ? "border-accent" : "border-edge"
                 }`}
               >
+                <NewBadge createdAt={p.createdAt} />
                 <div className="flex items-center gap-3">
                   {p.iconUrl && (
                     <img

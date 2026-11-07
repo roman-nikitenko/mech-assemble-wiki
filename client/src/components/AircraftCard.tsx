@@ -2,6 +2,7 @@ import { imageSrc, srcSet, CARD_SIZES } from "../api/client";
 import type { Aircraft, QualityTier } from "../api/types";
 import { AIRCRAFT_RANK_TIERS, RankUpPreview } from "./RankUpPreview";
 import { STierIcon } from "./STierIcon";
+import { NewBadge } from "./NewBadge";
 import aircraftBg from "../assets/aircraft_bg.webp";
 
 const STATS = [
@@ -20,7 +21,8 @@ export function AircraftCard({
   quality?: QualityTier;
 }) {
   return (
-    <div className="overflow-hidden border border-edge bg-surface relative">
+    <div className="border border-edge bg-surface relative">
+      {quality === undefined && <NewBadge createdAt={aircraft.createdAt} />}
       <div 
         className="flex aspect-1/1 items-center justify-center bg-surface-2 bg-no-repeat bg-cover bg-position-[center_top_-100px]"
         style={{ backgroundImage: `url(${aircraftBg})` }}

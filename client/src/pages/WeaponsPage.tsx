@@ -4,10 +4,12 @@ import { imageSrc, srcSet, CARD_SIZES, useTypes, useWeapons } from "../api/clien
 import type { MechRank } from "../api/types";
 import { FilterBar } from "../components/FilterBar";
 import { RankBadge } from "../components/RankBadge";
+import { NewBadge } from "../components/NewBadge";
 import { TypeBadge } from "../components/TypeBadge";
 import { LoadingSkeleton } from "../components/LoadingSkeleton";
 import { ErrorPanel } from "../components/ErrorPanel";
 import { Seo } from "../components/Seo";
+import { sortNewestFirst } from "../lib/sortNewestFirst";
 import cardBg from "../assets/acessery-card-bg.jpeg";
 
 export function WeaponsPage() {
@@ -21,7 +23,7 @@ export function WeaponsPage() {
     set(list.includes(value) ? list.filter((v) => v !== value) : [...list, value]);
 
   const query = search.trim().toLowerCase();
-  const visible = (data ?? []).filter((w) => {
+  const visible = sortNewestFirst(data ?? []).filter((w) => {
     const typeOk = typeIds.length === 0 || (w.type != null && typeIds.includes(w.type.id));
     const tierOk = tiers.length === 0 || tiers.includes(w.tier);
     const searchOk =
@@ -67,7 +69,7 @@ export function WeaponsPage() {
             <Link
               key={w.id}
               to={`/weapons/${w.slug ?? w.id}`}
-              className="@container  block rounded-xl relative overflow-hidden border border-edge bg-surface transition hover:border-accent/60 hover:bg-surface-2 bg-no-repeat bg-cover bg-center after:absolute after:inset-0 after:bg-black/30 after:z-0"
+              className="@container  block rounded-xl relative border border-edge bg-surface transition hover:border-accent/60 hover:bg-surface-2 bg-no-repeat bg-cover bg-center after:absolute after:rounded-xl after:inset-0 after:bg-black/30 after:z-0"
               style={{ backgroundImage: `url(${cardBg})` }}
             >
               {w.imageUrl ? (
@@ -84,13 +86,14 @@ export function WeaponsPage() {
                   // relative z-10 like the <img> branch: the card's ::after scrim is a
           // positioned pseudo-element, so a static placeholder paints UNDER it and
           // renders dimmed next to full-brightness neighbours.
-          className="relative z-10 mb-3 flex h-32 w-full items-center justify-center rounded-lg bg-surface-2 text-3xl"
+          className="relative z-10 mb-3 flex h-32 w-full items-center justify-center rounded-t-lg bg-surface-2 text-3xl"
                   aria-hidden
                 >
                   ⚔️
                 </div>
               )}
-              <div className="flex items-center absolute min-w-full bottom-0 left-1/2 -translate-x-1/2 z-10 justify-center py-2 gap-2 backdrop-blur-sm bg-black/20">
+              <NewBadge createdAt={w.createdAt} />
+              <div className="flex items-center absolute min-w-full rounded-b-xl bottom-0 left-1/2 -translate-x-1/2 z-10 justify-center py-2 gap-2 backdrop-blur-sm bg-black/20">
                 {w.tier !== "Standard" && <RankBadge rank={w.tier} />}
                 <h2 className="font-bold text-[6cqw]">{w.name}</h2>
                 <div className="flex items-center gap-2">

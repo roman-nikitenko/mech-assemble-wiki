@@ -6,6 +6,7 @@ import { AircraftQualityTable } from "../components/AircraftQualityTable";
 import { LoadingSkeleton } from "../components/LoadingSkeleton";
 import { ErrorPanel } from "../components/ErrorPanel";
 import { Seo } from "../components/Seo";
+import { sortNewestFirst } from "../lib/sortNewestFirst";
 import { STierIcon } from "../components/STierIcon";
 
 /** Public aircraft list: image, tier, stats, description and the rank-up
@@ -16,7 +17,7 @@ export function AircraftPage() {
   const [tier, setTier] = useState<MechRank | "">("");
 
   const query = search.trim().toLowerCase();
-  const visible = (data ?? []).filter((a) => {
+  const visible = sortNewestFirst(data ?? []).filter((a) => {
     const nameOk = !query || a.name.toLowerCase().includes(query);
     const tierOk = tier === "" || a.tier === tier;
     return nameOk && tierOk;

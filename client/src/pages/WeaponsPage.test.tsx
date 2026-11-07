@@ -7,6 +7,7 @@ import type { WeaponSummary } from "../api/types";
 
 const weapon: WeaponSummary = {
   id: "33333333-3333-4333-8333-333333333333",
+  createdAt: "2026-01-01T00:00:00.000Z",
   slug: "doom-cannon",
   name: "Doom Cannon",
   description: "Big boom.",

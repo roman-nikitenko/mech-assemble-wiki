@@ -9,6 +9,7 @@ import type { AccessorySummary } from "../../api/types";
 const accessories: AccessorySummary[] = [
   {
     id: "a1",
+    createdAt: "2026-01-01T00:00:00.000Z",
     name: "Shadow Pendant",
     tier: "S",
     attributes: [{ name: "HP", value: "42k" }],
@@ -19,6 +20,7 @@ const accessories: AccessorySummary[] = [
   },
   {
     id: "a2",
+    createdAt: "2026-01-01T00:00:00.000Z",
     name: "Iron Band",
     tier: "Standard",
     attributes: [{ name: "DEF", value: "200" }],

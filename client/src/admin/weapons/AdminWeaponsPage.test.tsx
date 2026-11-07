@@ -9,6 +9,7 @@ import type { WeaponSummary } from "../../api/types";
 const weapons: WeaponSummary[] = [
   {
     id: "w1",
+    createdAt: "2026-01-01T00:00:00.000Z",
     slug: "ninja-spikes-gun",
     name: "Ninja Spikes Gun",
     description: null,
@@ -25,6 +26,7 @@ const weapons: WeaponSummary[] = [
   },
   {
     id: "w2",
+    createdAt: "2026-01-01T00:00:00.000Z",
     slug: "frost-cannon",
     name: "Frost Cannon",
     description: null,
