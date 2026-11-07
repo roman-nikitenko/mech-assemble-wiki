@@ -20,6 +20,8 @@ const SUMMARY_SELECT = {
   type: { select: { id: true, name: true, iconUrl: true } },
   rank: true,
   imageUrl: true,
+  // The browse page sorts newest-first on this (see client sortNewestFirst).
+  createdAt: true,
 } as const;
 
 // A mech may only carry a pilot when it's S-tier, and the pilot must exist.

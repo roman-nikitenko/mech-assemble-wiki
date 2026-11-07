@@ -7,6 +7,7 @@ import { AircraftPage } from "./AircraftPage";
 import type { Aircraft } from "../api/types";
 
 const base = {
+  createdAt: "2026-01-01T00:00:00.000Z",
   description: null,
   imageUrl: null,
   hp: null,

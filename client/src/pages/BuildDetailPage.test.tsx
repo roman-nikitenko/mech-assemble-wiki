@@ -8,6 +8,7 @@ import { BuildDetailPage } from "./BuildDetailPage";
 
 const mechSummary: MechSummary = {
   id: "m1",
+  createdAt: "2026-01-01T00:00:00.000Z",
   slug: "iron-colossus",
   name: "Iron Colossus",
   epithet: null,
@@ -84,6 +85,7 @@ const droneTypes: DroneType[] = [
 const drones: Drone[] = [
   {
     id: "d1", name: "Buzz", iconUrl: null, tier: "S", droneTypeId: "dt1",
+    createdAt: "2026-01-01T00:00:00.000Z",
     inheritAttack: null, atk: null, hp: null, def: null,
     previewVideoUrl: null, levelUpBonuses: [],
   },
@@ -108,6 +110,7 @@ const LINKED_OFF: PostedBuild = { ...LINKED_ON, id: "boff", weaponIds: [] };
 
 const weapon: WeaponSummary = {
   id: "w1",
+  createdAt: "2026-01-01T00:00:00.000Z",
   slug: "blade-of-dawn",
   name: "Blade of Dawn",
   description: null,
@@ -159,6 +162,7 @@ const BUILD: PostedBuild = {
 const aircraftCatalog: Aircraft[] = [
   {
     id: "a1", name: "Sky Fang", description: null, imageUrl: null, tier: "S",
+    createdAt: "2026-01-01T00:00:00.000Z",
     hp: null, atk: null, def: null, specialBonus: null, rankUpPreview: [],
   },
 ];

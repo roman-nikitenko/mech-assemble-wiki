@@ -3,13 +3,14 @@ import type { MechSummary } from "../api/types";
 import { imageSrc, srcSet, CARD_SIZES } from "../api/client";
 import { TypeBadge } from "./TypeBadge";
 import { RankBadge } from "./RankBadge";
+import { NewBadge } from "./NewBadge";
 import mechCardBg from "../assets/mecha_story_bg.webp"
 
 export function MechCard({ mech, priority = false }: { mech: MechSummary; priority?: boolean }) {
   return (
     <Link
       to={`/mechs/${mech.slug ?? mech.id}`}
-      className="@container block rounded-xl relative overflow-hidden border border-edge bg-surface transition hover:border-accent/60 hover:bg-surface-2 bg-no-repeat bg-cover bg-center after:absolute after:inset-0 after:bg-black/30 after:z-0"
+      className="@container block rounded-xl relative border border-edge bg-surface transition hover:border-accent/60 hover:bg-surface-2 bg-no-repeat bg-cover bg-center after:absolute after:inset-0 after:rounded-xl after:bg-black/30 after:z-0"
       style={{ backgroundImage: `url(${mechCardBg})` }}
     >
       {mech.imageUrl ? (
@@ -27,13 +28,14 @@ export function MechCard({ mech, priority = false }: { mech: MechSummary; priori
           // relative z-10 like the <img> branch: the card's ::after scrim is a
           // positioned pseudo-element, so a static placeholder paints UNDER it and
           // renders dimmed next to full-brightness neighbours.
-          className="relative z-10 mb-3 flex h-32 w-full items-center justify-center rounded-lg bg-surface-2 text-3xl"
+          className="relative z-10 mb-3 flex h-32 w-full items-center justify-center rounded-t-lg bg-surface-2 text-3xl"
           aria-hidden
         >
           🤖
         </div>
       )}
-      <div className="min-h-12.5 flex items-center absolute min-w-full bottom-0 rounded-b-lg left-1/2 -translate-x-1/2 z-10  justify-center py-2 gap-2 backdrop-blur-sm bg-black/10">
+      <NewBadge createdAt={mech.createdAt} />
+      <div className="min-h-12.5 flex items-center overflow-hidden absolute min-w-full bottom-0 rounded-b-xl left-1/2 -translate-x-1/2 z-10  justify-center py-2 gap-2 backdrop-blur-sm bg-black/10">
         {mech.rank !== 'Standard' && <RankBadge rank={mech.rank} />}
         <h2 className="font-bold text-[6cqw]">{mech.name}</h2>
         <div className="flex items-center gap-2">

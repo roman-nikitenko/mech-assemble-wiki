@@ -7,6 +7,7 @@ import { DroneCard } from "./DroneCard";
 // Level-up bonus rows are pinned to the gems [0, 7, 8, 9], in order.
 const drone: Drone = {
   id: "d1",
+  createdAt: "2026-01-01T00:00:00.000Z",
   name: "Buzz",
   iconUrl: null,
   tier: "S",

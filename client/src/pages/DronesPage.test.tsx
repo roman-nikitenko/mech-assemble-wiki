@@ -12,6 +12,7 @@ const droneTypes: DroneType[] = [
 ];
 
 const base = {
+  createdAt: "2026-01-01T00:00:00.000Z",
   iconUrl: null, inheritAttack: null, atk: null, hp: null, def: null,
   previewVideoUrl: null, levelUpBonuses: [] as string[],
 };

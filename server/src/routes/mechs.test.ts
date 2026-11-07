@@ -91,6 +91,7 @@ describe("GET /api/mechs", () => {
     // summary fields ONLY — no lore, no relations
     const alpha = res.body.find((m: { id: string }) => m.id === alphaId);
     expect(Object.keys(alpha).sort()).toEqual([
+      "createdAt",
       "epithet",
       "id",
       "imageUrl",
@@ -99,6 +100,8 @@ describe("GET /api/mechs", () => {
       "slug",
       "type",
     ]);
+    // createdAt feeds the client's newest-first sort — must be a real timestamp
+    expect(Number.isNaN(Date.parse(alpha.createdAt))).toBe(false);
   });
 
   it("filters by rank (tolerant)", async () => {

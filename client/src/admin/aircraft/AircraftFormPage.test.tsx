@@ -16,6 +16,7 @@ function CacheProbe() {
 
 const existing: Aircraft = {
   id: "a1",
+  createdAt: "2026-01-01T00:00:00.000Z",
   name: "Sky Raider",
   description: "A heavy gunship.",
   imageUrl: null,

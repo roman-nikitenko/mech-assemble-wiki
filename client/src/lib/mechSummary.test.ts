@@ -5,6 +5,7 @@ import type { MechDetail } from "../api/types";
 // Minimal MechDetail with everything empty; each test fills only what it needs.
 const base: MechDetail = {
   id: "m1",
+  createdAt: "2026-01-01T00:00:00.000Z",
   slug: "abyssal-knight",
   name: "Abyssal Knight",
   epithet: null,

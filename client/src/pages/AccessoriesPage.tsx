@@ -4,9 +4,11 @@ import { imageSrc, srcSet, CARD_SIZES, useAccessories } from "../api/client";
 import type { MechRank } from "../api/types";
 import { FilterBar } from "../components/FilterBar";
 import { RankBadge } from "../components/RankBadge";
+import { NewBadge } from "../components/NewBadge";
 import { LoadingSkeleton } from "../components/LoadingSkeleton";
 import { ErrorPanel } from "../components/ErrorPanel";
 import { Seo } from "../components/Seo";
+import { sortNewestFirst } from "../lib/sortNewestFirst";
 import { Tabs } from "../components/Tabs";
 import { AccessorySetsTab } from "./sections/AccessorySetsTab";
 import cardBg from "../assets/acessery-card-bg.jpeg";
@@ -31,7 +33,7 @@ export function AccessoriesPage() {
   ].sort();
 
   const query = search.trim().toLowerCase();
-  const visible = (data ?? []).filter((a) => {
+  const visible = sortNewestFirst(data ?? []).filter((a) => {
     const tierOk = tiers.length === 0 || tiers.includes(a.tier);
     const attrOk = attrs.length === 0 || a.attributes.some((at) => attrs.includes(at.name));
     const searchOk =
@@ -85,15 +87,13 @@ export function AccessoriesPage() {
               {visible.map((a) => (
             <div
               key={a.id}
-              // overflow-hidden clips the art div's ::after scrim to the card's
-              // rounded corners — without it the 30% black fills the square
-              // corners outside the radius. MechCard/WeaponsPage do the same.
-              className="overflow-hidden rounded-xl bg-surface border border-edge"
+              className=" rounded-xl bg-surface border border-edge"
             >
               <div
-                className="aspect-2/1 rounded-t-xl flex items-center justify-center bg-no-repeat bg-center bg-cover relative after:absolute after:inset-0 after:bg-black/30 after:z-0" 
+                className="aspect-2/1 rounded-t-xl flex items-center justify-center bg-no-repeat bg-center bg-cover relative after:absolute after:rounded-t-2xl after:inset-0 after:bg-black/30 after:z-0" 
                 style={{ backgroundImage: `url(${cardBg})` }}
               >
+                <NewBadge createdAt={a.createdAt} />
                 {a.imageUrl && (
                   <img
                     src={imageSrc(a.imageUrl)}

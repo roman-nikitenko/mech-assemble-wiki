@@ -5,6 +5,7 @@ import { NotePreview } from "./NotePreview";
 
 const mech: MechSummary = {
   id: "m1",
+  createdAt: "2026-01-01T00:00:00.000Z",
   slug: "iron-colossus",
   name: "Iron Colossus",
   epithet: null,
@@ -15,6 +16,7 @@ const mech: MechSummary = {
 
 const weapon = {
   id: "w1",
+  createdAt: "2026-01-01T00:00:00.000Z",
   slug: "blade-of-dawn",
   name: "Blade of Dawn",
   description: null,

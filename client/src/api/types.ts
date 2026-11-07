@@ -24,6 +24,8 @@ export interface TypeInput {
     Standard|S rank. levelUpBonuses holds up to 4 rows. */
 export interface Drone {
   id: string;
+  // ISO timestamp; public lists sort newest-first on it.
+  createdAt: string;
   name: string;
   iconUrl: string | null;
   tier: MechRank;
@@ -68,6 +70,8 @@ export interface DroneTypeInput {
     colour rank (see AIRCRAFT_RANK_TIERS), so an interior blank keeps its slot. */
 export interface Aircraft {
   id: string;
+  // ISO timestamp; public lists sort newest-first on it.
+  createdAt: string;
   name: string;
   description: string | null;
   imageUrl: string | null;
@@ -122,6 +126,8 @@ export type MechRank = "Standard" | "S";
 /** Shape returned by GET /api/mechs (browse page). */
 export interface MechSummary {
   id: string;
+  // ISO timestamp; public lists sort newest-first on it.
+  createdAt: string;
   // Pretty URL identifier (e.g. "abyssal-knight"); links prefer it over id.
   // Nullable defensively — in practice every mech has one.
   slug: string | null;
@@ -269,6 +275,8 @@ export interface WeaponDetail {
 /** Shape of GET /api/weapons rows (admin list, edit prefill, pilot form). */
 export interface WeaponSummary {
   id: string;
+  // ISO timestamp; public lists sort newest-first on it.
+  createdAt: string;
   slug: string | null;
   name: string;
   description: string | null;
@@ -442,6 +450,8 @@ export interface MechInput {
 /** A pilot, as served by /api/pilots (always carries its linked mech or null). */
 export interface Pilot {
   id: string;
+  // ISO timestamp; public lists sort newest-first on it.
+  createdAt: string;
   name: string;
   unlockBoost: string | null;
   relationshipBonus: string | null;
@@ -473,6 +483,8 @@ export interface AccessoryAttribute {
 /** Shape of GET /api/accessories rows. */
 export interface AccessorySummary {
   id: string;
+  // ISO timestamp; public lists sort newest-first on it.
+  createdAt: string;
   name: string;
   tier: MechRank;
   attributes: AccessoryAttribute[];

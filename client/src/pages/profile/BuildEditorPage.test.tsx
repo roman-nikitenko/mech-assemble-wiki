@@ -59,6 +59,7 @@ const authState = vi.hoisted(() => ({ loggedIn: true }));
 
 const summary: MechSummary = {
   id: "m1",
+  createdAt: "2026-01-01T00:00:00.000Z",
   slug: "iron-colossus",
   name: "Iron Colossus",
   epithet: null,
@@ -143,6 +144,7 @@ const droneTypesFixture: DroneType[] = [
 
 const droneFixture = (over: Partial<Drone>): Drone => ({
   id: "d1",
+  createdAt: "2026-01-01T00:00:00.000Z",
   name: "Buzz",
   iconUrl: null,
   tier: "S",
@@ -159,10 +161,12 @@ const droneFixture = (over: Partial<Drone>): Drone => ({
 const aircraftFixture: Aircraft[] = [
   {
     id: "a1", name: "Sky Fang", description: null, imageUrl: null, tier: "S",
+    createdAt: "2026-01-01T00:00:00.000Z",
     hp: null, atk: null, def: null, specialBonus: null, rankUpPreview: [],
   },
   {
     id: "a2", name: "Nimbus", description: null, imageUrl: null, tier: "Standard",
+    createdAt: "2026-01-01T00:00:00.000Z",
     hp: null, atk: null, def: null, specialBonus: null, rankUpPreview: [],
   },
 ];
@@ -194,6 +198,7 @@ const dronesFixture: Drone[] = [
 
 const weaponFixture = (over: Partial<WeaponSummary>): WeaponSummary => ({
   id: "w1",
+  createdAt: "2026-01-01T00:00:00.000Z",
   slug: "blade-of-dawn",
   name: "Blade of Dawn",
   description: null,
