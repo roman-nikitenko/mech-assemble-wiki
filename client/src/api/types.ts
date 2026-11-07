@@ -819,3 +819,31 @@ export interface ModuleInput {
   effect3Target: ModuleTargetKind;
   bonuses: ModuleBonusInput[];
 }
+
+/** A record that uses an uploaded file — the Media library's "Used by" list. */
+export interface MediaUsage {
+  kind: string; // "Mech", "Weapon skin", ...
+  id: string;
+  name: string;
+  field: string; // which column holds the image
+  editPath: string; // admin page to change it
+}
+
+/** One file in the uploads folder (a "base" file; resized copies are hidden). */
+export interface MediaItem {
+  name: string; // "<uuid>.webp"
+  url: string; // "/uploads/<uuid>.webp" — what records store
+  kind: "image" | "video";
+  size: number; // bytes
+  width: number | null;
+  height: number | null;
+  modifiedAt: string; // ISO
+  usage: MediaUsage[];
+}
+
+export interface MediaPage {
+  items: MediaItem[];
+  total: number;
+  page: number;
+  limit: number;
+}

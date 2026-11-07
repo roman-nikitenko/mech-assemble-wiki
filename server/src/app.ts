@@ -7,6 +7,7 @@ import cookieParser from "cookie-parser";
 import { mechsRouter } from "./routes/mechs";
 import { traitsRouter } from "./routes/traits";
 import { uploadsDir, uploadsRouter } from "./routes/uploads";
+import { mediaRouter } from "./routes/media";
 import { pilotsRouter } from "./routes/pilots";
 import { typesRouter } from "./routes/types";
 import { dronesRouter } from "./routes/drones";
@@ -68,6 +69,8 @@ app.use("/api/feedback", feedbackRouter);
 app.use("/api/awakening", awakeningRouter);
 app.use("/api/admin", adminRouter);
 app.use("/api/uploads", uploadsRouter);
+// Admin Media library: list / search / delete what is in the uploads folder.
+app.use("/api/media", mediaRouter);
 // GET /api/sitemap.xml — generated from the DB for search engines.
 app.use("/api/sitemap.xml", sitemapRouter);
 // Serve uploaded images as plain static files: GET /uploads/<name>.
