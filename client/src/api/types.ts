@@ -847,3 +847,51 @@ export interface MediaPage {
   page: number;
   limit: number;
 }
+
+// ---- Chips (the game's "Gems") ----------------------------------------------
+// One row per body part; every quality lives inside `qualities` (jsonb on the
+// server, validated by server/src/lib/chip-input.ts — keep the two in sync).
+
+export type ChipCategory = "Head" | "Shoulder" | "Chest" | "Legs" | "Hands" | "Waist";
+export type ChipPoolKind = "Base stat" | "DMG Boost / Immunity" | "Special stat" | "Overclock skill";
+export type ChipEffectMode = "All modes" | "PvE only" | "PvP only";
+
+export interface ChipEffect {
+  text: string;
+  mode: ChipEffectMode;
+  /** Share (%) of this effect inside its pool. */
+  chance: number;
+}
+
+export interface ChipPool {
+  kind: ChipPoolKind;
+  /** Odds (%) that a roll picks this pool at all. */
+  chance: number;
+  effects: ChipEffect[];
+}
+
+export interface ChipQuality {
+  /** Game quality id: 1-8, then 13 (Supreme). */
+  quality: number;
+  baseStats: string[];
+  /** How many identical chips compose into the next quality; null = top quality. */
+  composeNext: number | null;
+  resetCost: string | null;
+  pools: ChipPool[];
+}
+
+export interface ChipInput {
+  name: string;
+  category: ChipCategory;
+  qualities: ChipQuality[];
+}
+
+export interface Chip extends ChipInput {
+  id: string;
+  createdAt: string;
+}
+
+export interface ChipImportResult {
+  created: number;
+  updated: number;
+}
