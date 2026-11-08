@@ -926,3 +926,33 @@ model HiddenAchievement {
 
   @@map("hidden_achievements")
 }
+
+// The six body parts a chip (the game calls them "Gems") goes on. Declaration
+// order is the display order, and Postgres sorts enums by that order.
+enum ChipCategory {
+  Head
+  Shoulder
+  Chest
+  Legs
+  Hands
+  Waist
+}
+
+// A chip type, e.g. "[Head] Chip". Each one carries up to 9 qualities (Rough …
+// Supreme) in the `qualities` jsonb: fixed base stats, compose/reset info and the
+// random-effect pools with their chances. Shape + limits: lib/chip-input.ts.
+// jsonb (not tables) because it is read and written as one block and never
+// queried by an inner field — the project's convention for variable stat blocks.
+//
+// `category` is NOT unique on purpose: "one chip per category" is a data-entry
+// convention (like `types`), and the unique key is `name`, so tests and import
+// can work on prefixed/named rows without touching the real ones.
+model Chip {
+  id        String       @id @default(uuid()) @db.Uuid
+  name      String       @unique
+  category  ChipCategory
+  qualities Json         @default("[]")
+  createdAt DateTime     @default(now()) @map("created_at")
+
+  @@map("chips")
+}
