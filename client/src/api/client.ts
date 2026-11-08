@@ -1,5 +1,5 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { AccessoryInput, AccessorySet, AccessorySetInput, ArsenalPiece, ArsenalPieceInput, ArsenalSet, ArsenalSetInput, AccessorySummary, AdminUser, Aircraft, AircraftAttributeGroup, AircraftInput, AwakeningCostTier, AwakeningLevel, DashboardStats, Drone, DroneInput, DroneType, DroneTypeInput, Feedback, GameType, HiddenAchievement, HiddenAchievementInput, MediaPage, MechDetail, MechInput, MechRank, MechSummary, ModuleDetail, ModuleInput, ModuleQuality, ModuleQualityInput, ModuleSummary, Pilot, PilotInput, PostedBuild, TypeInput, WeaponDetail, WeaponInput, WeaponSummary } from "./types";
+import type { Chip, ChipImportResult, ChipInput, AccessoryInput, AccessorySet, AccessorySetInput, ArsenalPiece, ArsenalPieceInput, ArsenalSet, ArsenalSetInput, AccessorySummary, AdminUser, Aircraft, AircraftAttributeGroup, AircraftInput, AwakeningCostTier, AwakeningLevel, DashboardStats, Drone, DroneInput, DroneType, DroneTypeInput, Feedback, GameType, HiddenAchievement, HiddenAchievementInput, MediaPage, MechDetail, MechInput, MechRank, MechSummary, ModuleDetail, ModuleInput, ModuleQuality, ModuleQualityInput, ModuleSummary, Pilot, PilotInput, PostedBuild, TypeInput, WeaponDetail, WeaponInput, WeaponSummary } from "./types";
 import { adminHeaders } from "../auth/adminSession";
 
 export const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
@@ -980,5 +980,50 @@ export function useDeleteMediaBulk() {
     },
     // Same reasoning as useDeleteMedia: records lose their image too.
     onSuccess: () => qc.invalidateQueries(),
+  });
+}
+
+// ---- Chips ------------------------------------------------------------------
+
+export function useChips() {
+  return useQuery({ queryKey: ["chips"], queryFn: () => fetchJson<Chip[]>("/api/chips") });
+}
+
+export function useCreateChip() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: ChipInput) => sendJson<Chip>("/api/chips", "POST", input),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["chips"] }),
+  });
+}
+
+export function useUpdateChip(id: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: ChipInput) => sendJson<Chip>(`/api/chips/${id}`, "PUT", input),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["chips"] }),
+  });
+}
+
+export function useDeleteChip() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`${API_URL}/api/chips/${id}`, { method: "DELETE", headers: adminHeaders() });
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        throw new Error(data?.error ?? `API error ${res.status}`);
+      }
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["chips"] }),
+  });
+}
+
+/** Upserts many chips by name in one request (the Import JSON button). */
+export function useImportChips() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (chips: ChipInput[]) => sendJson<ChipImportResult>("/api/chips/import", "POST", { chips }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["chips"] }),
   });
 }

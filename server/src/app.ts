@@ -20,6 +20,7 @@ import { accessorySetsRouter } from "./routes/accessory-sets";
 import { arsenalSetsRouter } from "./routes/arsenal-sets";
 import { arsenalPiecesRouter } from "./routes/arsenal-pieces";
 import { hiddenAchievementsRouter } from "./routes/hidden-achievements";
+import { chipsRouter } from "./routes/chips";
 import { moduleQualitiesRouter } from "./routes/module-qualities";
 import { modulesRouter } from "./routes/modules";
 import { meRouter } from "./routes/me";
@@ -43,7 +44,8 @@ app.set("trust proxy", 1);
 // Behind nginx the site and API share one origin, so this is belt-and-suspenders.
 const clientOrigin = process.env.CLIENT_ORIGIN;
 app.use(cors(clientOrigin ? { origin: clientOrigin } : {}));
-app.use(express.json());
+// 1mb (default is 100kb): a chips import is the game's whole chips_data.json (~90kb).
+app.use(express.json({ limit: "1mb" }));
 app.use(cookieParser());
 
 app.use("/api/auth", authRouter);
@@ -61,6 +63,7 @@ app.use("/api/accessory-sets", accessorySetsRouter);
 app.use("/api/arsenal-sets", arsenalSetsRouter);
 app.use("/api/arsenal-pieces", arsenalPiecesRouter);
 app.use("/api/hidden-achievements", hiddenAchievementsRouter);
+app.use("/api/chips", chipsRouter);
 app.use("/api/module-qualities", moduleQualitiesRouter);
 app.use("/api/modules", modulesRouter);
 app.use("/api/me", meRouter);
