@@ -38,7 +38,7 @@ function SetCard({ set, pieces }: { set: ArsenalSet; pieces: ArsenalPiece[] }) {
     <section className="flex flex-col overflow-hidden rounded-xl border border-edge bg-surface sm:flex-row ">
       <div className="flex shrink-0 items-center justify-center border-edge bg-surface-2/40 p-6 sm:w-48 sm:border-r">
         {set.iconUrl ? (
-          <img src={imageSrc(set.iconUrl)} alt="" className="h-35 w-35 object-contain" />
+          <img src={imageSrc(set.iconUrl)} alt={set.name} className="h-35 w-35 object-contain" />
         ) : (
           <div className="h-28 w-28 rounded bg-surface-2" aria-hidden />
         )}

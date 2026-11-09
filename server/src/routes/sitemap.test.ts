@@ -26,6 +26,14 @@ describe("GET /api/sitemap.xml", () => {
     // A static landing page and both DB-driven detail URLs are present.
     expect(res.text).toContain("<loc>");
     expect(res.text).toContain("/weapons</loc>");
+    expect(res.text).toContain("/support</loc>");
+    expect(res.text).toContain("/modules</loc>");
+
+    // The conventional root URL serves the same XML (robots.txt points there).
+    const root = await request(app).get("/sitemap.xml");
+    expect(root.status).toBe(200);
+    expect(root.headers["content-type"]).toContain("application/xml");
+    expect(root.text).toBe(res.text);
     expect(res.text).toContain(`/mechs/${mech.id}</loc>`);
     expect(res.text).toContain(`/weapons/${weapon.id}</loc>`);
   });

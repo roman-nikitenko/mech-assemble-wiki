@@ -25,6 +25,8 @@ export function AircraftPage() {
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-6">
+      {/* The one page heading (the header logo is not an h1); visually hidden because the filters already head the page. */}
+      <h1 className="sr-only">Aircraft</h1>
       <Seo
         title="Aircraft — Mech Assemble Wiki"
         description="Every aircraft in Mech Assemble: Zombie Swarm — their tier, stats, and rank-up bonuses."

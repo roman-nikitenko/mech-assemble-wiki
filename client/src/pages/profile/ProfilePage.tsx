@@ -12,6 +12,7 @@ import {
 } from "../../auth/useBuilds";
 import type { PostedBuild } from "../../api/types";
 import { Tabs } from "../../components/Tabs";
+import { LogoutIcon } from "../../components/LogoutIcon";
 import { SavedToast } from "../../admin/SavedToast";
 import { formatDate } from "../../lib/date";
 
@@ -20,7 +21,7 @@ import { formatDate } from "../../lib/date";
     login — logged-out visitors see a prompt instead. */
 export function ProfilePage() {
   const location = useLocation();
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, logout } = useAuth();
   const me = useMe();
   const updateMe = useUpdateMe();
   const myBuilds = useMyBuilds();
@@ -117,20 +118,32 @@ export function ProfilePage() {
       <SavedToast show={saved} onHide={() => setSaved(false)} />
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-xl font-bold">My Profile</h2>
-        <Link
-          to="/profile/builds/new"
-          className="flex min-h-11 items-center rounded-lg bg-accent px-4 font-semibold text-bg hover:brightness-110"
+        <button
+          type="button"
+          onClick={() => logout()}
+          aria-label="Log out"
+          title="Log out"
+          className="flex min-h-11 shrink-0 cursor-pointer items-center rounded-lg px-2 text-ink-dim hover:text-accent"
         >
-          + New build
-        </Link>
+          <LogoutIcon className="h-6 w-6" />
+        </button>
       </div>
       <p className="mb-4 text-xs text-ink-dim">
         Post a build to share it in the community feed. Posted builds can be
         unposted anytime.
       </p>
 
-      <div className="mb-4">
-        <Tabs tabs={["Builds", "Settings"]} active={tab} onChange={setTab} />
+      {/* Tabs on the left, the New build button pinned to the right of the same row. */}
+      <div className="mb-4 flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <Tabs tabs={["Builds", "Settings"]} active={tab} onChange={setTab} />
+        </div>
+        <Link
+          to="/profile/builds/new"
+          className="flex items-center rounded-lg bg-accent px-3 py-2 font-semibold text-bg hover:brightness-110"
+        >
+          + New build
+        </Link>
       </div>
 
       {tab === "Settings" ? (

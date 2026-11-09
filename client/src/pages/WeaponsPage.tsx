@@ -35,6 +35,8 @@ export function WeaponsPage() {
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-6">
+      {/* The one page heading (the header logo is not an h1); visually hidden because the filters already head the page. */}
+      <h1 className="sr-only">Weapons</h1>
       <Seo
         title="Weapons — Mech Assemble Wiki"
         description="Browse every weapon in Mech Assemble: Zombie Swarm — tiers, stats, skill trees, skins, and the mechs they belong to."

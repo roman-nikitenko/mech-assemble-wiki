@@ -75,7 +75,10 @@ app.use("/api/uploads", uploadsRouter);
 // Admin Media library: list / search / delete what is in the uploads folder.
 app.use("/api/media", mediaRouter);
 // GET /api/sitemap.xml — generated from the DB for search engines.
+// Also at the conventional /sitemap.xml that crawlers and SEO tools try first
+// (in production nginx must proxy this exact path to Node — see docs).
 app.use("/api/sitemap.xml", sitemapRouter);
+app.use("/sitemap.xml", sitemapRouter);
 // Serve uploaded images as plain static files: GET /uploads/<name>.
 // Uploaded filenames are immutable UUIDs (a re-upload always gets a NEW
 // name — see routes/uploads.ts), so the bytes at a given URL never change.

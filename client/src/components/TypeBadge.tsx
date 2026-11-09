@@ -12,7 +12,7 @@ export function TypeBadge({ type }: { type: GameType }) {
           src={imageSrc(type.iconUrl)}
           srcSet={srcSet(type.iconUrl)}
           sizes="24px"
-          alt=""
+          alt={type.name}
           className="h-5 w-5 rounded-full object-cover"
         />
       )}

@@ -80,15 +80,29 @@ describe("PublicLayout", () => {
     expect(within(nav).getByRole("link", { name: "Builds" })).toHaveAttribute("aria-current", "page");
   });
 
+  it("has a Support link in the header and footer but not in the menu tabs", () => {
+    renderAt("/");
+    const links = screen.getAllByRole("link", { name: /Support/ });
+    expect(links).toHaveLength(2);
+    for (const l of links) expect(l).toHaveAttribute("href", "/support");
+    expect(within(screen.getByRole("navigation", { name: "Footer" })).getByRole("link", { name: /Support/ })).toBeInTheDocument();
+    expect(within(screen.getByRole("navigation", { name: "Site sections" })).queryByRole("link", { name: /Support/ })).toBeNull();
+  });
+
+  it("has no h1 of its own: each page owns the single h1", () => {
+    renderAt("/");
+    expect(screen.queryByRole("heading", { level: 1 })).toBeNull();
+  });
+
   it("shows a Log in link to /login when logged out", () => {
     renderAt("/");
     expect(screen.getByRole("link", { name: "Log in" })).toHaveAttribute("href", "/login");
   });
 
-  it("shows the nickname and Log out when logged in", async () => {
+  it("shows the profile link when logged in; Log out lives on the profile page", async () => {
     authState.loggedIn = true;
     renderAt("/");
     expect(await screen.findByRole("link", { name: "BanzaiFun" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Log out" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Log out" })).toBeNull();
   });
 });

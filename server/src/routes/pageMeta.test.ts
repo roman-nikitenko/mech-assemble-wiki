@@ -98,6 +98,27 @@ describe("page meta injection", () => {
     expect(res.headers.location).toBe(`https://mech-assemble-wiki.online/mechs/${mechSlug}`);
   });
 
+  it("injects title, description and canonical for the static pages", async () => {
+    for (const [route, title] of [
+      ["/", "Mech Assemble Wiki — Mech Assemble: Zombie Swarm database"],
+      ["/weapons", "Weapons — Mech Assemble Wiki"],
+      ["/chips", "Chips — Mech Assemble Wiki"],
+      ["/support", "Support Mech Assemble Wiki"],
+    ]) {
+      const res = await request(app).get(route);
+      expect(res.status).toBe(200);
+      expect(res.text).toContain(`<title>${title}</title>`);
+      expect(res.text).toContain(`<link rel="canonical" href="https://mech-assemble-wiki.online${route === "/" ? "/" : route}" />`);
+      // exactly one description: the injected one replaced the static default
+      expect(res.text.match(/name="description"/g)).toHaveLength(1);
+    }
+  });
+
+  it("does not claim unknown paths", async () => {
+    const res = await request(app).get("/definitely-not-a-page");
+    expect(res.status).toBe(404);
+  });
+
   it("returns the generic page for an unknown mech", async () => {
     const res = await request(app).get("/mechs/does-not-exist");
     expect(res.status).toBe(200);

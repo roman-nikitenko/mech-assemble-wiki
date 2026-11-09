@@ -32,6 +32,8 @@ export function DronesPage() {
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-6">
+      {/* The one page heading (the header logo is not an h1); visually hidden because the filters already head the page. */}
+      <h1 className="sr-only">Drones</h1>
       <Seo
         title="Drones — Mech Assemble Wiki"
         description="All drones in Mech Assemble: Zombie Swarm — their type, tier, stats, and level-up bonuses."
@@ -64,7 +66,7 @@ export function DronesPage() {
                   }`}
                 >
                   {t.iconUrl ? (
-                    <img src={imageSrc(t.iconUrl)} alt="" className="h-6 w-6 rounded object-contain" />
+                    <img src={imageSrc(t.iconUrl)} alt={t.name} className="h-6 w-6 rounded object-contain" />
                   ) : (
                     t.name
                   )}
