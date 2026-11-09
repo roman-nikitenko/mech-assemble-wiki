@@ -37,6 +37,8 @@ export function BrowsePage() {
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-6">
+      {/* The one page heading (the header logo is not an h1); visually hidden because the filters already head the page. */}
+      <h1 className="sr-only">Mechs</h1>
       <Seo
         title="Mech Assemble Wiki — Mech Assemble: Zombie Swarm database"
         path="/"

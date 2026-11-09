@@ -48,6 +48,8 @@ export function PilotsPage() {
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-6">
+      {/* The one page heading (the header logo is not an h1); visually hidden because the filters already head the page. */}
+      <h1 className="sr-only">Pilots</h1>
       <Seo
         title="Pilots — Mech Assemble Wiki"
         description="All pilots in Mech Assemble: Zombie Swarm — their boosts, relationship bonuses, and the mech or weapon they serve."

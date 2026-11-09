@@ -89,6 +89,11 @@ describe("PublicLayout", () => {
     expect(within(screen.getByRole("navigation", { name: "Site sections" })).queryByRole("link", { name: /Support/ })).toBeNull();
   });
 
+  it("has no h1 of its own: each page owns the single h1", () => {
+    renderAt("/");
+    expect(screen.queryByRole("heading", { level: 1 })).toBeNull();
+  });
+
   it("shows a Log in link to /login when logged out", () => {
     renderAt("/");
     expect(screen.getByRole("link", { name: "Log in" })).toHaveAttribute("href", "/login");

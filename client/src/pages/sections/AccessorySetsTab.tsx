@@ -92,7 +92,7 @@ function PieceTile({
           <STierIcon size={25} className="absolute left-0.5 top-0.5 z-10" />
         )}
         {art && (
-          <img src={imageSrc(art)} alt="" className="h-16 w-16 object-contain" />
+          <img src={imageSrc(art)} alt={piece.name} className="h-16 w-16 object-contain" />
         )}
       </button>
 

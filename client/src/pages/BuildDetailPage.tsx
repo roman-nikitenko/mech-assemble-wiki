@@ -115,7 +115,7 @@ export function BuildDetailPage() {
   return (
     <main className="mx-auto max-w-6xl px-4 py-6">
       <Seo
-        title={`Mech Assemble Wiki — "${b.name}"`}
+        title={`${b.name} — Community Build | Mech Assemble Wiki`}
         description={b.description.trim() || undefined}
         path={`/builds/${b.id}`}
         image={

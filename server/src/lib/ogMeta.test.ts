@@ -9,7 +9,7 @@ describe("mechMeta", () => {
       pilot: null, traits: [], weapon: null, accessory: null,
       imageUrl: "/uploads/colossus.png",
     });
-    expect(meta.title).toBe('Mech Assemble Wiki — "Iron Colossus"');
+    expect(meta.title).toBe("Iron Colossus — Skills, Build & Awakening | Mech Assemble Wiki");
     expect(meta.description).toBe("Iron Colossus is a Standard mech in Mech Assemble.");
     expect(meta.url).toBe("https://mech-assemble-wiki.online/mechs/iron-colossus");
     expect(meta.image).toBe("https://mech-assemble-wiki.online/uploads/colossus.png");
@@ -34,7 +34,7 @@ describe("weaponMeta", () => {
       id: "w1", slug: "blade", name: "Blade", tier: "S",
       description: "Big boom.", imageUrl: "/uploads/blade.png",
     });
-    expect(meta.title).toBe('Mech Assemble Wiki — "Blade"');
+    expect(meta.title).toBe("Blade — Stats, Skill Tree & Skins | Mech Assemble Wiki");
     expect(meta.description).toBe("Big boom.");
     expect(meta.image).toBe("https://mech-assemble-wiki.online/uploads/blade.png");
   });
@@ -53,7 +53,7 @@ describe("buildMeta", () => {
       { id: "b1", name: "My Build", description: "Crit comp." },
       "https://mech-assemble-wiki.online/uploads/mech.png",
     );
-    expect(meta.title).toBe('Mech Assemble Wiki — "My Build"');
+    expect(meta.title).toBe("My Build — Community Build | Mech Assemble Wiki");
     expect(meta.description).toBe("Crit comp.");
     expect(meta.url).toBe("https://mech-assemble-wiki.online/builds/b1");
     expect(meta.image).toBe("https://mech-assemble-wiki.online/uploads/mech.png");

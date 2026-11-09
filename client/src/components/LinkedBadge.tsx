@@ -8,7 +8,7 @@ export function LinkedBadge({ iconUrl }: { iconUrl?: string | null }) {
       aria-label="Linked skill"
     >
       {iconUrl ? (
-        <img src={imageSrc(iconUrl)} alt="" className="h-full w-full object-cover" />
+        <img src={imageSrc(iconUrl)} alt="Linked skill" className="h-full w-full object-cover" />
       ) : (
         <span className="flex h-full w-full items-center justify-center bg-accent text-bg">
           <svg viewBox="0 0 24 24" aria-hidden="true" className="h-3.5 w-3.5 fill-current">

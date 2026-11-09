@@ -7,6 +7,7 @@ import { QualityIcon } from "../components/QualityIcon";
 import { ModuleCard } from "../components/ModuleCard";
 import { LoadingSkeleton } from "../components/LoadingSkeleton";
 import { ErrorPanel } from "../components/ErrorPanel";
+import { Seo } from "../components/Seo";
 
 export function ModulesPage() {
   const modules = useModules();
@@ -18,6 +19,11 @@ export function ModulesPage() {
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-6">
+      <Seo
+        title="Attack Module — Mech Assemble Wiki"
+        description="Every attack module in Mech Assemble: Zombie Swarm — stats and effects at each quality level."
+        path="/modules"
+      />
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-black tracking-tight">Attack Module</h1>
         <div className="w-44">

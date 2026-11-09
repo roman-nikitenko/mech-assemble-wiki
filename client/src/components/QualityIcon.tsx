@@ -41,7 +41,7 @@ export function QualityIcon({ tier, size = 20 }: { tier: QualityTier; size?: num
   return (
     <img
       src={QUALITY_IMAGES[tier]}
-      alt=""
+      alt={tier}
       role="img"
       aria-label={tier}
       width={size}

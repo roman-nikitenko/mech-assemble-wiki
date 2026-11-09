@@ -18,7 +18,7 @@ export function FeedbackPage() {
   return (
     <main className="mx-auto max-w-2xl px-4 py-8">
       <Seo
-        title={`Mech Assemble Wiki — "Feedback"`}
+        title="Feedback — Mech Assemble Wiki"
         description="Send the Mech Assemble Wiki team a message — bug reports, corrections, and suggestions welcome."
         path="/feedback"
       />

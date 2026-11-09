@@ -30,7 +30,7 @@ export function BuildsPage() {
         description="Community-made mech builds for Mech Assemble: Zombie Swarm — skills, weapons, and setups shared by other players."
         path="/builds"
       />
-      <h2 className="text-xl font-bold">Builds</h2>
+      <h1 className="text-xl font-bold">Builds</h1>
       <p className="mb-4 mt-1 text-xs text-ink-dim">
         Community builds — post your own from{" "}
         <Link to="/profile" className="text-accent underline">
@@ -60,7 +60,7 @@ export function BuildsPage() {
                       src={imageSrc(image)}
                       srcSet={srcSet(image)}
                       sizes="96px"
-                      alt=""
+                      alt={b.name}
                       loading="lazy"
                       className="h-32 w-24 rounded-lg border border-edge object-cover"
                     />

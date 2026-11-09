@@ -51,12 +51,12 @@ export function PublicLayout() {
       <header className="mx-auto w-full z-10 max-w-6xl px-4 pt-6">
         <div className="flex items-center justify-between">
           <Link to="/">
-            {/* The image carries the name, so alt holds the text. The logo file has
+            {/* The image carries the name, so alt holds the text. It is a div, not an h1: each page owns the single h1. The logo file has
                 transparent margins; the negative margin trims them so the header
                 doesn't grow taller than the logo's visible art. */}
-            <h1>
+            <div>
               <img src={logo} alt="Mech Assemble Wiki" className="-my-2 h-20 w-auto" />
-            </h1>
+            </div>
           </Link>
           <div className="flex items-center gap-4  ">
             {/* Filled, unlike the outlined Log in beside it: Support is the action we
