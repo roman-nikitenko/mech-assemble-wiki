@@ -15,6 +15,7 @@ import { AircraftPage } from "./pages/AircraftPage";
 import { ChipsPage } from "./pages/ChipsPage";
 import { ModulesPage } from "./pages/ModulesPage";
 import { FeedbackPage } from "./pages/FeedbackPage";
+import { SupportPage } from "./pages/SupportPage";
 import { ProfilePage } from "./pages/profile/ProfilePage";
 import { LoginPage } from "./pages/LoginPage";
 
@@ -97,6 +98,7 @@ export default function App() {
         <Route path="/chips" element={<ChipsPage />} />
         <Route path="/modules" element={<ModulesPage />} />
         <Route path="/feedback" element={<FeedbackPage />} />
+        <Route path="/support" element={<SupportPage />} />
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/profile/builds/new" element={<BuildEditorPage />} />
         <Route path="/profile/builds/:buildId/edit" element={<BuildEditorPage />} />

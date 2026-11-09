@@ -19,3 +19,7 @@ export const SITE_DESCRIPTION =
 export function siteUrl(path: string): string {
   return `${SITE_URL}${path}`;
 }
+
+/** Where donations go. Only the /support page links here (the header and footer
+    point at /support), so a platform change is a one-line edit. */
+export const PATREON_URL = "https://www.patreon.com/MechAssembleWiki";

@@ -1,6 +1,7 @@
 import { Link, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "../auth/useAuth";
 import mainBg from "../assets/main-bg.png";
+import logo from "../assets/wiki-logo-3.webp";
 
 const TABS = [
   { to: "/", label: "Mechs" },
@@ -50,11 +51,22 @@ export function PublicLayout() {
       <header className="mx-auto w-full z-10 max-w-6xl px-4 pt-6">
         <div className="flex items-center justify-between">
           <Link to="/">
-            <h1 className="text-2xl font-black tracking-tight">
-              Mech <span className="text-accent">Assemble</span> Wiki
+            {/* The image carries the name, so alt holds the text. The logo file has
+                transparent margins; the negative margin trims them so the header
+                doesn't grow taller than the logo's visible art. */}
+            <h1>
+              <img src={logo} alt="Mech Assemble Wiki" className="-my-2 h-20 w-auto" />
             </h1>
           </Link>
           <div className="flex items-center gap-4  ">
+            {/* Filled, unlike the outlined Log in beside it: Support is the action we
+                want noticed. Not in TABS — the menu is for wiki content. */}
+            <Link
+              to="/support"
+              className="rounded-lg border border-accent bg-accent px-2 py-1 text-sm font-semibold text-bg hover:brightness-110"
+            >
+              <span aria-hidden="true">❤️</span> Support
+            </Link>
             {isAuthenticated ? (
               <>
                 {/* Icon-only on every screen size — the account link and log
@@ -118,8 +130,8 @@ export function PublicLayout() {
       <footer className="mt-16 border-t border-edge bg-surface z-10">
         <div className="mx-auto max-w-6xl px-4 py-8 text-ink-dim">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <Link to="/" className="text-lg font-black tracking-tight text-ink">
-              Mech <span className="text-accent">Assemble</span> Wiki
+            <Link to="/">
+              <img src={logo} alt="Mech Assemble Wiki" className="-my-2 h-20 w-auto" />
             </Link>
             <nav aria-label="Footer" className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
               {TABS.map((tab) => (
@@ -127,6 +139,9 @@ export function PublicLayout() {
                   {tab.label}
                 </Link>
               ))}
+              <Link to="/support" className="hover:text-accent">
+                <span aria-hidden="true">❤️</span> Support
+              </Link>
             </nav>
           </div>
           {/* Unofficial fan-site disclaimer — the important part for a

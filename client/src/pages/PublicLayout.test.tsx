@@ -80,6 +80,15 @@ describe("PublicLayout", () => {
     expect(within(nav).getByRole("link", { name: "Builds" })).toHaveAttribute("aria-current", "page");
   });
 
+  it("has a Support link in the header and footer but not in the menu tabs", () => {
+    renderAt("/");
+    const links = screen.getAllByRole("link", { name: /Support/ });
+    expect(links).toHaveLength(2);
+    for (const l of links) expect(l).toHaveAttribute("href", "/support");
+    expect(within(screen.getByRole("navigation", { name: "Footer" })).getByRole("link", { name: /Support/ })).toBeInTheDocument();
+    expect(within(screen.getByRole("navigation", { name: "Site sections" })).queryByRole("link", { name: /Support/ })).toBeNull();
+  });
+
   it("shows a Log in link to /login when logged out", () => {
     renderAt("/");
     expect(screen.getByRole("link", { name: "Log in" })).toHaveAttribute("href", "/login");

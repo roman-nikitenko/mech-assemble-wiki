@@ -26,6 +26,7 @@ describe("GET /api/sitemap.xml", () => {
     // A static landing page and both DB-driven detail URLs are present.
     expect(res.text).toContain("<loc>");
     expect(res.text).toContain("/weapons</loc>");
+    expect(res.text).toContain("/support</loc>");
     expect(res.text).toContain(`/mechs/${mech.id}</loc>`);
     expect(res.text).toContain(`/weapons/${weapon.id}</loc>`);
   });
