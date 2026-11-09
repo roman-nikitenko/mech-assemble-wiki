@@ -5,7 +5,7 @@ import type { Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma";
 import { UUID_RE } from "../lib/uuid";
 import { injectMeta } from "../lib/htmlInject";
-import { mechMeta, weaponMeta, buildMeta } from "../lib/ogMeta";
+import { mechMeta, weaponMeta, buildMeta, STATIC_PAGE_META, staticPageMeta } from "../lib/ogMeta";
 import { absoluteUrl } from "../lib/site";
 
 export const pageMetaRouter = Router();
@@ -82,3 +82,13 @@ pageMetaRouter.get("/builds/:id", async (req, res) => {
   const image = imageUrl ? absoluteUrl(imageUrl) : null;
   return sendHtml(res, injectMeta(html, buildMeta(build, image)));
 });
+
+// The home page and list/info pages: same injection as the detail pages, minus
+// the database lookup. Registered per exact path (not a catch-all) so unknown
+// URLs and the /api, /admin, /uploads routes are never touched.
+for (const pagePath of Object.keys(STATIC_PAGE_META)) {
+  pageMetaRouter.get(pagePath, (_req, res) => {
+    const meta = staticPageMeta(pagePath)!;
+    sendHtml(res, injectMeta(loadIndexHtml(), meta));
+  });
+}

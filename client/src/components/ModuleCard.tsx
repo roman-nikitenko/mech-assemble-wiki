@@ -96,7 +96,7 @@ export function ModuleCard({
                     return (
                       <li key={b.id} className="flex p-1 items-center relative gap-2 text-sm border border-edge bg-surface-2">
                         {entity?.iconUrl && (
-                          <img src={imageSrc(entity.iconUrl)} alt="" className="h-10 w-10 object-cover" />
+                          <img src={imageSrc(entity.iconUrl)} alt={entity.name} className="h-10 w-10 object-cover" />
                         )}
                         <span className="text-ink-dim font-semibold">{b.effectText}</span>
                       </li>

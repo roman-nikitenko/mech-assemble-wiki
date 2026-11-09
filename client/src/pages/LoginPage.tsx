@@ -3,6 +3,7 @@ import { useAuth } from "../auth/useAuth";
 // Vite turns an SVG import into a URL string we can drop into <img src>.
 import googleIcon from "../assets/google-icon.svg";
 import discordIcon from "../assets/discord.svg";
+import logo from "../assets/wiki-logo-3.webp";
 
 // These SVGs are single-color (black) glyphs, so a CSS filter recolors them.
 // Both chains start with `brightness(0) saturate(100%)` to first flatten the
@@ -27,13 +28,11 @@ export function LoginPage() {
           helps avoid "deceptive site" misclassification. */}
       <Link
         to="/"
-        className="inline-flex flex-col items-center gap-3"
+        className="inline-flex"
         aria-label="Mech Assemble Wiki — home"
       >
-        <img src="/favicon.svg" alt="" className="h-12 w-12" />
-        <span className="text-2xl font-black tracking-tight">
-          Mech <span className="text-accent">Assemble</span> Wiki
-        </span>
+        {/* The logo carries the name; the link's aria-label already says it. */}
+        <img src={logo} alt="" className="-my-4 h-40 w-auto object-contain" />
       </Link>
 
       <h1 className="mt-10 text-2xl font-black">Sign in</h1>

@@ -69,6 +69,7 @@ export function FilterBar({
                   key={t.id}
                   type="button"
                   aria-pressed={active}
+                  aria-label={t.name}
                   onClick={() => onToggleType(t.id)}
                   className={chipCls(active)}
                 >

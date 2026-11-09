@@ -1,6 +1,7 @@
 import { Link, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "../auth/useAuth";
 import mainBg from "../assets/main-bg.png";
+import logo from "../assets/wiki-logo-3.webp";
 
 const TABS = [
   { to: "/", label: "Mechs" },
@@ -26,17 +27,9 @@ function UserIcon({ className }: { className?: string }) {
   );
 }
 
-function LogoutIcon({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden="true" className={className}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15M12 9l3 3m0 0-3 3m3-3H2.25" />
-    </svg>
-  );
-}
-
 export function PublicLayout() {
   const { pathname } = useLocation();
-  const { isAuthenticated, isLoading, me, logout } = useAuth();
+  const { isAuthenticated, isLoading, me } = useAuth();
 
   const isActive = (to: string) =>
     to === "/" ? pathname === "/" || pathname.startsWith("/mechs") : pathname.startsWith(to);
@@ -50,15 +43,29 @@ export function PublicLayout() {
       <header className="mx-auto w-full z-10 max-w-6xl px-4 pt-6">
         <div className="flex items-center justify-between">
           <Link to="/">
-            <h1 className="text-2xl font-black tracking-tight">
-              Mech <span className="text-accent">Assemble</span> Wiki
-            </h1>
+            {/* The image carries the name, so alt holds the text. It is a div, not an h1: each page owns the single h1. The logo file has
+                transparent margins; the negative margin trims them so the header
+                doesn't grow taller than the logo's visible art. */}
+            <div>
+              <img src={logo} alt="Mech Assemble Wiki" className="-my-2 h-14 w-auto object-contain sm:h-20" />
+            </div>
           </Link>
           <div className="flex items-center gap-4  ">
+            {/* Filled, unlike the outlined Log in beside it: Support is the action we
+                want noticed. Not in TABS — the menu is for wiki content. */}
+            {/* On phones only the heart shows (the label stays for screen readers). */}
+            <Link
+              to="/support"
+              aria-label="Support"
+              className="rounded-lg border border-accent bg-accent px-2 py-1 text-sm font-semibold text-bg hover:brightness-110"
+            >
+              <span aria-hidden="true">❤️</span>
+              <span className="hidden sm:inline"> Support</span>
+            </Link>
             {isAuthenticated ? (
               <>
-                {/* Icon-only on every screen size — the account link and log
-                    out are shown as icons (name/label live in aria-label). */}
+                {/* Icon-only on every screen size (name lives in aria-label).
+                    Log out lives inside the profile page, next to the tabs. */}
                 <Link
                   to="/profile"
                   aria-label={me?.nickname ?? "My Profile"}
@@ -66,22 +73,17 @@ export function PublicLayout() {
                 >
                   <UserIcon className="h-6 w-6" />
                 </Link>
-                <button
-                  type="button"
-                  onClick={() => logout()}
-                  aria-label="Log out"
-                  className={`${buttonStyles} flex items-center text-ink-dim hover:text-accent cursor-pointer`}
-                >
-                  <LogoutIcon className="h-5 w-5" />
-                </button>
               </>
             ) : (
               <Link
                 to="/login"
                 aria-disabled={isLoading}
-                className={`${buttonStyles} text-sm  font-semibold text-accent hover:brightness-110`}
+                aria-label="Log in"
+                className={`${buttonStyles} flex items-center text-sm font-semibold text-accent hover:brightness-110`}
               >
-                Log in
+                {/* Phones: just the user icon; from sm up the words too. */}
+                <UserIcon className="h-5 w-5 sm:hidden" />
+                <span className="hidden sm:inline">Log in</span>
               </Link>
             )}
             {/* No Admin link on purpose — the admin area is reached by
@@ -118,8 +120,8 @@ export function PublicLayout() {
       <footer className="mt-16 border-t border-edge bg-surface z-10">
         <div className="mx-auto max-w-6xl px-4 py-8 text-ink-dim">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <Link to="/" className="text-lg font-black tracking-tight text-ink">
-              Mech <span className="text-accent">Assemble</span> Wiki
+            <Link to="/">
+              <img src={logo} alt="Mech Assemble Wiki" className="-my-2 h-20 w-auto place-self-center" />
             </Link>
             <nav aria-label="Footer" className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
               {TABS.map((tab) => (
@@ -127,6 +129,9 @@ export function PublicLayout() {
                   {tab.label}
                 </Link>
               ))}
+              <Link to="/support" className="hover:text-accent">
+                <span aria-hidden="true">❤️</span> Support
+              </Link>
             </nav>
           </div>
           {/* Unofficial fan-site disclaimer — the important part for a

@@ -59,10 +59,10 @@ export function MechDetailPage() {
   return (
     <main className="mx-auto max-w-4xl px-4 py-6">
       <Seo
-        title={`Mech Assemble Wiki — "${mech.name}"`}
-        description={`${mech.name}${mech.epithet ? ` (${mech.epithet})` : ""} — ${
-          mech.rank === "S" ? "S-tier" : "Standard"
-        } mech in Mech Assemble: Zombie Swarm. Skills, weapon, accessory, pilot, skins, and awakening.`}
+        title={`${mech.name} — Skills, Build & Awakening | Mech Assemble Wiki`}
+        // Same text the server injects (server/src/lib/mechSummary.ts), so the
+        // description a crawler sees does not change once the JS runs.
+        description={mechSummary(mech)}
         path={`/mechs/${mech.slug ?? mech.id}`}
         image={mech.imageUrl ? imageSrc(mech.imageUrl) : undefined}
       />
