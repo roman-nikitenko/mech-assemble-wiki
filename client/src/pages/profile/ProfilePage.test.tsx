@@ -67,6 +67,7 @@ beforeEach(() => {
       const body = JSON.parse((init as RequestInit).body as string) as Record<string, unknown>;
       return json({ id: "u1", isNew: false, ...body });
     }
+    if (url.includes("/api/auth/logout")) return json({ ok: true });
     // GET /api/me — 200 with a user when logged in, 401 when guest.
     if (url.includes("/api/me")) {
       return authState.loggedIn
@@ -107,6 +108,16 @@ beforeEach(() => {
 afterEach(() => vi.restoreAllMocks());
 
 describe("ProfilePage", () => {
+  it("has a Log out icon button beside the tabs that calls the logout endpoint", async () => {
+    renderPage();
+    await userEvent.click(await screen.findByRole("button", { name: "Log out" }));
+    await waitFor(() =>
+      expect(
+        vi.mocked(globalThis.fetch).mock.calls.some(([u, i]) => String(u).includes("/api/auth/logout") && (i as RequestInit)?.method === "POST"),
+      ).toBe(true),
+    );
+  });
+
   it("shows the empty state and a New build link", async () => {
     renderPage();
     expect(await screen.findByText(/No builds yet/)).toBeInTheDocument();

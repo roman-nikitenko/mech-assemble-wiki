@@ -99,10 +99,10 @@ describe("PublicLayout", () => {
     expect(screen.getByRole("link", { name: "Log in" })).toHaveAttribute("href", "/login");
   });
 
-  it("shows the nickname and Log out when logged in", async () => {
+  it("shows the profile link when logged in; Log out lives on the profile page", async () => {
     authState.loggedIn = true;
     renderAt("/");
     expect(await screen.findByRole("link", { name: "BanzaiFun" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Log out" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Log out" })).toBeNull();
   });
 });

@@ -32,7 +32,7 @@ export function LoginPage() {
         aria-label="Mech Assemble Wiki — home"
       >
         {/* The logo carries the name; the link's aria-label already says it. */}
-        <img src={logo} alt="" className="-my-4 h-40 w-auto" />
+        <img src={logo} alt="" className="-my-4 h-40 w-auto object-contain" />
       </Link>
 
       <h1 className="mt-10 text-2xl font-black">Sign in</h1>
