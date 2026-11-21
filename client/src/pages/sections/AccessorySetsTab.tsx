@@ -4,7 +4,7 @@ import type { AccessorySetPiece } from "../../api/types";
 import { LoadingSkeleton } from "../../components/LoadingSkeleton";
 import { ErrorPanel } from "../../components/ErrorPanel";
 import { STierIcon } from "../../components/STierIcon";
-import bgImage from "../../assets/dron-quality-border/quality-7.png"
+import bgImage from "../../assets/dron-quality-border/quality-7.webp"
 
 /** Breathing room kept between the open card and the viewport edge, in px. */
 const EDGE_GAP = 8;

@@ -1,7 +1,7 @@
 import type { Skin } from "../api/types";
 import { imageSrc } from "../api/client";
 import { StarNumber } from "./StarNumber";
-import skinBg from "../assets/mech-skin-bg.jpeg";
+import skinBg from "../assets/mech-skin-bg.webp";
 
 export function SkinCard({ skin }: { skin: Skin }) {
   return (
