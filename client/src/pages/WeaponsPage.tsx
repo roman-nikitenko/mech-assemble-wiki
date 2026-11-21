@@ -10,7 +10,7 @@ import { LoadingSkeleton } from "../components/LoadingSkeleton";
 import { ErrorPanel } from "../components/ErrorPanel";
 import { Seo } from "../components/Seo";
 import { sortNewestFirst } from "../lib/sortNewestFirst";
-import cardBg from "../assets/acessery-card-bg.jpeg";
+import cardBg from "../assets/acessery-card-bg.webp";
 
 export function WeaponsPage() {
   const { data, isPending, isError, refetch } = useWeapons();

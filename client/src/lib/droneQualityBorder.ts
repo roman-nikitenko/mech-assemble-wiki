@@ -2,7 +2,7 @@
 // (quality-0.png … quality-9.png). Globbed eagerly — like the module card art
 // and the quality gems themselves — so new or missing files are picked up
 // without touching this file. `import: "default"` yields each asset's URL.
-const borderAssets = import.meta.glob("../assets/dron-quality-border/*.png", {
+const borderAssets = import.meta.glob("../assets/dron-quality-border/*.webp", {
   eager: true,
   import: "default",
 }) as Record<string, string>;
