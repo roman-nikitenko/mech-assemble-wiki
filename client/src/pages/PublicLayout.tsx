@@ -2,6 +2,7 @@ import { Link, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "../auth/useAuth";
 import mainBg from "../assets/main-bg.png";
 import logo from "../assets/wiki-logo-3.webp";
+import { CalendarPopup } from "../components/CalendarPopup";
 
 const TABS = [
   { to: "/", label: "Mechs" },
@@ -14,6 +15,7 @@ const TABS = [
   { to: "/final-raid", label: "Final Raid" },
   { to: "/modules", label: "Attack Module" },
   { to: "/chips", label: "Chips" },
+  { to: "/calendar", label: "Calendar" },
   { to: "/feedback", label: "Feedback" },
 ];
 
@@ -54,6 +56,7 @@ export function PublicLayout() {
             {/* Filled, unlike the outlined Log in beside it: Support is the action we
                 want noticed. Not in TABS — the menu is for wiki content. */}
             {/* On phones only the heart shows (the label stays for screen readers). */}
+            <CalendarPopup />
             <Link
               to="/support"
               aria-label="Support"

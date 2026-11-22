@@ -956,3 +956,57 @@ model Chip {
 
   @@map("chips")
 }
+
+// What kind of in-game event this is. Drives the colour on the calendar and the
+// filter chips. `season` covers monthly Seasons and Final Raid blocks: they are
+// just "events with a long date range", so one table and one timeline serve all.
+enum EventCategory {
+  draw
+  guild
+  explore
+  rank
+  shop
+  season
+}
+
+// One in-game event run (the game repeats an event as separate rows with their own
+// ids, so there is no recurrence logic here). Most rows arrive via JSON import:
+// `game_id` is the game's own run id, so re-importing updates instead of duplicating
+// (null for events an admin typed in by hand — Postgres allows many NULLs in a UNIQUE).
+// Dates are plain days (@db.Date, no time/timezone): an event opens 00:00 server time
+// on start_date and closes 00:00 the day after end_date (end is inclusive).
+// `rewards` is jsonb — grouped sections [{section, note, items:[{name, amount,
+// quality, iconUrl}]}] — read/written as one block, never queried inside
+// (same convention as chips.qualities). Shape + limits: lib/event-input.ts.
+model Event {
+  id               String        @id @default(uuid()) @db.Uuid
+  gameId           Int?          @unique @map("game_id")
+  name             String
+  category         EventCategory
+  startDate        DateTime      @map("start_date") @db.Date
+  endDate          DateTime      @map("end_date") @db.Date
+  minServerDay     Int?          @map("min_server_day")
+  featuring        String?
+  iconUrl          String?       @map("icon_url")
+  backgroundUrl    String?       @map("background_url")
+  otherBackgrounds String[]      @map("other_backgrounds")
+  rewards          Json          @default("[]")
+  createdAt        DateTime      @default(now()) @map("created_at")
+
+  // The public calendar asks "which events overlap this month?" — this serves it.
+  @@index([startDate, endDate])
+  @@map("events")
+}
+
+// Registry of imported event art: the game's image name (key, no folder/extension,
+// e.g. "item-9-diamond") -> the uploaded file's URL. The media library renames every
+// upload to <uuid>.webp, so without this table a later import could not tell that
+// "Diamond" was already uploaded. Written by the import dialog, never by hand.
+model EventAsset {
+  id        String   @id @default(uuid()) @db.Uuid
+  key       String   @unique
+  url       String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("event_assets")
+}

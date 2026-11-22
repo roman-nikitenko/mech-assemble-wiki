@@ -1,5 +1,5 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { Chip, ChipImportResult, ChipInput, AccessoryInput, AccessorySet, AccessorySetInput, ArsenalPiece, ArsenalPieceInput, ArsenalSet, ArsenalSetInput, AccessorySummary, AdminUser, Aircraft, AircraftAttributeGroup, AircraftInput, AwakeningCostTier, AwakeningLevel, DashboardStats, Drone, DroneInput, DroneType, DroneTypeInput, Feedback, GameType, HiddenAchievement, HiddenAchievementInput, MediaPage, MechDetail, MechInput, MechRank, MechSummary, ModuleDetail, ModuleInput, ModuleQuality, ModuleQualityInput, ModuleSummary, Pilot, PilotInput, PostedBuild, TypeInput, WeaponDetail, WeaponInput, WeaponSummary } from "./types";
+import type { CalendarEvent, EventAsset, EventImportResult, EventInput, Chip, ChipImportResult, ChipInput, AccessoryInput, AccessorySet, AccessorySetInput, ArsenalPiece, ArsenalPieceInput, ArsenalSet, ArsenalSetInput, AccessorySummary, AdminUser, Aircraft, AircraftAttributeGroup, AircraftInput, AwakeningCostTier, AwakeningLevel, DashboardStats, Drone, DroneInput, DroneType, DroneTypeInput, Feedback, GameType, HiddenAchievement, HiddenAchievementInput, MediaPage, MechDetail, MechInput, MechRank, MechSummary, ModuleDetail, ModuleInput, ModuleQuality, ModuleQualityInput, ModuleSummary, Pilot, PilotInput, PostedBuild, TypeInput, WeaponDetail, WeaponInput, WeaponSummary } from "./types";
 import { adminHeaders } from "../auth/adminSession";
 
 export const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
@@ -1026,4 +1026,75 @@ export function useImportChips() {
     mutationFn: (chips: ChipInput[]) => sendJson<ChipImportResult>("/api/chips/import", "POST", { chips }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["chips"] }),
   });
+}
+
+
+// ---- Event calendar ---------------------------------------------------------
+
+/** Events overlapping an optional date range. The range is part of the query KEY,
+    so each month the popup shows is its own cache entry. */
+export function useEvents(range?: { from: string; to: string }) {
+  const qs = range ? `?from=${range.from}&to=${range.to}` : "";
+  return useQuery({
+    queryKey: ["events", range?.from ?? null, range?.to ?? null],
+    queryFn: () => fetchJson<CalendarEvent[]>(`/api/events${qs}`),
+  });
+}
+
+// Every events mutation invalidates the ["events"] prefix: all ranges refetch.
+export function useCreateEvent() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: EventInput) => sendJson<CalendarEvent>("/api/events", "POST", input),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["events"] }),
+  });
+}
+
+export function useUpdateEvent(id: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: EventInput) => sendJson<CalendarEvent>(`/api/events/${id}`, "PUT", input),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["events"] }),
+  });
+}
+
+export function useDeleteEvent() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`${API_URL}/api/events/${id}`, { method: "DELETE", headers: adminHeaders() });
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        throw new Error(data?.error ?? `API error ${res.status}`);
+      }
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["events"] }),
+  });
+}
+
+/** Upserts many events by game id in one request (the Import JSON button). */
+export function useImportEvents() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (events: EventInput[]) => sendJson<EventImportResult>("/api/events/import", "POST", { events }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["events"] }),
+  });
+}
+
+/** The image registry (game image name -> uploaded url). Admin-only. */
+export function useEventAssets(enabled = true) {
+  return useQuery({
+    queryKey: ["event-assets"],
+    enabled,
+    queryFn: async () => {
+      const res = await fetch(`${API_URL}/api/event-assets`, { headers: adminHeaders() });
+      if (!res.ok) throw new Error(`API error ${res.status} for /api/event-assets`);
+      return (await res.json()) as EventAsset[];
+    },
+  });
+}
+
+/** Registers freshly uploaded import images under their game names. */
+export function saveEventAssets(assets: EventAsset[]) {
+  return sendJson<{ saved: number }>("/api/event-assets/bulk", "POST", { assets });
 }

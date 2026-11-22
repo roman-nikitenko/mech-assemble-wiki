@@ -12,6 +12,7 @@ import { AccessoriesPage } from "./pages/AccessoriesPage";
 import { PilotsPage } from "./pages/PilotsPage";
 import { DronesPage } from "./pages/DronesPage";
 import { AircraftPage } from "./pages/AircraftPage";
+import { CalendarPage } from "./pages/CalendarPage";
 import { ChipsPage } from "./pages/ChipsPage";
 import { ModulesPage } from "./pages/ModulesPage";
 import { FeedbackPage } from "./pages/FeedbackPage";
@@ -67,6 +68,8 @@ const AdminAircraftPage = lazyNamed(() => import("./admin/aircraft/AdminAircraft
 const AircraftFormPage = lazyNamed(() => import("./admin/aircraft/AircraftFormPage"), "AircraftFormPage");
 const AdminChipsPage = lazyNamed(() => import("./admin/chips/AdminChipsPage"), "AdminChipsPage");
 const ChipFormPage = lazyNamed(() => import("./admin/chips/ChipFormPage"), "ChipFormPage");
+const AdminEventsPage = lazyNamed(() => import("./admin/events/AdminEventsPage"), "AdminEventsPage");
+const EventFormPage = lazyNamed(() => import("./admin/events/EventFormPage"), "EventFormPage");
 const AdminModulesPage = lazyNamed(() => import("./admin/modules/AdminModulesPage"), "AdminModulesPage");
 const ModuleFormPage = lazyNamed(() => import("./admin/modules/ModuleFormPage"), "ModuleFormPage");
 const AdminModuleQualitiesPage = lazyNamed(() => import("./admin/moduleQualities/AdminModuleQualitiesPage"), "AdminModuleQualitiesPage");
@@ -96,6 +99,7 @@ export default function App() {
         <Route path="/final-raid" element={<FinalRaidPublicPage />} />
         <Route path="/aircraft" element={<AircraftPage />} />
         <Route path="/chips" element={<ChipsPage />} />
+        <Route path="/calendar" element={<CalendarPage />} />
         <Route path="/modules" element={<ModulesPage />} />
         <Route path="/feedback" element={<FeedbackPage />} />
         <Route path="/support" element={<SupportPage />} />
@@ -143,6 +147,9 @@ export default function App() {
         <Route path="chips" element={<AdminChipsPage />} />
         <Route path="chips/new" element={<ChipFormPage />} />
         <Route path="chips/:id/edit" element={<ChipFormPage />} />
+        <Route path="events" element={<AdminEventsPage />} />
+        <Route path="events/new" element={<EventFormPage />} />
+        <Route path="events/:id/edit" element={<EventFormPage />} />
         <Route path="modules" element={<AdminModulesPage />} />
         <Route path="modules/new" element={<ModuleFormPage />} />
         <Route path="modules/:id/edit" element={<ModuleFormPage />} />

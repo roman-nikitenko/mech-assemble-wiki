@@ -36,6 +36,7 @@ const NAV = [
   { to: "/admin/drones", label: "Drones", end: false },
   { to: "/admin/aircraft", label: "Aircraft", end: false },
   { to: "/admin/chips", label: "Chips", end: false },
+  { to: "/admin/events", label: "Events", end: false },
   { to: "/admin/final-raid", label: "Final Raid", end: false },
   { to: "/admin/awakening/cost-tiers", label: "Awakening costs", end: false },
   { to: "/admin/settings", label: "Settings", end: false },

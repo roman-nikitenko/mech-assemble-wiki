@@ -64,7 +64,14 @@ const SOURCES: Source[] = [
   { kind: "Arsenal set", model: delegate(prisma.arsenalSet), fields: ["iconUrl"], editPath: (r) => `/admin/final-raid/sets/${r.id}/edit` },
   { kind: "Arsenal piece", model: delegate(prisma.arsenalPiece), fields: ["iconUrl"], editPath: (r) => `/admin/final-raid/arsenal/${r.id}/edit` },
   { kind: "Hidden achievement", model: delegate(prisma.hiddenAchievement), fields: ["iconUrl"], editPath: (r) => `/admin/final-raid/achievements/${r.id}/edit` },
+  // Events: only the plain columns fit this list. Their extra backgrounds (a text[])
+  // and reward icons (inside the `rewards` jsonb) are handled separately below.
+  { kind: "Event", model: delegate(prisma.event), fields: ["iconUrl", "backgroundUrl"], editPath: (r) => `/admin/events/${r.id}/edit` },
 ];
+
+// Shape of the reward sections inside events.rewards (see lib/event-input.ts).
+type RewardSections = { items?: { iconUrl?: string | null }[] }[];
+const rewardSections = (v: unknown): RewardSections => (Array.isArray(v) ? (v as RewardSections) : []);
 
 /** Map of stored URL ("/uploads/<file>") -> every record using it. */
 export async function findMediaUsage(): Promise<Map<string, MediaUsage[]>> {
@@ -88,6 +95,23 @@ export async function findMediaUsage(): Promise<Map<string, MediaUsage[]>> {
       }
     }
   }
+
+  // Events' extra backgrounds + reward icons live in an array / jsonb, so the loop
+  // above can't see them. Without this a reward icon used only inside an event would
+  // look "unused" in the Media library and could be deleted without a warning.
+  const add = (url: unknown, usage: MediaUsage) => {
+    if (typeof url !== "string" || !url) return;
+    const list = byUrl.get(url);
+    if (list) list.push(usage);
+    else byUrl.set(url, [usage]);
+  };
+  for (const e of await prisma.event.findMany({ select: { id: true, name: true, otherBackgrounds: true, rewards: true } })) {
+    const base = { kind: "Event", id: e.id, name: e.name, editPath: `/admin/events/${e.id}/edit` };
+    for (const url of e.otherBackgrounds) add(url, { ...base, field: "otherBackgrounds" });
+    for (const section of rewardSections(e.rewards)) {
+      for (const item of section.items ?? []) add(item.iconUrl, { ...base, field: "rewards" });
+    }
+  }
   return byUrl;
 }
 
@@ -97,6 +121,34 @@ export async function findMediaUsage(): Promise<Map<string, MediaUsage[]>> {
     one all-or-nothing transaction (~25 updates) instead of one per file. */
 export async function clearMediaUsage(urls: string[]): Promise<void> {
   if (urls.length === 0) return;
+  const gone = new Set(urls);
+
+  // Events keep some urls inside an array / jsonb, which updateMany can't edit, so
+  // rewrite those rows in JS (a few dozen events — cheap) and save only changed ones.
+  const events = await prisma.event.findMany({ select: { id: true, otherBackgrounds: true, rewards: true } });
+  for (const e of events) {
+    const others = e.otherBackgrounds.filter((u) => !gone.has(u));
+    const sections = rewardSections(e.rewards);
+    let rewardsChanged = false;
+    for (const section of sections) {
+      for (const item of section.items ?? []) {
+        if (item.iconUrl && gone.has(item.iconUrl)) {
+          item.iconUrl = null; // keep the reward, drop only its dead icon
+          rewardsChanged = true;
+        }
+      }
+    }
+    if (others.length !== e.otherBackgrounds.length || rewardsChanged) {
+      await prisma.event.update({
+        where: { id: e.id },
+        data: { otherBackgrounds: others, rewards: sections as unknown as Prisma.InputJsonValue },
+      });
+    }
+  }
+  // A registry entry pointing at a deleted file would make the next import reuse a
+  // dead url, so drop it — the import then asks for the image again.
+  await prisma.eventAsset.deleteMany({ where: { url: { in: urls } } });
+
   await prisma.$transaction(
     SOURCES.flatMap((s) =>
       s.fields.map((field) => s.model.updateMany({ where: { [field]: { in: urls } }, data: { [field]: null } })),
