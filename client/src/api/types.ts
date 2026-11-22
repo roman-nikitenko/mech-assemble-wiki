@@ -895,3 +895,54 @@ export interface ChipImportResult {
   created: number;
   updated: number;
 }
+
+// ---- Event calendar --------------------------------------------------------
+// Mirrors server/src/lib/event-input.ts. Dates are plain "YYYY-MM-DD" days
+// (endDate is the LAST day, inclusive); an event opens 00:00 server time on its
+// start and closes 00:00 the day after its end.
+
+export type EventCategory = "draw" | "guild" | "explore" | "rank" | "shop" | "season";
+
+export interface RewardItem {
+  name: string;
+  /** null = a pool of possible items (shop / prize pool), not a guaranteed amount. */
+  amount: number | null;
+  /** Colour tier: 1 grey … 8 gold, 13 rainbow, 0 = unknown / random drop. */
+  quality: number;
+  iconUrl: string | null;
+}
+
+export interface RewardSection {
+  section: string;
+  note: string | null;
+  items: RewardItem[];
+}
+
+export interface EventInput {
+  /** The game's own run id — the import's upsert key; null for hand-typed events. */
+  gameId: number | null;
+  name: string;
+  category: EventCategory;
+  startDate: string;
+  endDate: string;
+  minServerDay: number | null;
+  featuring: string | null;
+  iconUrl: string | null;
+  backgroundUrl: string | null;
+  otherBackgrounds: string[];
+  rewards: RewardSection[];
+}
+
+export interface CalendarEvent extends EventInput {
+  id: string;
+}
+
+export interface EventImportResult {
+  created: number;
+  updated: number;
+}
+
+export interface EventAsset {
+  key: string;
+  url: string;
+}
