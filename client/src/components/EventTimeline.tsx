@@ -111,7 +111,7 @@ export function EventTimeline({
                   }}
                   className={`my-1 flex h-7 cursor-pointer items-center gap-1 overflow-hidden whitespace-nowrap rounded-md px-1.5 text-left font-semibold text-white hover:brightness-110 ${lit ? "ring-2 ring-white" : ""}`}
                 >
-                  {e.iconUrl && <img src={imageSrc(e.iconUrl)} alt="" className="h-5 w-5 shrink-0 object-contain drop-shadow" />}
+                  {e.iconUrl && <img src={imageSrc(e.iconUrl)} alt="" className="h-5 w-5 shrink-0 object-contain" />}
                   <span className="truncate">
                     {e.startDate < first ? "‹ " : ""}{e.name} · {short(e.startDate)}–{short(e.endDate)}{e.endDate > last ? " ›" : ""}
                   </span>
