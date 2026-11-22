@@ -88,3 +88,12 @@ describe("EventTimeline layout", () => {
     expect(screen.getByRole("button", { name: /Late Raid ·/ })).toHaveTextContent("25 Nov–30 Nov");
   });
 });
+
+describe("EventTimeline icons", () => {
+  it("draws the event icon without a CSS filter (Safari drops filtered images in a scrolling area when a modal locks the page)", () => {
+    render(<EventTimeline events={[{ ...LATE, iconUrl: "/uploads/i.webp" }]} year={2026} month={10} today="2026-11-22" onSelect={vi.fn()} />);
+    const icon = screen.getByRole("button", { name: /Late Raid ·/ }).querySelector("img")!;
+    expect(icon).toBeTruthy();
+    expect(icon.className).not.toMatch(/drop-shadow|blur|filter/);
+  });
+});
