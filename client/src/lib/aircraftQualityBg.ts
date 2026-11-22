@@ -5,7 +5,7 @@ import { QUALITY_TIERS } from "../api/types";
 // eagerly — like moduleCardStyle and the quality gems — so a missing tier
 // degrades instead of breaking the build, and new files are picked up without
 // touching this file. `import: "default"` yields each asset's URL string.
-const bgAssets = import.meta.glob("../assets/aircraft-quality-bg/*.png", {
+const bgAssets = import.meta.glob("../assets/aircraft-quality-bg/*.webp", {
   eager: true,
   import: "default",
 }) as Record<string, string>;

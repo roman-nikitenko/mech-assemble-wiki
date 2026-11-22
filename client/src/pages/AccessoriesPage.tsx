@@ -11,7 +11,7 @@ import { Seo } from "../components/Seo";
 import { sortNewestFirst } from "../lib/sortNewestFirst";
 import { Tabs } from "../components/Tabs";
 import { AccessorySetsTab } from "./sections/AccessorySetsTab";
-import cardBg from "../assets/acessery-card-bg.jpeg";
+import cardBg from "../assets/acessery-card-bg.webp";
 
 const TABS = ["Accessories", "Accessory sets"];
 

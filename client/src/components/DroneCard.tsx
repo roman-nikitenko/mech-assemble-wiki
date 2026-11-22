@@ -48,7 +48,7 @@ export function DroneCard({
           </button>
         )}
         <div
-          className=" rounded-t-xl absolute inset-0 bg-amber-500 z-0 bg-bottom bg-no-repeat bg-cover"
+          className=" rounded-t-xl absolute inset-0 z-0 bg-bottom bg-no-repeat bg-cover"
           style={{ backgroundImage: `url(${droneCardBg})` }}
         ></div>
         <div className="bg-gradient-to-r rounded-t-xl absolute w-full z-10 px-3 py-2 text-center">
@@ -66,7 +66,7 @@ export function DroneCard({
               src={imageSrc(drone.iconUrl)}
               alt={drone.name}
               loading="lazy"
-              className="animate-drone-float h-full z-0 w-full object-contain"
+              className="animate-drone-float h-full z-0 max-w-[250px] object-contain"
             />
           ) : (
             <div className="h-full w-full" aria-hidden />
