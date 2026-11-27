@@ -141,3 +141,44 @@ describe("MechFormPage (create mode)", () => {
     expect(body.linkedSkills).toEqual([{ name: "Frost Synergy", description: null, partnerId: "w9" }]);
   });
 });
+
+describe("MechFormPage 3D SS view", () => {
+  it("offers the upload only for S mechs", async () => {
+    renderForm();
+    await screen.findByRole("button", { name: "Create mech" });
+    await userEvent.click(screen.getByRole("button", { name: "Rank Standard" }));
+    expect(screen.queryByLabelText("3D SS view")).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Rank S" }));
+    expect(screen.getByLabelText("3D SS view")).toBeInTheDocument();
+  });
+
+  it("sends the uploaded view for an S mech and null after switching to Standard", async () => {
+    const url = "/uploads/viewers/11111111-1111-4111-8111-111111111111/index.html";
+    const posted: string[] = [];
+    renderForm();
+    vi.mocked(globalThis.fetch).mockImplementation((input, init) => {
+      const path = String(input);
+      const method = (init as RequestInit | undefined)?.method ?? "GET";
+      const reply = (body: unknown, status = 200) =>
+        Promise.resolve(new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } }));
+      if (path.includes("/api/uploads/viewer")) return reply({ url }, 201);
+      if (path.endsWith("/api/mechs") && method === "POST") {
+        posted.push(String((init as RequestInit).body));
+        return reply({ error: "stay on the form" }, 400);
+      }
+      return reply([]);
+    });
+    await userEvent.type(await screen.findByLabelText("Name *"), "Shadow");
+    await userEvent.click(screen.getByRole("button", { name: "Rank S" }));
+    await userEvent.upload(screen.getByLabelText("3D SS view"), new File(["z"], "v.zip", { type: "application/zip" }));
+    await screen.findByRole("link", { name: "Open preview" });
+    await userEvent.click(screen.getByRole("button", { name: "Create mech" }));
+    await vi.waitFor(() => expect(posted).toHaveLength(1));
+    expect(JSON.parse(posted[0]).ssViewerUrl).toBe(url);
+
+    await userEvent.click(screen.getByRole("button", { name: "Rank Standard" }));
+    await userEvent.click(screen.getByRole("button", { name: "Create mech" }));
+    await vi.waitFor(() => expect(posted).toHaveLength(2));
+    expect(JSON.parse(posted[1]).ssViewerUrl).toBeNull();
+  });
+});

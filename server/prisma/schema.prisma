@@ -102,6 +102,10 @@ model Mech {
   // Third art slot: the art shown inside this mech's skill CARDS
   // (build editor / game-style rank-up cards).
   cardSkillIconUrl String?  @map("card_skill_icon_url")
+  // S only: url of an uploaded 3D viewer of the SS skin
+  // (/uploads/viewers/<uuid>/index.html). On the mech, not on `skins`, because
+  // skin rows are deleted and recreated on every save.
+  ssViewerUrl      String?  @map("ss_viewer_url")
 
   // S-tier-only systems below are optional/empty for Standard mechs;
   // the frontend decides what to show based on `rank`.
