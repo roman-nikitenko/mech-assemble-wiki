@@ -7,6 +7,7 @@ import cookieParser from "cookie-parser";
 import { mechsRouter } from "./routes/mechs";
 import { traitsRouter } from "./routes/traits";
 import { uploadsDir, uploadsRouter } from "./routes/uploads";
+import { createViewerUploadRouter } from "./routes/viewer-uploads";
 import { mediaRouter } from "./routes/media";
 import { pilotsRouter } from "./routes/pilots";
 import { typesRouter } from "./routes/types";
@@ -75,6 +76,8 @@ app.use("/api/builds", buildsRouter);
 app.use("/api/feedback", feedbackRouter);
 app.use("/api/awakening", awakeningRouter);
 app.use("/api/admin", adminRouter);
+// 3D viewer packs (zip). Mounted before /api/uploads, the image/video router.
+app.use("/api/uploads/viewer", createViewerUploadRouter());
 app.use("/api/uploads", uploadsRouter);
 // Admin Media library: list / search / delete what is in the uploads folder.
 app.use("/api/media", mediaRouter);

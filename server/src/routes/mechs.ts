@@ -7,6 +7,8 @@ import { parseMechInput } from "../lib/mech-input";
 import { createSkillNodes, createLinkedSkills } from "../lib/skill-nodes";
 import { slugify } from "../lib/slug";
 import { UUID_RE } from "../lib/uuid";
+import { removeViewer } from "../lib/viewerPack";
+import { uploadsDir } from "./uploads";
 
 export const mechsRouter = Router();
 
@@ -109,6 +111,17 @@ async function uniqueMechSlug(
     });
     if (!clash) return candidate;
     candidate = `${base}-${n}`;
+  }
+}
+
+// Deletes a viewer's folder once no mech points at it. Runs AFTER the database
+// change, and only logs a failure: a leftover folder must not fail the request.
+async function removeViewerIfUnused(url: string | null | undefined) {
+  if (!url) return;
+  try {
+    if ((await prisma.mech.count({ where: { ssViewerUrl: url } })) === 0) await removeViewer(url, uploadsDir);
+  } catch (err) {
+    console.error("Could not remove 3D viewer", url, err);
   }
 }
 
@@ -300,6 +313,8 @@ mechsRouter.put("/:id", requireAdmin, async (req, res) => {
   const accessoryError = await validateMechAccessoryLink(accessoryId);
   if (accessoryError) return res.status(400).json({ error: accessoryError });
 
+  const before = await prisma.mech.findUnique({ where: { id }, select: { ssViewerUrl: true } });
+
   try {
     const mech = await prisma.$transaction(async (tx) => {
       await tx.mechTrait.deleteMany({ where: { mechId: id } });
@@ -366,6 +381,7 @@ mechsRouter.put("/:id", requireAdmin, async (req, res) => {
       await createLinkedSkills(tx, { mechId: id }, linkedSkills);
       return updated;
     });
+    await removeViewerIfUnused(before?.ssViewerUrl);
     res.json(mech);
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2025") {
@@ -397,7 +413,8 @@ mechsRouter.delete("/:id", requireAdmin, async (req, res) => {
   const { id } = req.params;
   if (!UUID_RE.test(id)) return res.status(404).json({ error: "Mech not found" });
   try {
-    await prisma.mech.delete({ where: { id } });
+    const deleted = await prisma.mech.delete({ where: { id } });
+    await removeViewerIfUnused(deleted.ssViewerUrl);
     res.status(204).end();
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2025") {

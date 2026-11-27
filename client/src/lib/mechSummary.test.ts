@@ -14,6 +14,7 @@ const base: MechDetail = {
   imageUrl: null,
   iconUrl: null,
   cardSkillIconUrl: null,
+  ssViewerUrl: null,
   specialBonus: null,
   lore: null,
   rankUpPreview: [],

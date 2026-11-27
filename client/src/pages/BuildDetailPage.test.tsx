@@ -27,6 +27,7 @@ const mechDetail: MechDetail = {
   ...mechSummary,
   iconUrl: null,
   cardSkillIconUrl: null,
+  ssViewerUrl: null,
   specialBonus: null,
   lore: null,
   rankUpPreview: [],

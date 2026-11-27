@@ -4,6 +4,7 @@ import { imageSrc, NotFoundError, useMech } from "../api/client";
 import { Tabs } from "../components/Tabs";
 import { TypeBadge } from "../components/TypeBadge";
 import { RankBadge } from "../components/RankBadge";
+import { STierIcon } from "../components/STierIcon";
 import { LoadingSkeleton } from "../components/LoadingSkeleton";
 import { LinkedRow } from "../components/LinkedRow";
 import { Seo } from "../components/Seo";
@@ -13,6 +14,10 @@ import { OverviewTab } from "./sections/OverviewTab";
 import { SkillsTab } from "./sections/SkillsTab";
 import { AwakenTab } from "./sections/AwakenTab";
 import { SkinsHelpersTab } from "./sections/SkinsHelpersTab";
+import { SsViewTab } from "./sections/SsViewTab";
+
+// Shown as the SS art, not as text; this is its accessible name.
+const SS_TAB = "SS 3D view";
 
 export function MechDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -49,12 +54,16 @@ export function MechDetailPage() {
   // Tabs are driven by DATA, not by rank: a Standard mech simply has no
   // weapon/awakening/skins, so those tabs never appear for it. (Rank gates
   // the data at seed time; data gates the tabs here.)
+  const ssViewerUrl = mech.rank === "S" ? mech.ssViewerUrl : null;
   const tabs = [
     "Overview",
     "Skills",
     ...(mech.awakeningLevels.length > 0 ? ["Awaken"] : []),
     ...(mech.skins.length + mech.helpers.length > 0 ? ["Skin"] : []),
+    ...(ssViewerUrl ? [SS_TAB] : []),
   ];
+  // The chosen tab survives navigating to another mech, which may not have it.
+  const shownTab = tabs.includes(activeTab) ? activeTab : "Overview";
 
   return (
     <main className="mx-auto max-w-4xl px-4 py-6">
@@ -107,14 +116,20 @@ export function MechDetailPage() {
 
       </header>
 
-      <Tabs tabs={tabs} active={activeTab} onChange={setActiveTab} />
+      <Tabs
+        tabs={tabs}
+        active={shownTab}
+        onChange={setActiveTab}
+        icons={{ [SS_TAB]: <STierIcon variant="SS" size={32} /> }}
+      />
       <div className="py-4">
-        {activeTab === "Overview" && <OverviewTab mech={mech} />}
-        {activeTab === "Skills" && <SkillsTab nodes={mech.skillNodes} />}
-        {activeTab === "Awaken" && <AwakenTab levels={mech.awakeningLevels} />}
-        {activeTab === "Skin" && (
+        {shownTab === "Overview" && <OverviewTab mech={mech} />}
+        {shownTab === "Skills" && <SkillsTab nodes={mech.skillNodes} />}
+        {shownTab === "Awaken" && <AwakenTab levels={mech.awakeningLevels} />}
+        {shownTab === "Skin" && (
           <SkinsHelpersTab skins={mech.skins} helpers={mech.helpers} />
         )}
+        {shownTab === SS_TAB && ssViewerUrl && <SsViewTab mechName={mech.name} url={ssViewerUrl} />}
       </div>
     </main>
   );

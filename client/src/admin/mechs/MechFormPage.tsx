@@ -16,6 +16,7 @@ import { QualityIcon } from "../../components/QualityIcon";
 import { STierIcon } from "../../components/STierIcon";
 import { slugify } from "../../lib/slug";
 import { ImageUploadField } from "../ImageUploadField";
+import { SsViewerUploadField } from "../SsViewerUploadField";
 import { SavedToast } from "../SavedToast";
 import { SkillTreeEditor } from "../skilltree/SkillTreeEditor";
 import { draftsFromNodes, serializeDrafts, type SkillDraft } from "../skilltree/skillTreeDrafts";
@@ -87,6 +88,7 @@ export function MechFormPage() {
         imageUrl: m.imageUrl,
         iconUrl: m.iconUrl,
         cardSkillIconUrl: m.cardSkillIconUrl,
+        ssViewerUrl: m.ssViewerUrl,
         traitNames: m.traits.map((t) => t.trait.name),
         pilotId: m.pilot?.id ?? null,
         weaponId: m.weapon?.id ?? null,
@@ -163,6 +165,7 @@ export function MechFormPage() {
     const payload = {
       ...form,
       pilotId: form.rank === "S" ? form.pilotId : null,
+      ssViewerUrl: form.rank === "S" ? form.ssViewerUrl : null,
       rankUpPreview: rankUp,
       // Bonuses go positionally (blanks included) — the server keeps ★
       // numbers by index and skips the blank slots.
@@ -463,6 +466,10 @@ export function MechFormPage() {
             onChange={(url) => set("cardSkillIconUrl", url)}
           />
         </div>
+
+        {form.rank === "S" && (
+          <SsViewerUploadField value={form.ssViewerUrl ?? null} onChange={(url) => set("ssViewerUrl", url)} />
+        )}
 
         <fieldset>
           <legend className="mb-1 text-sm font-semibold">Skins</legend>
