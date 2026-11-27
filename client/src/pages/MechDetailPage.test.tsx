@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { cleanup, render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MechDetailPage } from "./MechDetailPage";
@@ -17,6 +18,7 @@ const bareMech: MechDetail = {
   imageUrl: null,
   iconUrl: null,
   cardSkillIconUrl: null,
+  ssViewerUrl: null,
   specialBonus: null,
   lore: null,
   rankUpPreview: [],
@@ -113,5 +115,48 @@ describe("MechDetailPage tabs are driven by data", () => {
     expect(screen.getByRole("tab", { name: "Skin" })).toBeInTheDocument();
     // The Weapon tab was removed from the mech detail page.
     expect(screen.queryByRole("tab", { name: "Weapon" })).not.toBeInTheDocument();
+  });
+});
+
+describe("MechDetailPage 3D SS view tab", () => {
+  const viewer = "/uploads/viewers/11111111-1111-4111-8111-111111111111/index.html";
+  const skins = [{ id: "s1", name: "Skin", description: null, imageUrl: null, stars: [] }];
+  const withViewer: MechDetail = { ...bareMech, name: "Shadow Warrior", rank: "S", skins, ssViewerUrl: viewer };
+
+  it("sits right after Skin and shows the SS art instead of text", async () => {
+    renderWithMech(withViewer);
+    const tab = await screen.findByRole("tab", { name: "SS 3D view" });
+    const names = screen.getAllByRole("tab").map((t) => t.getAttribute("aria-label") ?? t.textContent);
+    expect(names).toEqual(["Overview", "Skills", "Skin", "SS 3D view"]);
+    expect(tab).toHaveTextContent("");
+    expect(tab.querySelector("img")?.getAttribute("src")).toMatch(/ss.*\.png/);
+  });
+
+  it("loads the viewer in embed mode only once the tab is opened", async () => {
+    renderWithMech(withViewer);
+    const tab = await screen.findByRole("tab", { name: "SS 3D view" });
+    expect(screen.queryByTitle("Shadow Warrior SS, interactive 3D model")).not.toBeInTheDocument();
+    await userEvent.click(tab);
+    const frame = screen.getByTitle("Shadow Warrior SS, interactive 3D model");
+    expect(frame).toHaveAttribute("src", expect.stringContaining(`${viewer}?embed=1`));
+    expect(frame).toHaveAttribute("loading", "lazy");
+    expect(frame).toHaveAttribute("allow", "fullscreen");
+    // Exactly the stage's shape (the pack's handoff): extra height would show as a black band.
+    expect(frame).toHaveClass("aspect-[668/634]", "w-full");
+    expect(screen.getByRole("link", { name: "Open full page" })).toHaveAttribute(
+      "href",
+      expect.stringMatching(/index\.html$/),
+    );
+  });
+
+  it("is absent without a viewer, and on a Standard mech", async () => {
+    renderWithMech({ ...withViewer, ssViewerUrl: null });
+    await screen.findByRole("tab", { name: "Overview" });
+    expect(screen.queryByRole("tab", { name: "SS 3D view" })).not.toBeInTheDocument();
+    cleanup();
+    vi.restoreAllMocks();
+    renderWithMech({ ...withViewer, rank: "Standard" });
+    await screen.findByRole("tab", { name: "Overview" });
+    expect(screen.queryByRole("tab", { name: "SS 3D view" })).not.toBeInTheDocument();
   });
 });

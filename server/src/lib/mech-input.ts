@@ -1,6 +1,7 @@
 import { MechRank } from "@prisma/client";
 import { parseSkillNodes, type SkillNodeInput } from "./skill-node-input";
 import { parseLinkedSkills, type LinkedSkillInput } from "./linked-skill-input";
+import { VIEWER_URL_RE } from "./viewerPack";
 
 // Shared validation for POST and PUT /api/mechs. Returns either a clean,
 // typed payload or a user-facing error message. Kept out of the router so
@@ -31,6 +32,8 @@ export interface MechInput {
   imageUrl: string | null;
   iconUrl: string | null;
   cardSkillIconUrl: string | null;
+  // 3D SS view (S only). Tri-state: undefined = leave untouched, null = remove.
+  ssViewerUrl: string | null | undefined;
   // Trait NAMES, not ids: the admin types them as free text and the router
   // finds-or-creates the catalog rows, so the client never manages trait ids.
   traitNames: string[];
@@ -105,6 +108,16 @@ export function parseMechInput(body: unknown): ParseResult {
   }
   if (b.accessoryId !== undefined && b.accessoryId !== null && typeof b.accessoryId !== "string") {
     return { ok: false, message: "accessoryId must be an accessory id string or null." };
+  }
+
+  const viewer = b.ssViewerUrl;
+  if (viewer !== undefined && viewer !== null) {
+    if (typeof viewer !== "string" || !VIEWER_URL_RE.test(viewer)) {
+      return { ok: false, message: "ssViewerUrl must be an uploaded 3D viewer." };
+    }
+    if (b.rank !== "S") {
+      return { ok: false, message: "Only S mechs can have a 3D SS view." };
+    }
   }
 
   const optionalFields = ["slug", "epithet", "specialBonus", "lore", "imageUrl", "iconUrl", "cardSkillIconUrl"] as const;
@@ -191,6 +204,8 @@ export function parseMechInput(body: unknown): ParseResult {
       imageUrl: parsed.imageUrl,
       iconUrl: parsed.iconUrl,
       cardSkillIconUrl: parsed.cardSkillIconUrl,
+      // A Standard mech never keeps a viewer, even if the field was omitted.
+      ssViewerUrl: b.rank === "S" ? (viewer as string | null | undefined) : null,
       skills: skillsResult.value,
       linkedSkills: linkedResult.value,
       skins,

@@ -374,6 +374,8 @@ export interface MechDetail extends MechSummary {
   iconUrl: string | null;
   // Art shown inside this mech's skill cards (build editor).
   cardSkillIconUrl: string | null;
+  // S only: uploaded 3D viewer of the SS skin (url of its index.html).
+  ssViewerUrl: string | null;
   // Positional (index = rank): interior entries may be "" on purpose.
   rankUpPreview: string[];
   skills: Skill[];
@@ -424,6 +426,8 @@ export interface MechInput {
   imageUrl?: string | null;
   iconUrl?: string | null;
   cardSkillIconUrl?: string | null;
+  // Omit to leave the 3D view as it is; null removes it.
+  ssViewerUrl?: string | null;
   // Trait NAMES, not ids — the server finds-or-creates catalog rows by name.
   traitNames?: string[];
   pilotId?: string | null;

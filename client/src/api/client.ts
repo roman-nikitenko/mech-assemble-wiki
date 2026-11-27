@@ -158,6 +158,19 @@ export async function uploadVideo(file: File): Promise<string> {
   return data.url;
 }
 
+/** Upload a 3D viewer zip; returns the url of its unpacked index.html. */
+export async function uploadViewer(file: File): Promise<string> {
+  const form = new FormData();
+  form.append("viewer", file);
+  const res = await fetch(`${API_URL}/api/uploads/viewer`, { method: "POST", headers: adminHeaders(), body: form });
+  if (!res.ok) {
+    const data = await res.json().catch(() => null);
+    throw new Error(data?.error ?? `Upload failed (${res.status})`);
+  }
+  const data = (await res.json()) as { url: string };
+  return data.url;
+}
+
 export function usePilots() {
   return useQuery({ queryKey: ["pilots"], queryFn: () => fetchJson<Pilot[]>("/api/pilots") });
 }
